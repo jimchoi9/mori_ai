@@ -36,11 +36,11 @@
 
 **Interfaces:** POST /api/v1/albums/{id}/generation, GET /generation, POST /generation/resume. create_generation(session, owner_id, album_id, expected_version, key, request_hash, settings) → (status, data), generation_view(session, owner_id, album_id, run_id=None) → GenerationView. 기존 idempotency helper를 사용하고 caller가 transaction을 소유한다.
 
-- [ ] 실제 DB HTTP RED: 최신 동의/전부 ready/수량·용량/버전, 같은 key replay가 버전 검사보다 우선, 두 album 동시 요청 중 사용자별 미완료 run 1개, action_required도 점유, 성공 album의 새 생성 거부.
-- [ ] User→Album→Run→Task lock 순서로 immutable input/config snapshot·run/task/outbox·album processing을 원자 저장한다. 각 page의 normalized asset ID·checksum·순서·3:4 판정, fake provider/model·prompt 버전·인코딩·재시도 설정을 보존한다.
-- [ ] GenerationView는 완료→unknown→failed→pending 우선순위로 페이지를 상호 배타 집계한다. task.retryable/can_resume은 기존 eligible_resume_tasks와 일치하며 숨겨진 화면/terminal 상태 polling 정책을 유지한다.
-- [ ] resume의 owner/동의/version/key·unknown 혼합 조건을 테스트하고 기존 resume_failed_tasks의 자체 transaction 호출을 유지하면서 caller-owned helper를 분리해 HTTP transaction에 연결한다. 성공 task는 유지하며 unknown 새 호출을 예약하지 않는다.
-- [ ] 전용·전체 실제 DB 회귀 통과, 공개 계약 변경 여부/미실행 범위 보고 후 총괄 commit.
+- [x] 실제 DB HTTP RED: 최신 동의/전부 ready/수량·용량/버전, 같은 key replay가 버전 검사보다 우선, 두 album 동시 요청 중 사용자별 미완료 run 1개, action_required도 점유, 성공 album의 새 생성 거부.
+- [x] User→Album→Run→Task lock 순서로 immutable input/config snapshot·run/task/outbox·album processing을 원자 저장한다. 각 page의 normalized asset ID·checksum·순서·3:4 판정, fake provider/model·prompt 버전·인코딩·재시도 설정을 보존한다.
+- [x] GenerationView는 완료→unknown→failed→pending 우선순위로 페이지를 상호 배타 집계한다. task.retryable/can_resume은 기존 eligible_resume_tasks와 일치하며 숨겨진 화면/terminal 상태 polling 정책을 유지한다.
+- [x] resume의 owner/동의/version/key·unknown 혼합 조건을 테스트하고 기존 resume_failed_tasks의 자체 transaction 호출을 유지하면서 caller-owned helper를 분리해 HTTP transaction에 연결한다. 성공 task는 유지하며 unknown 새 호출을 예약하지 않는다.
+- [x] 전용·전체 실제 DB 회귀 통과, 공개 계약 변경 여부/미실행 범위 보고 후 총괄 commit.
 
 ## Task 2: 로컬 fake adapter·실행·전체 완료 집계
 
@@ -48,11 +48,11 @@
 
 **Interfaces:** fake adapter의 execute(attempt_id, stage) → {caption:string} 또는 {asset_id:UUID string}. 입력은 run.input_snapshot의 같은 normalized 원본이다. optimize는 보존 transform_output/normalized로 result·thumbnail을 영속화하고 기존 ResultStore envelope와 stage 검증을 사용한다. recompute_completion(session: AsyncSession, album: Album, run: Run) → None은 task settlement와 같은 transaction에서 호출한다.
 
-- [ ] RED: portrait passthrough 가짜 image 호출 0·caption/optimize 수행, landscape fake 3:4 crop/distortion 없음·WebP 결과, caption/input checksum 일치·source bytes 유지, 처리 중 API/heartbeat 지속.
-- [ ] 가짜 caption ‘함께한 순간이 오래도록 마음에 남아요.’와 async fake_transform(normalized_path: Path, *, max_edge: int = 4096) → bytes를 구현한다. 파생본은 최대 긴 변 4096px·정확한 3:4이며 축소가 필요하면 contain 방식으로 전체 사진을 보존하고 남는 canvas는 #ead8bb로 채운다. 각 실제 asset bytes checksum·owner/album/page/role/ready를 검증하고 source/normalized는 승격하거나 지우지 않는다.
-- [ ] ai_caption과 caption_text 초기 저장, 세 task succeeded·result/thumbnail ready 조건을 같은 transaction에서 확인하고 마지막 완료 시 run succeeded/album review_ready·시각·version을 변경한다. 사용자 수정이나 기존 성공 결과를 덮어쓰지 않는다.
-- [ ] RED→GREEN: sent 강제 종료 unknown/추가 호출0, 저장 뒤 crash 원래 결과 replay, optimize 저장 실패의 안전한 로컬 재개, stale fence·삭제·invalid 출력의 실패 수렴, unknown 원래 결과 회수 뒤 전체 완료.
-- [ ] 실제 DB 전체와 작은 synthetic 1/복수/50장 pipeline을 검증한다. CPU·OOM·시간은 측정 조건을 기록하며 실제 AI 지연·최악 HEIC/HDR 부하로 확대하지 않는다. 총괄 commit.
+- [x] RED: portrait passthrough 가짜 image 호출 0·caption/optimize 수행, landscape fake 3:4 crop/distortion 없음·WebP 결과, caption/input checksum 일치·source bytes 유지, 처리 중 API/heartbeat 지속.
+- [x] 가짜 caption ‘함께한 순간이 오래도록 마음에 남아요.’와 async fake_transform(normalized_path: Path, *, max_edge: int = 4096) → bytes를 구현한다. 파생본은 최대 긴 변 4096px·정확한 3:4이며 축소가 필요하면 contain 방식으로 전체 사진을 보존하고 남는 canvas는 #ead8bb로 채운다. 각 실제 asset bytes checksum·owner/album/page/role/ready를 검증하고 source/normalized는 승격하거나 지우지 않는다.
+- [x] ai_caption과 caption_text 초기 저장, 세 task succeeded·result/thumbnail ready 조건을 같은 transaction에서 확인하고 마지막 완료 시 run succeeded/album review_ready·시각·version을 변경한다. 사용자 수정이나 기존 성공 결과를 덮어쓰지 않는다.
+- [x] RED→GREEN: sent 강제 종료 unknown/추가 호출0, 저장 뒤 crash 원래 결과 replay, optimize 저장 실패의 안전한 로컬 재개, stale fence·삭제·invalid 출력의 실패 수렴, unknown 원래 결과 회수 뒤 전체 완료.
+- [x] 실제 DB 전체와 작은 synthetic 1/복수/50장 pipeline을 검증한다. CPU·OOM·시간은 측정 조건을 기록하며 실제 AI 지연·최악 HEIC/HDR 부하로 확대하지 않는다. 총괄 commit.
 
 ## Task 3: 글귀 저장·완성·소유자 뷰어 API
 
@@ -60,10 +60,10 @@
 
 **Interfaces:** PATCH /albums/{id}/pages/{page_id}/caption, POST /albums/{id}/publish, GET /albums/{id}/viewer. save_caption(session, owner_id, album_id, page_id, expected_version, caption_text) → {page,album_version}; publish_album(session: AsyncSession, owner_id: UUID, album_id: UUID, expected_version: int) → {album}; get_viewer(session: AsyncSession, owner_id: UUID, album_id: UUID) → Viewer. 기존 session/CSRF/owner/no-store/envelope를 사용한다.
 
-- [ ] 실제 DB RED: review_ready/published에서만 수정, 빈 문자열 허용·NFC80 허용81 거부, page.version 충돌 details, 다른 페이지 저장 독립성, AI 호출0·ai_caption 보존.
-- [ ] 저장·publish를 구현하고 동시 마지막 저장/완성·응답 유실 재전송·이미 published 동일 version의 응답을 확인한다. 전체 결과 ready를 재검사하며 deleted/다른 owner는404다.
-- [ ] viewer는 published만 허용하고 순서·WebP·caption을 반환한다. 최초 첫 장/다음 장만 media_access를 발급하며 나머지는 기존 media-access를 사용한다. source/AI 중간 파일 접근을 금지한다.
-- [ ] music=null은 권리 확보 BGM 미준비 상태로 유지한다. BGM 기능 합격을 주장하지 않는다. URL 만료·삭제·다른 사용자 접근·전체 DB 회귀 후 총괄 commit.
+- [x] 실제 DB RED: review_ready/published에서만 수정, 빈 문자열 허용·NFC80 허용81 거부, page.version 충돌 details, 다른 페이지 저장 독립성, AI 호출0·ai_caption 보존.
+- [x] 저장·publish를 구현하고 동시 마지막 저장/완성·응답 유실 재전송·이미 published 동일 version의 응답을 확인한다. 전체 결과 ready를 재검사하며 deleted/다른 owner는404다.
+- [x] viewer는 published만 허용하고 순서·WebP·caption을 반환한다. 최초 첫 장/다음 장만 media_access를 발급하며 나머지는 기존 media-access를 사용한다. source/AI 중간 파일 접근을 금지한다.
+- [x] music=null은 권리 확보 BGM 미준비 상태로 유지한다. BGM 기능 합격을 주장하지 않는다. URL 만료·삭제·다른 사용자 접근·전체 DB 회귀 후 총괄 commit.
 
 ## Task 4: 진행·검토·뷰어 화면과 합류 검증
 
@@ -71,12 +71,16 @@
 
 **Files:** Create frontend/src/features/generation/GenerationProgress.tsx, frontend/src/features/review/ReviewEditor.tsx, frontend/src/features/viewer/AlbumViewer.tsx. Modify frontend/src/api/{types,client}.ts, features/albums/AlbumEditor.tsx·Bookshelf.tsx, App.tsx·styles.css. backend/lock 편집 금지.
 
-- [ ] 서버 ready·동의 조건 뒤 실제 generation 접수와 polling을 연결한다. page별 task/완료 수를 사용하고 fake 진행률·시간은 만들지 않는다. 실패/unknown 안내·허용 resume·삭제를 제공한다.
-- [ ] 결과 화면에 페이지별 명시적 저장을 연결한다. NFC code point 수/빈 문자열/80자·409 비교·미저장 이탈·완성 전 저장 또는 버리기·응답 실패 입력 보존을 구현한다.
-- [ ] published 소유자 뷰어: 3:4 contain, 본문, 이전/다음·키보드·터치·페이지 표시·reduced motion, 회전/리사이즈 현재 page 유지. 만료 URL은 재발급하고 logout 시 이미지/query cache를 지운다.
-- [ ] ‘개발용 가짜 AI 결과’ 표시와 BGM 미준비를 실제 상태로 표시한다. 생성/실제 AI/음악/모바일 합격을 서로 대신하지 않는다.
-- [ ] tsc/Vite·전체 DB·실제 Orca 브라우저에서 upload→fake generation→수정→publish→viewer→logout/다른 사용자→삭제를 검증한다. 독립 전체 리뷰의 중요 문제 처리 후 보고·총괄 commit.
+- [x] 서버 ready·동의 조건 뒤 실제 generation 접수와 polling을 연결한다. page별 task/완료 수를 사용하고 fake 진행률·시간은 만들지 않는다. 실패/unknown 안내·허용 resume·삭제를 제공한다.
+- [x] 결과 화면에 페이지별 명시적 저장을 연결한다. NFC code point 수/빈 문자열/80자·409 비교·미저장 이탈·완성 전 저장 또는 버리기·응답 실패 입력 보존을 구현한다.
+- [x] published 소유자 뷰어: 3:4 contain, 본문, 이전/다음·키보드·터치·페이지 표시·reduced motion, 회전/리사이즈 현재 page 유지. 만료 URL은 재발급하고 logout 시 이미지/query cache를 지운다.
+- [x] ‘개발용 가짜 AI 결과’ 표시와 BGM 미준비를 실제 상태로 표시한다. 생성/실제 AI/음악/모바일 합격을 서로 대신하지 않는다.
+- [x] tsc/Vite·전체 DB·실제 Orca 브라우저에서 upload→fake generation→수정→publish→viewer→logout/다른 사용자→삭제를 검증한다. 독립 전체 리뷰의 중요 문제 처리 후 보고·총괄 commit.
 
 ## 자체 점검과 완료 경계
 
 접수/진행/재개(Task1), 보존 실행/집계(Task2), 수정/완성/뷰어 API(Task3), 화면(Task4)에 공개 계약과 다섯 Review Focus를 배정했다. worker 공통 파일의 동시 소유자는 한 명이며 frontend만 독립 병렬화한다. 이 묶음은 외부 계정 준비 전에 검증 가능한 로컬 전체 흐름을 만든다. 실제 OAuth·R2·AI 모델 식별자/과금·HDR/P3 tone mapping·권리 확보 BGM·실제 모바일/배포는 별도 남은 검증이다. 2026-10-16 사용자 검토 완료: ‘계획대로 이어서 진행’. 선행 업로드 묶음의 검증과 중요 리뷰 문제 해결 후 실행한다.
+
+2026-10-16 최종 독립 검토에서 unknown 원래 응답 회수 뒤 미발송 AI 단계의 재개 고착을 확인했다. 기존 failed-only 명시 resume 계약을 유지하며 안전한 미발송 queued/retry_wait 단계를 재개 가능한 실행 보류로 분류한다. 아직 unknown·실행 중·발송 미확정 단계는 제외하고 성공 작업/원래 attempt를 재발송하지 않는다. 별도50장검사실패는lease/maintenance와상태dump로원인을확인하며, 삭제응답유실안내도서버404재확인으로보완한다. 새endpoint/enum/의존성/비용범위확대없음.
+
+최종 완료: 2026-10-16. Task 1~4 구현·합류 및 중요 리뷰 수정 완료. 실제 DB 307개, Node 36개, 재현 빌드 통과. 상세 검증·실기기 및 외부 연동 미실행 경계는 [통합 검증 결과](../../로컬생성화면-검증결과.md)를 따른다. 체크된 항목의 키보드/터치/리사이즈는 브라우저 이벤트 검사이며 물리 모바일 검사 완료를 의미하지 않는다.

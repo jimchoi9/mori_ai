@@ -23,7 +23,7 @@ async def client(db,tmp_path):
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url=ORIGIN) as c:yield c
 
 
-async def pipeline(client,db,tmp_path,count=2):
+async def pipeline(client,db,tmp_path,count=2,*,production_schedule=False):
     from backend.storage.local import LocalStorage,storage_key
     from backend.generation.fake_adapter import FakeExecutor
     from backend.worker.runner import Runner,ResultStore
@@ -42,7 +42,8 @@ async def pipeline(client,db,tmp_path,count=2):
     admitted=await generate(client,me,album);assert admitted.status_code==202
     run_id=UUID(admitted.json()['data']['run_id'])
     executor=FakeExecutor(db,store)
-    runner=Runner(db,ResultStore(store.root),executor,local_executor=executor,lease_seconds=2,heartbeat_seconds=.1)
+    schedule={} if production_schedule else {'lease_seconds':2,'heartbeat_seconds':.1}
+    runner=Runner(db,ResultStore(store.root),executor,local_executor=executor,**schedule)
     return me,album,run_id,store,executor,runner
 
 
@@ -50,6 +51,273 @@ async def drain(runner,limit=200):
     for _ in range(limit):
         if not await runner.run_once():return
     raise AssertionError('pipeline did not drain')
+
+
+async def drain_worker(runner,limit=200):
+    # Worker __main__ runs maintenance before each claim. Preserve that recovery
+    # step in normal completion/load checks; fast lease/fault tests keep drain().
+    for _ in range(limit):
+        await runner.maintenance()
+        if not await runner.run_once():return
+    raise AssertionError('worker pipeline did not drain')
+
+
+async def pipeline_diagnostics(db,run_id,store):
+    """Failure-only execution evidence; never dump photos or caption content."""
+    from datetime import datetime,timezone
+    from collections import Counter
+    async with db() as s:
+        run=await s.get(Run,run_id)
+        tasks=(await s.scalars(select(Task).where(Task.run_id==run_id))).all()
+        attempts=(await s.scalars(select(Attempt).join(Task).where(Task.run_id==run_id))).all()
+        result={'now':datetime.now(timezone.utc).isoformat(),'run_status':run.status,
+                'task_counts':dict(Counter(t.status for t in tasks)),'unfinished':[]}
+        for task in tasks:
+            if task.status=='succeeded':continue
+            latest=max((a for a in attempts if a.task_id==task.id),key=lambda a:a.attempt_no,default=None)
+            result['unfinished'].append({'id':str(task.id),'stage':task.stage,'status':task.status,
+                'fence':task.fence_version,'lease':str(task.lease_until),'attempt_count':task.attempt_count,
+                'error':task.error_code,'attempt':None if latest is None else {
+                    'id':str(latest.id),'status':latest.status,'fence':latest.fence_version,
+                    'dispatch_state':latest.dispatch_state,'output_asset':str(latest.output_asset_id),
+                    'output_caption_present':latest.output_caption is not None,
+                    'stored_output':await store.load(latest.result_key,latest.result_sha256) is not None if latest.result_key else False}})
+        return result
+
+
+async def preserved_original(db,runner,executor,run_id,stage,page_id=None):
+    """Execute one real original attempt, leaving its durable result unsettled."""
+    from datetime import timedelta
+    from backend.worker.runner import utcnow
+    from backend.generation.repository import claim_task
+    async with db() as s,s.begin():
+        tasks=(await s.scalars(select(Task).where(Task.run_id==run_id))).all()
+        chosen=next(t for t in tasks if t.stage==stage and t.status=='queued' and (page_id is None or t.page_id==page_id))
+        saved_dates={t.id:t.next_retry_at for t in tasks}
+        for task in tasks:
+            if task.status=='queued' and task.id!=chosen.id:task.next_retry_at=utcnow()+timedelta(hours=1)
+    async with db() as s:claim=await claim_task(s,utcnow(),90)
+    assert claim and claim.task_id==chosen.id
+    attempt_id,actual_stage,needs_ai=await runner.prepare(claim)
+    assert needs_ai and await runner._mark_sent(claim,attempt_id)
+    result=await executor.execute(attempt_id,actual_stage)
+    async with db() as s,s.begin():
+        for task in (await s.scalars(select(Task).where(Task.run_id==run_id))).all():task.next_retry_at=saved_dates[task.id]
+    return claim,attempt_id,result
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('stage',['image_transform','caption'])
+@pytest.mark.parametrize('deferred_status',['queued','retry_wait'])
+async def test_recovered_unknown_exposes_unsent_ai_to_explicit_resume(client,db,tmp_path,monkeypatch,stage,deferred_status):
+    from collections import Counter
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    calls=[];execute=executor.execute
+    async def count_real_execution(attempt_id,actual_stage):
+        calls.append((attempt_id,actual_stage))
+        return await execute(attempt_id,actual_stage)
+    monkeypatch.setattr(executor,'execute',count_real_execution)
+    claim,attempt_id,result=await preserved_original(db,runner,executor,run_id,stage)
+    async with db() as s,s.begin():
+        run=await s.get(Run,run_id);snapshot=run.input_snapshot
+        deferred=(await s.scalars(select(Task).where(Task.run_id==run_id,Task.status=='queued',Task.requires_ai_call.is_(True)))).all()
+        before={t.id:(t.attempt_count,t.fence_version) for t in deferred}
+        for task in deferred:task.status=deferred_status
+    async with db() as s:assert await settle_task(s,claim.task_id,claim.fence_version,'unknown',utcnow())
+    assert await runner.recover()==1
+    async with db() as s:
+        assert (await s.get(Run,run_id)).input_snapshot==snapshot
+        assert (await s.get(Task,claim.task_id)).status=='succeeded'
+        assert (await s.get(Task,claim.task_id)).attempt_count==1
+        for task_id,counters in before.items():
+            task=await s.get(Task,task_id)
+            assert (task.status,task.safe_to_retry,task.error_code)==('failed',True,'AI_TEMPORARY_FAILURE')
+            assert (task.attempt_count,task.fence_version)==counters
+    view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert view['unknown_pages']==0 and view['can_resume']
+    await drain(runner)  # Local work may finish; no new AI before explicit resume.
+    assert sum(actual_stage in {'caption','image_transform'} for _,actual_stage in calls)==1
+    async with db() as s:
+        assert await s.scalar(select(func.count()).select_from(Attempt).join(Task).where(Task.requires_ai_call.is_(True)))==1
+        version=(await s.get(Album,UUID(album))).version
+    assert (await resume(client,me,album,str(run_id),version)).status_code==202
+    await drain(runner)
+    async with db() as s:
+        assert (await s.get(Run,run_id)).status=='succeeded'
+        assert (await s.get(Album,UUID(album))).status=='review_ready'
+        assert all(t.attempt_count==1 for t in (await s.scalars(select(Task).where(Task.run_id==run_id,Task.requires_ai_call.is_(True)))).all())
+        original=await s.get(Attempt,attempt_id)
+        assert original.attempt_no==1 and await runner.store.load(original.result_key)==result
+    assert sorted(Counter(call_id for call_id,actual_stage in calls if actual_stage in {'caption','image_transform'}).values())==[1,1,1]
+
+
+@pytest.mark.asyncio
+async def test_only_last_unknown_recovery_exposes_deferred_ai(client,db,tmp_path):
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    first=await preserved_original(db,runner,executor,run_id,'image_transform')
+    second=await preserved_original(db,runner,executor,run_id,'caption')
+    runner.store._path(str(second[1])).unlink()  # Caption response not recovered yet.
+    for claim,_,_ in (first,second):
+        async with db() as s:assert await settle_task(s,claim.task_id,claim.fence_version,'unknown',utcnow())
+    assert await runner.recover()==1
+    async with db() as s:
+        pending=(await s.scalars(select(Task).where(Task.run_id==run_id,Task.status=='queued',Task.requires_ai_call.is_(True)))).all()
+        assert pending and all(not t.safe_to_retry and t.attempt_count==0 for t in pending)
+    view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert view['unknown_pages']>0 and not view['can_resume']
+    await runner.store.save(str(second[1]),second[2])
+    assert await runner.recover()==1
+    view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert view['unknown_pages']==0 and view['can_resume']
+
+
+@pytest.mark.asyncio
+async def test_two_connections_recover_last_unknowns_and_classify_once(client,db,tmp_path):
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import Runner,utcnow
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy import text
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    originals=[await preserved_original(db,runner,executor,run_id,'image_transform'),
+               await preserved_original(db,runner,executor,run_id,'caption')]
+    for claim,_,_ in originals:
+        async with db() as s:assert await settle_task(s,claim.task_id,claim.fence_version,'unknown',utcnow())
+    barrier=asyncio.Barrier(2)
+    async def recover_connection():
+        async with db.kw['bind'].connect() as conn:
+            pid=await conn.scalar(text('SELECT pg_backend_pid()'));await conn.rollback()
+            sessions=async_sessionmaker(conn,expire_on_commit=False)
+            await barrier.wait()
+            return pid,await Runner(sessions,runner.store,executor,lease_seconds=90,heartbeat_seconds=15).recover()
+    recovered=await asyncio.wait_for(asyncio.gather(recover_connection(),recover_connection()),15)
+    assert recovered[0][0]!=recovered[1][0] and sum(r[1] for r in recovered)==2
+    view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert view['unknown_pages']==0 and view['can_resume']
+
+
+@pytest.mark.asyncio
+async def test_worker_drain_recovers_expired_received_result_without_second_call(client,db,tmp_path,monkeypatch):
+    from datetime import timedelta
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path,count=1)
+    original_receive=runner._received
+    expired=[]
+    async with db() as s,s.begin():
+        (await s.scalar(select(Task).where(Task.run_id==run_id,Task.stage=='optimize'))).next_retry_at=utcnow()+timedelta(hours=1)
+    async def expire_before_receive(claim,*args):
+        if not expired:
+            async with db() as s,s.begin():
+                task=await s.get(Task,claim.task_id)
+                assert task.stage=='caption'
+                task.lease_until=utcnow()-timedelta(seconds=1)
+                (await s.scalar(select(Task).where(Task.run_id==run_id,Task.stage=='optimize'))).next_retry_at=None
+            expired.append(claim.task_id)
+        return await original_receive(claim,*args)
+    monkeypatch.setattr(runner,'_received',expire_before_receive)
+    await drain_worker(runner)
+    evidence=await pipeline_diagnostics(db,run_id,runner.store)
+    print('CONTROLLED_LEASE_EXPIRY',evidence)
+    assert evidence['run_status']=='succeeded'
+    async with db() as s:
+        assert all(t.attempt_count==1 for t in (await s.scalars(select(Task).where(Task.run_id==run_id,Task.requires_ai_call.is_(True)))).all())
+
+
+@pytest.mark.asyncio
+async def test_late_live_result_preserves_running_attempt_and_exposes_only_unsent(client,db,tmp_path):
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    first=await preserved_original(db,runner,executor,run_id,'image_transform')
+    live=await preserved_original(db,runner,executor,run_id,'caption')
+    async with db() as s:assert await settle_task(s,first[0].task_id,first[0].fence_version,'unknown',utcnow())
+    assert await runner.recover()==1
+    async with db() as s:
+        task=await s.get(Task,live[0].task_id)
+        assert task.status=='running' and not task.safe_to_retry and task.attempt_count==1
+    checksum=await runner.store.save(str(live[1]),live[2])
+    assert await runner._received(live[0],live[1],live[2],checksum)
+    async with db() as s:assert await settle_task(s,live[0].task_id,live[0].fence_version,'succeeded',utcnow())
+    await drain(runner)
+    async with db() as s:version=(await s.get(Album,UUID(album))).version
+    assert (await resume(client,me,album,str(run_id),version)).status_code==202
+    await drain(runner)
+    async with db() as s:
+        assert (await s.get(Run,run_id)).status=='succeeded'
+        assert all(t.attempt_count==1 for t in (await s.scalars(select(Task).where(Task.run_id==run_id,Task.requires_ai_call.is_(True)))).all())
+
+
+@pytest.mark.asyncio
+async def test_unknown_recovery_and_delete_never_reopen_resumable_work(client,db,tmp_path):
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    claim,attempt_id,result=await preserved_original(db,runner,executor,run_id,'image_transform')
+    async with db() as s:assert await settle_task(s,claim.task_id,claim.fence_version,'unknown',utcnow())
+    async with db() as s:version=(await s.get(Album,UUID(album))).version
+    recovered,deleted=await asyncio.gather(runner.recover(),client.delete(f'/api/v1/albums/{album}?expected_version={version}',headers=headers(me)))
+    assert deleted.status_code==202
+    await runner.recover()
+    async with db() as s:
+        assert (await s.get(Run,run_id)).status=='cancelled'
+        assert (await s.get(Album,UUID(album))).status=='deleted'
+        assert not any(t.status in {'queued','retry_wait','failed','unknown'} for t in (await s.scalars(select(Task).where(Task.run_id==run_id))).all())
+    assert (await client.get(f'/api/v1/albums/{album}/generation')).status_code==404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('boundary',['prepare','mark_sent'])
+async def test_unsent_claim_deferred_after_last_unknown_is_resumable(client,db,tmp_path,boundary):
+    from datetime import timedelta
+    from backend.generation.repository import claim_task,settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    original=await preserved_original(db,runner,executor,run_id,'image_transform')
+    async with db() as s,s.begin():
+        candidate=await s.scalar(select(Task).where(Task.run_id==run_id,Task.stage=='caption').order_by(Task.id))
+        for task in (await s.scalars(select(Task).where(Task.run_id==run_id))).all():
+            if task.status=='queued' and task.id!=candidate.id:task.next_retry_at=utcnow()+timedelta(hours=1)
+    async with db() as s:claim=await claim_task(s,utcnow(),90)
+    assert claim.task_id==candidate.id
+    prepared=await runner.prepare(claim) if boundary=='mark_sent' else None
+    async with db() as s:assert await settle_task(s,original[0].task_id,original[0].fence_version,'unknown',utcnow())
+    assert await runner.recover()==1
+    async with db() as s:assert (await s.get(Task,claim.task_id)).status=='running'
+    if boundary=='prepare':assert await runner.prepare(claim) is None
+    else:assert not await runner._mark_sent(claim,prepared[0])
+    async with db() as s:
+        task=await s.get(Task,claim.task_id)
+        assert (task.status,task.safe_to_retry)==('failed',True)
+        assert task.fence_version==claim.fence_version and task.attempt_count==(1 if prepared else 0)
+        attempts=(await s.scalars(select(Attempt).where(Attempt.task_id==task.id))).all()
+        assert all(a.dispatch_state=='not_sent' for a in attempts)
+
+
+@pytest.mark.asyncio
+async def test_classified_deferred_ai_still_obeys_frozen_attempt_budget(client,db,tmp_path):
+    from backend.generation.repository import settle_task
+    from backend.worker.runner import utcnow
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
+    claim,_,_=await preserved_original(db,runner,executor,run_id,'image_transform')
+    async with db() as s,s.begin():
+        # Simulate a consumed execution budget without changing the frozen config.
+        local=await s.scalar(select(Task).where(Task.run_id==run_id,Task.stage=='optimize').order_by(Task.id))
+        local.status='failed';local.safe_to_retry=True;local.attempt_count=449
+        config_before=(await s.get(Run,run_id)).config_snapshot
+    async with db() as s:assert await settle_task(s,claim.task_id,claim.fence_version,'unknown',utcnow())
+    assert await runner.recover()==1
+    view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert not view['can_resume']
+    async with db() as s:
+        assert (await s.get(Run,run_id)).config_snapshot==config_before
+        version=(await s.get(Album,UUID(album))).version
+        deferred=(await s.scalars(select(Task).where(Task.run_id==run_id,Task.stage=='caption'))).all()
+        assert all(t.status=='failed' and t.safe_to_retry and t.attempt_count==0 for t in deferred)
+    response=await resume(client,me,album,str(run_id),version)
+    assert response.status_code==429 and response.json()['error']['code']=='USAGE_LIMIT_EXCEEDED'
 
 
 @pytest.mark.asyncio
@@ -244,11 +512,14 @@ async def test_result_thumbnails_private_and_deleted_sweep_cleans_both(client,db
 @pytest.mark.parametrize('count',[1,50])
 async def test_small_synthetic_single_worker_load(client,db,tmp_path,count):
     import time,resource
-    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path,count=count)
+    me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path,count=count,production_schedule=True)
     before=time.monotonic()
-    await drain(runner,limit=151)
+    await drain_worker(runner,limit=151)
     async with db() as s:
-        assert (await s.get(Run,run_id)).status=='succeeded'
+        status=(await s.get(Run,run_id)).status
+        if status!='succeeded':
+            print('PIPELINE_FAILURE',await pipeline_diagnostics(db,run_id,runner.store))
+        assert status=='succeeded'
         assert await s.scalar(select(func.count()).select_from(Task).where(Task.status=='succeeded'))==count*3
     print({'photos':count,'elapsed_seconds':round(time.monotonic()-before,3),'parent_maxrss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'sizes':'30x40/60x20 synthetic WebP','workers':1})
 

@@ -59,10 +59,10 @@ make verify-isolation
 
 추가 검증 명령: make verify-codecs, make verify-db, make verify-worker, make verify-media-load. 실제 DB 연결 전체 테스트는 bash scripts/verify-db.sh backend/tests로 실행한다. 설치 검증은 DB 테스트를 명시적으로 skip하고 이 명령에서 실제 실행한다. 상세 결과는 [미디어 검증](docs/미디어검증-결과.md)과 [DB/worker 검증](docs/DB-worker검증-결과.md)을 참고한다.
 
-다음 승인 범위는 [로컬 로그인·책장·업로드 연동](docs/superpowers/plans/2026-10-16-local-upload-flow.md)이며 실제 OAuth/R2/AI 계정 없이 개발한다.
+로컬 기반 구현 계획은 [로그인·책장·업로드 연동](docs/superpowers/plans/2026-10-16-local-upload-flow.md)이며 실제 OAuth/R2/AI 계정 없이 개발한다.
 
 로컬 개발 로그인을 사용하려면 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`를 지정한다. 기본값은 개발 로그인을 비활성화한다. 운영 환경에서는 개발 로그인·insecure cookie 설정을 허용하지 않는다. HDR/10bit 사진은 명시적으로 거부한다.
 
-업로드 합류 검증은 [화면 검증 결과](docs/로컬화면-검증결과.md)에 기록한다. 다음 승인된 작업은 [가짜 AI·수정·뷰어](docs/superpowers/plans/2026-10-16-local-generation-viewer.md)다.
+업로드 합류 검증은 [화면 검증 결과](docs/로컬화면-검증결과.md)에 기록한다. 가짜 흐름 구현 계획은 [AI·수정·뷰어](docs/superpowers/plans/2026-10-16-local-generation-viewer.md)다.
 
 가짜 생성을 시험하려면 위 로컬 설정에 `DEV_AI_ENABLED=true`를 추가한다. 기본값은 false이며 local에서만 켤 수 있다. 이미지는 전체 사진을 담는 3:4 테스트 canvas, 글귀는 고정 문장이고 실제 AI 호출·비용은 없다. [로컬 생성 화면·통합 검증](docs/로컬생성화면-검증결과.md)을 참고한다. 음악은 준비 전이다.

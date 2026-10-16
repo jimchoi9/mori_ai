@@ -84,6 +84,8 @@ class Runner:
             album, run, task, page = rows
             if task.requires_ai_call and run.status == 'action_required':
                 task.status = 'queued'; task.lease_until = None
+                from backend.generation.completion import recompute_completion
+                await recompute_completion(s, album, run)
                 return None
             used=await s.scalar(select(func.sum(Task.attempt_count)).where(Task.run_id==run.id)) or 0
             if used >= run.config_snapshot.get('attempt_budget',450):
@@ -105,6 +107,8 @@ class Runner:
             album, run, task, page = rows
             if task.requires_ai_call and run.status == 'action_required':
                 task.status = 'queued'; task.lease_until = None
+                from backend.generation.completion import recompute_completion
+                await recompute_completion(s, album, run)
                 return False
             attempt = await s.get(Attempt, attempt_id)
             attempt.status = 'dispatching'; attempt.dispatch_state = 'accepted_or_unknown'

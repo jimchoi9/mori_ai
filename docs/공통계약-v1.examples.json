@@ -1320,6 +1320,103 @@
         ]
       },
       "request_id": "req-example"
+    },
+    "recovered_unknown_awaiting_resume": {
+      "data": {
+        "run_id": "00000000-0000-4000-8000-000000000601",
+        "album_id": "00000000-0000-4000-8000-000000000001",
+        "album_status": "action_required",
+        "run_status": "action_required",
+        "total_pages": 3,
+        "completed_pages": 2,
+        "failed_pages": 1,
+        "unknown_pages": 0,
+        "pending_pages": 0,
+        "progress_percent": 66,
+        "can_resume": true,
+        "poll_after_ms": null,
+        "pages": [
+          {
+            "page_id": "00000000-0000-4000-8000-000000000101",
+            "tasks": [
+              {
+                "stage": "caption",
+                "status": "succeeded",
+                "completion_kind": "provider",
+                "error_code": null,
+                "retryable": false
+              },
+              {
+                "stage": "image_transform",
+                "status": "succeeded",
+                "completion_kind": "provider",
+                "error_code": null,
+                "retryable": false
+              },
+              {
+                "stage": "optimize",
+                "status": "succeeded",
+                "completion_kind": "local",
+                "error_code": null,
+                "retryable": false
+              }
+            ]
+          },
+          {
+            "page_id": "00000000-0000-4000-8000-000000000102",
+            "tasks": [
+              {
+                "stage": "caption",
+                "status": "failed",
+                "completion_kind": null,
+                "error_code": "AI_TEMPORARY_FAILURE",
+                "retryable": true
+              },
+              {
+                "stage": "image_transform",
+                "status": "succeeded",
+                "completion_kind": "provider",
+                "error_code": null,
+                "retryable": false
+              },
+              {
+                "stage": "optimize",
+                "status": "succeeded",
+                "completion_kind": "local",
+                "error_code": null,
+                "retryable": false
+              }
+            ]
+          },
+          {
+            "page_id": "00000000-0000-4000-8000-000000000103",
+            "tasks": [
+              {
+                "stage": "caption",
+                "status": "succeeded",
+                "completion_kind": "provider",
+                "error_code": null,
+                "retryable": false
+              },
+              {
+                "stage": "image_transform",
+                "status": "succeeded",
+                "completion_kind": "passthrough",
+                "error_code": null,
+                "retryable": false
+              },
+              {
+                "stage": "optimize",
+                "status": "succeeded",
+                "completion_kind": "local",
+                "error_code": null,
+                "retryable": false
+              }
+            ]
+          }
+        ]
+      },
+      "request_id": "req-example"
     }
   },
   "errors": {

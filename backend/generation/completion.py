@@ -17,6 +17,8 @@ async def recompute_completion(session,album,run):
         return
     await session.flush()
     tasks=(await session.scalars(select(Task).where(Task.run_id==run.id).order_by(Task.id).with_for_update())).all()
+    from backend.generation.resume_policy import classify_deferred_ai
+    await classify_deferred_ai(session,album,run,tasks)
     for item in run.input_snapshot:
         page=await session.get(Page,UUID(item['page_id']))
         stages={t.stage:t for t in tasks if str(t.page_id)==item['page_id']}
