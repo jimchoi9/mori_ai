@@ -14,6 +14,19 @@ class Settings(BaseSettings):
     storage_mode: Literal["local"] = "local"
     storage_root: Path = Path("/app/media")
     worker_poll_seconds: float = Field(default=1, gt=0, le=60, allow_inf_nan=False)
+    normalized_webp_lossless: bool = True
+    normalized_max_edge: int = Field(default=4096, ge=4, le=16383)
+    normalized_max_bytes: int = Field(default=20971520, ge=1)
+    result_webp_quality: int = Field(default=90, ge=1, le=100)
+    thumbnail_webp_quality: int = Field(default=80, ge=1, le=100)
+    thumbnail_max_edge: int = Field(default=480, ge=4, le=480)
+
+    @field_validator("normalized_webp_lossless")
+    @classmethod
+    def require_lossless_normalization(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError("normalized WebP must be lossless")
+        return value
 
     @field_validator("database_url")
     @classmethod
