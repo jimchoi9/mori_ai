@@ -57,14 +57,14 @@
 - Produces: `python -m backend.worker`의 SIGTERM 처리·안전 종료 entrypoint. 실제 task 실행은 Task 3이 소유.
 - Produces: `make up`, `make down`, `make verify-install`; Compose 기본 서비스 postgres/web/worker, 공유 local media volume.
 
-- [ ] **Step 1:** `test_health_ok`, `test_missing_api_is_404`, `test_missing_static_asset_is_404`, `test_spa_route_serves_index`를 작성한다. 없는 `/api/v1/*`·`/assets/*`는 HTML 200이 아니며 SPA `/albums`만 index를 반환하는 것을 확인한다.
-- [ ] **Step 2:** 최소 test 의존성을 설정하고 `pytest backend/tests/test_web_boundary.py -q`를 실행해 아직 없는 create_app 때문에 실패함을 확인한다.
-- [ ] **Step 3:** create_app·Settings·React 기본 shell과 worker entrypoint를 구현한다. shell에는 기반 준비 상태만 표시하며 로그인·생성 성공을 가장하지 않는다.
-- [ ] **Step 4:** Node 24/Python 3.12 Bookworm의 새 의존성만 resolve한다. Linux amd64에서 pip-tools로 hashes lock을 만들고 npm lock을 만든다. 기존 manifest를 복사하지 않는다.
-- [ ] **Step 5:** frontend build를 backend image로 복사하고 같은 origin으로 제공한다. Compose에는 하드코딩 container_name을 두지 않고 프로젝트 이름별 DB·media volume을 분리한다. healthcheck와 DB 준비 대기를 추가한다.
-- [ ] **Step 6:** `make verify-install`에서 clean image build·hash 기반 pip 설치·pip check·주요 import·npm ci·tsc/Vite build·web 경계 테스트를 수행한다. 실패 시 non-zero, 성공 시 버전·image digest를 출력한다.
-- [ ] **Step 7:** `scripts/verify-isolation.sh`로 임시 Compose project 2개를 실행해 DB 표식과 media 파일이 공유되지 않는지 확인한다. 검사 종료는 생성한 두 project만 정리한다.
-- [ ] **Step 8:** V01 결과와 실제 실행 명령을 README/검증계획에 기록한다. `git diff --check` 후 총괄이 명시 파일만 commit한다.
+- [x] **Step 1:** `test_health_ok`, `test_missing_api_is_404`, `test_missing_static_asset_is_404`, `test_spa_route_serves_index`를 작성한다. 없는 `/api/v1/*`·`/assets/*`는 HTML 200이 아니며 SPA `/albums`만 index를 반환하는 것을 확인한다.
+- [x] **Step 2:** 최소 test 의존성을 설정하고 `pytest backend/tests/test_web_boundary.py -q`를 실행해 아직 없는 create_app 때문에 실패함을 확인한다.
+- [x] **Step 3:** create_app·Settings·React 기본 shell과 worker entrypoint를 구현한다. shell에는 기반 준비 상태만 표시하며 로그인·생성 성공을 가장하지 않는다.
+- [x] **Step 4:** Node 24/Python 3.12 Bookworm의 새 의존성만 resolve한다. Linux amd64에서 pip-tools로 hashes lock을 만들고 npm lock을 만든다. 기존 manifest를 복사하지 않는다.
+- [x] **Step 5:** frontend build를 backend image로 복사하고 같은 origin으로 제공한다. Compose에는 하드코딩 container_name을 두지 않고 프로젝트 이름별 DB·media volume을 분리한다. healthcheck와 DB 준비 대기를 추가한다.
+- [x] **Step 6:** `make verify-install`에서 clean image build·hash 기반 pip 설치·pip check·주요 import·npm ci·tsc/Vite build·web 경계 테스트를 수행한다. 실패 시 non-zero, 성공 시 버전·image digest를 출력한다.
+- [x] **Step 7:** `scripts/verify-isolation.sh`로 임시 Compose project 2개를 실행해 DB 표식과 media 파일이 공유되지 않는지 확인한다. 검사 종료는 생성한 두 project만 정리한다.
+- [x] **Step 8:** V01 결과와 실제 실행 명령을 README/검증계획에 기록한다. `git diff --check` 후 총괄이 명시 파일만 commit한다.
 
 ## Task 2: HEIF/WebP 미디어 경계와 V02/V09
 
