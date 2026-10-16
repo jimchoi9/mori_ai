@@ -4,6 +4,7 @@ import type { Detail, Reservation, UploadView } from '../../api/types';
 interface Intent { key:string; files:{file:File;id:string}[]; body:unknown; reservation?:Reservation; put:Set<string>; complete:Set<string> }
 const drafts = new Map<string,{files:File[];intent:Intent|null}>();
 window.addEventListener('mori:logout',()=>drafts.clear());
+window.addEventListener('mori:clear-private-memory',()=>drafts.clear());
 export function useUploads(albumId:string, userId:string, refresh:()=>Promise<unknown>) {
  const draftKey=`${userId}:${albumId}`;
  const intent = useRef<Intent|null>(drafts.get(draftKey)?.intent ?? null); const controller = useRef<AbortController|null>(null);
@@ -12,8 +13,9 @@ export function useUploads(albumId:string, userId:string, refresh:()=>Promise<un
  useEffect(()=>{
   let discard=false;
   const clear=()=>{discard=true;drafts.clear();intent.current=null;controller.current?.abort();};
-  window.addEventListener('mori:logout',clear);
-  return()=>{controller.current?.abort();if(!discard)drafts.set(draftKey,{files:latestFiles.current,intent:intent.current});window.removeEventListener('mori:logout',clear);};
+  const expire=()=>controller.current?.abort();
+  window.addEventListener('mori:logout',clear);window.addEventListener('mori:session-expired',expire);
+  return()=>{controller.current?.abort();if(!discard)drafts.set(draftKey,{files:latestFiles.current,intent:intent.current});window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:session-expired',expire);};
  },[draftKey]);
  async function send() {
   if(busy || !files.length)return;
