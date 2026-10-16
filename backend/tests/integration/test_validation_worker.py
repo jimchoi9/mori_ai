@@ -61,7 +61,8 @@ async def test_real_codec_ready_private_media(client,db,kind):
     url=access.json()['data']['media_access'][0]['url']
     media=await client.get(url); assert media.status_code==200 and media.headers['content-type']=='image/webp'
     assert (await client.post(f'/api/v1/albums/{a}/media-access',json={'asset_ids':[u['asset_id']]},headers=headers(me))).status_code==404
-    await client.delete(f'/api/v1/albums/{a}?expected_version=3',headers=headers(me))
+    # reserve, complete and ready each changed the public album revision.
+    assert (await client.delete(f'/api/v1/albums/{a}?expected_version=4',headers=headers(me))).status_code==202
     assert (await client.get(url)).status_code==404
 
 
@@ -77,7 +78,7 @@ async def test_rejected_terminal_and_cleanup_idempotent(client,db):
     r=await client.get(path)
     assert r.json()['data']['status']=='rejected' and r.json()['data']['error_code']=='IMAGE_DECODE_FAILED'
     async with db() as s: assert (await s.scalar(select(Job))).status=='failed'
-    deleted=await client.delete(f'/api/v1/albums/{a}/pages/{u["page_id"]}?expected_version=3',headers=headers(me))
+    deleted=await client.delete(f'/api/v1/albums/{a}/pages/{u["page_id"]}?expected_version=4',headers=headers(me))
     assert deleted.status_code==200
     assert await worker.run_once()
     async with db() as s:
@@ -191,7 +192,10 @@ async def test_date_fallback_batch_reverse_and_manual(client,db):
     data=image_bytes('PNG'); groups=[]
     for index,date in enumerate(['2026-02-01T00:00:00Z','2026-01-01T00:00:00Z']):
         f=file(size=len(data)); f['file_last_modified_at']=date
-        u=(await reserve(client,me,a,[f],version=index+1,key=str(index))).json()['data']['uploads'][0]
+        # Each earlier reservation and complete advanced album.version once.
+        reservation=await reserve(client,me,a,[f],version=1+index*2,key=str(index))
+        assert reservation.status_code==201
+        u=reservation.json()['data']['uploads'][0]
         await client.put(u['upload_url'],content=data,headers={**u['required_headers'],**headers(me)})
         await client.post(f'/api/v1/albums/{a}/uploads/{u["upload_id"]}/complete',json={},headers=headers(me));groups.append(u)
     worker=ValidationWorker(db,config());claims=[]
@@ -201,10 +205,13 @@ async def test_date_fallback_batch_reverse_and_manual(client,db):
     await worker.validate_upload(claims[1]); await worker.validate_upload(claims[0])
     detail=(await client.get('/api/v1/albums/'+a)).json()['data']['detail']
     assert [p['id'] for p in detail['pages']]==[groups[1]['page_id'],groups[0]['page_id']]
+    assert detail['album']['version']==7
+    # The second page's ready+position updates share one transaction/revision.
+    assert [p['version'] for p in detail['pages']]==[3,4]
     manual=[groups[0]['page_id'],groups[1]['page_id']]
-    assert (await client.put(f'/api/v1/albums/{a}/page-order',json={'page_ids':manual,'expected_version':5},headers=headers(me))).status_code==200
+    assert (await client.put(f'/api/v1/albums/{a}/page-order',json={'page_ids':manual,'expected_version':7},headers=headers(me))).status_code==200
     f=file(size=len(data));f['file_last_modified_at']='2020-01-01T00:00:00Z'
-    u=(await reserve(client,me,a,[f],version=6,key='manual-add')).json()['data']['uploads'][0]
+    u=(await reserve(client,me,a,[f],version=8,key='manual-add')).json()['data']['uploads'][0]
     await client.put(u['upload_url'],content=data,headers={**u['required_headers'],**headers(me)})
     await client.post(f'/api/v1/albums/{a}/uploads/{u["upload_id"]}/complete',json={},headers=headers(me));assert await worker.run_once()
     detail=(await client.get('/api/v1/albums/'+a)).json()['data']['detail']
@@ -252,7 +259,7 @@ async def test_cleanup_only_deleted_owner_and_idempotent(client,db):
         # A malicious cleanup request for a live linked source does nothing.
         await enqueue_job(s,'cleanup_asset',source.id)
     assert await worker.run_once(); assert worker.store.path(original_key).exists()
-    assert (await client.delete(f'/api/v1/albums/{a}?expected_version=3',headers=headers(me))).status_code==202
+    assert (await client.delete(f'/api/v1/albums/{a}?expected_version=4',headers=headers(me))).status_code==202
     async with db() as s: await dispatch_outbox(s,datetime.now(timezone.utc))
     assert await worker.run_once()
     async with db() as s:
@@ -398,3 +405,241 @@ async def test_cleanup_fence_and_scanner_pagination(client,db):
     async with db() as s: next_claim=await claim_job(s,datetime.now(timezone.utc),90,('cleanup_asset',))
     await worker.cleanup_asset(next_claim)
     assert await worker.scan_incomplete_uploads(stamp,limit=1)==1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('last_status', ['reserved', 'validating'])
+@pytest.mark.parametrize('manual', [False, True])
+async def test_removing_last_unfinished_batch_page_finalizes_order(client, db, last_status, manual):
+    """Removing the batch's blocker must settle date order and its cover atomically."""
+    me, album = await setup(client)
+    await consent(client, me)
+    data = image_bytes('PNG')
+    files = [{**file(size=len(data)), 'file_last_modified_at': f'2026-01-0{day}T00:00:00Z'}
+             for day in (3, 1, 2)]
+    entries = (await reserve(client, me, album, files)).json()['data']['uploads']
+    from backend.uploads.validation import ValidationWorker
+    worker = ValidationWorker(db, config())
+    for entry in entries[:2]:
+        assert (await client.put(entry['upload_url'], content=data,
+                headers={**entry['required_headers'], **headers(me)})).status_code == 204
+        assert (await client.post(f'/api/v1/albums/{album}/uploads/{entry["upload_id"]}/complete',
+                json={}, headers=headers(me))).status_code == 202
+        assert await worker.run_once()
+    if last_status == 'validating':
+        entry = entries[2]
+        assert (await client.put(entry['upload_url'], content=data,
+                headers={**entry['required_headers'], **headers(me)})).status_code == 204
+        assert (await client.post(f'/api/v1/albums/{album}/uploads/{entry["upload_id"]}/complete',
+                json={}, headers=headers(me))).status_code == 202
+    before = (await client.get('/api/v1/albums/' + album)).json()['data']['detail']
+    if manual:
+        response = await client.put(f'/api/v1/albums/{album}/page-order', json={
+            'page_ids': [entry['page_id'] for entry in entries],
+            'expected_version': before['album']['version']}, headers=headers(me))
+        assert response.status_code == 200
+        before = response.json()['data']['detail']
+    response = await client.delete(f'/api/v1/albums/{album}/pages/{entries[2]["page_id"]}',
+        params={'expected_version': before['album']['version']}, headers=headers(me))
+    assert response.status_code == 200
+    detail = response.json()['data']['detail']
+    expected = entries[:2] if manual else [entries[1], entries[0]]
+    assert [page['id'] for page in detail['pages']] == [entry['page_id'] for entry in expected]
+    assert [page['position'] for page in detail['pages']] == [1, 2]
+    assert detail['album']['version'] == before['album']['version'] + 1
+    before_versions = {page['id']: page['version'] for page in before['pages']}
+    assert [page['version'] for page in detail['pages']] == [
+        before_versions[entry['page_id']] + (0 if manual else 1) for entry in expected]
+    assert detail['order_mode'] == ('manual' if manual else 'date')
+    assert detail['album']['cover']['asset_id'] == detail['pages'][0]['thumbnail']['asset_id']
+    async with db() as session:
+        from backend.models import Album
+        assert (await session.get(Album, UUID(album))).cover_page_id == UUID(expected[0]['page_id'])
+
+
+@pytest.mark.asyncio
+async def test_late_put_after_finished_cleanup_is_swept_after_request_cancel(client, db, monkeypatch):
+    """A finished cleanup job cannot hide a later source or unlinked derived object."""
+    import asyncio
+    from datetime import datetime, timezone
+    from backend.uploads.validation import ValidationWorker
+    import backend.uploads.service as uploads_service
+    from backend.worker.jobs import dispatch_outbox
+    from backend.worker.runner import Runner, ResultStore
+
+    me, album = await setup(client)
+    await consent(client, me)
+    entry = (await reserve(client, me, album, [file(size=4)])).json()['data']['uploads'][0]
+    began, resume, persisted = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    async def stream():
+        yield b'ab'
+        began.set()
+        await resume.wait()
+        yield b'cd'
+    async def cancel_after_persist(*args, **kwargs):
+        persisted.set()
+        # Park the real HTTP request at this boundary until its task is cancelled.
+        await asyncio.Event().wait()
+    monkeypatch.setattr(uploads_service, 'accept_put', cancel_after_persist)
+    request = asyncio.create_task(client.put(entry['upload_url'], content=stream(),
+        headers={**entry['required_headers'], **headers(me)}))
+    try:
+        await asyncio.wait_for(began.wait(), 5)
+        assert (await client.delete(f'/api/v1/albums/{album}?expected_version=2', headers=headers(me))).status_code == 202
+        async with db() as session:
+            await dispatch_outbox(session, datetime.now(timezone.utc))
+        worker = ValidationWorker(db, config())
+        assert await worker.run_once()
+        async with db() as session:
+            asset = await session.get(MediaAsset, UUID(entry['asset_id']))
+            assert asset.status == 'deleted' and asset.deleted_at is not None
+            deleted_at, key = asset.deleted_at, asset.storage_key
+        assert not worker.store.path(key).exists()
+        resume.set()
+        await asyncio.wait_for(persisted.wait(), 5)
+        assert worker.store.path(key).read_bytes() == b'abcd'
+        request.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await request
+        orphan = key.rsplit('/', 1)[0] + '/normalized'
+        worker.store.write(orphan, b'unlinked derived output')
+        # New worker instance models scanner restart; job state and tombstone are durable.
+        worker = ValidationWorker(db, config())
+        await Runner(db, ResultStore(config().storage_root)).maintenance()
+        await worker.scan_incomplete_uploads(datetime.now(timezone.utc))
+        assert await worker.run_once()
+        assert not worker.store.path(key).exists() and not worker.store.path(orphan).exists()
+        async with db() as session:
+            assert (await session.get(MediaAsset, asset.id)).deleted_at == deleted_at
+        # Repeated late persistence with the SAME tombstone must also be reclaimed.
+        worker.store.write(key, b'abcd')
+        await worker.scan_incomplete_uploads(datetime.now(timezone.utc))
+        assert await worker.run_once()
+        assert not worker.store.path(key).exists()
+    finally:
+        resume.set()
+        if not request.done(): request.cancel()
+        await asyncio.gather(request, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_validation_versions_change_once_and_replays_do_not(client, db):
+    from backend.uploads.validation import ValidationWorker
+    me, album, entry, path, _ = await pending(client)
+    validating = (await client.get('/api/v1/albums/' + album)).json()['data']['detail']
+    assert validating['album']['version'] == 3
+    assert validating['pages'][0]['version'] == 2
+    assert validating['pages'][0]['upload_status'] == 'validating'
+    assert await ValidationWorker(db, config()).run_once()
+    ready = (await client.get('/api/v1/albums/' + album)).json()['data']['detail']
+    assert ready['album']['version'] == 4 and ready['pages'][0]['version'] == 3
+    assert ready['pages'][0]['source'] is not None and ready['pages'][0]['thumbnail'] is not None
+    repeated = await client.post(path + '/complete', json={}, headers=headers(me))
+    assert repeated.status_code == 200 and repeated.json()['data']['album_version'] == 4
+    assert (await client.post(f'/api/v1/albums/{album}/media-access', json={
+        'asset_ids': [ready['pages'][0]['thumbnail']['asset_id']]}, headers=headers(me))).status_code == 200
+    assert (await client.get('/api/v1/albums/' + album)).json()['data']['detail'] == ready
+
+
+@pytest.mark.asyncio
+async def test_deleted_sweep_paginates_past_clean_and_unsafe_rows_and_preserves_live_inputs(client, db):
+    """Bounded scans must progress past old clean tombstones and never follow corrupt keys."""
+    from datetime import datetime, timezone
+    from backend.uploads.validation import ValidationWorker
+    from backend.worker.jobs import claim_job
+    from backend.models import Album, Run, Task, Attempt
+    me, album = await setup(client)
+    await consent(client, me)
+    entries = (await reserve(client, me, album, [file(size=4) for _ in range(7)])).json()['data']['uploads']
+    worker = ValidationWorker(db, config())
+    for entry in entries[:4]:
+        fresh = (await client.get('/api/v1/albums/' + album)).json()['data']['detail']
+        assert (await client.delete(f'/api/v1/albums/{album}/pages/{entry["page_id"]}',
+            params={'expected_version': fresh['album']['version']}, headers=headers(me))).status_code == 200
+    for _ in range(4):
+        async with db() as session:
+            claim = await claim_job(session, datetime.now(timezone.utc), 90, ('cleanup_asset',))
+        assert claim is not None
+        await worker.cleanup_asset(claim)
+    async with db() as session, session.begin():
+        deleted = sorted([await session.get(MediaAsset, UUID(entry['asset_id'])) for entry in entries[:4]], key=lambda a: a.id)
+        # The first tombstone is already clean, the next has a foreign canonical key.
+        protected = [await session.get(MediaAsset, UUID(entry['asset_id'])) for entry in entries[4:]]
+        foreign_key = protected[0].storage_key.rsplit('/', 1)[0] + '/normalized'
+        deleted[1].storage_key = foreign_key
+        worker.store.write(foreign_key, b'live')
+        for asset in protected:
+            worker.store.write(asset.storage_key, b'live')
+        for entry, state in zip(entries[4:], ['reserved', 'validating', 'ready']):
+            (await session.get(Upload, UUID(entry['upload_id']))).status = state
+        run = Run(album_id=UUID(album), status='action_required')
+        session.add(run)
+        await session.flush()
+        task = Task(run_id=run.id, page_id=UUID(entries[6]['page_id']), stage='caption', status='unknown')
+        session.add(task)
+        await session.flush()
+        session.add(Attempt(task_id=task.id, attempt_no=1, fence_version=0,
+            status='unknown', output_asset_id=protected[2].id))
+        late_keys = [asset.storage_key for asset in deleted[2:]]
+        for key in late_keys:
+            worker.store.write(key, b'late')
+        orphan = late_keys[1].rsplit('/', 1)[0] + '/thumbnail'
+        worker.store.write(orphan, b'late thumb')
+        protected_keys = [asset.storage_key for asset in protected] + [foreign_key]
+    reclaimed = 0
+    for _ in range(5):
+        reclaimed += await worker.scan_incomplete_uploads(datetime.now(timezone.utc), limit=1)
+        async with db() as session:
+            claim = await claim_job(session, datetime.now(timezone.utc), 90, ('cleanup_asset',))
+        if claim:
+            await worker.cleanup_asset(claim)
+    assert reclaimed == 2
+    assert all(not worker.store.path(key).exists() for key in [*late_keys, orphan])
+    assert all(worker.store.path(key).read_bytes() == b'live' for key in protected_keys)
+    async with db() as session:
+        assert (await session.get(Task, task.id)).status == 'unknown'
+        assert (await session.get(MediaAsset, protected[2].id)).deleted_at is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('reference', ['task', 'attempt'])
+async def test_cleanup_and_sweep_preserve_unlinked_unknown_outputs(client, db, reference):
+    """A missing page result link is not permission to destroy an unknown attempt's output."""
+    from datetime import datetime, timezone
+    from uuid import uuid4
+    from backend.models import Run, Task, Attempt
+    from backend.storage.local import storage_key
+    from backend.uploads.validation import ValidationWorker
+    from backend.worker.jobs import enqueue_job
+    from backend.worker.runner import ResultStore
+    me, album = await setup(client)
+    await consent(client, me)
+    entry = (await reserve(client, me, album)).json()['data']['uploads'][0]
+    worker = ValidationWorker(db, config())
+    key = storage_key(me['user']['id'], album, entry['page_id'], 'result')
+    async with db() as session, session.begin():
+        # A durable tombstone plus late preserved output must still obey live references.
+        output = MediaAsset(owner_id=UUID(me['user']['id']), album_id=UUID(album),
+            page_id=UUID(entry['page_id']), role='result', storage_key=key,
+            mime='image/webp', status='deleted', deleted_at=datetime.now(timezone.utc))
+        session.add(output)
+        await session.flush()
+        run = Run(album_id=UUID(album), status='action_required')
+        session.add(run)
+        await session.flush()
+        task = Task(run_id=run.id, page_id=UUID(entry['page_id']), stage='image_transform',
+            status='unknown', output_asset_id=output.id if reference == 'task' else None)
+        session.add(task)
+        await session.flush()
+        attempt = Attempt(id=uuid4(), task_id=task.id, attempt_no=1, fence_version=0,
+            status='unknown', output_asset_id=output.id if reference == 'attempt' else None)
+        session.add(attempt)
+        await enqueue_job(session, 'cleanup_asset', output.id)
+    worker.store.write(key, b'preserved unknown output')
+    store = ResultStore(config().storage_root)
+    envelope = {'asset_id': str(output.id)}
+    await store.save(str(attempt.id), envelope)
+    assert await worker.run_once()
+    assert await worker.scan_incomplete_uploads(datetime.now(timezone.utc)) == 0
+    assert worker.store.path(key).read_bytes() == b'preserved unknown output'
+    assert await store.load(str(attempt.id)) == envelope

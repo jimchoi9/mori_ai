@@ -8,6 +8,8 @@ RUN npm run build
 RUN ./node_modules/.bin/tsc src/api/client.ts src/api/session.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/client-check \
     && node tests/upload_headers.test.mjs file:///tmp/client-check/client.js \
     && node tests/session_reset.test.mjs file:///tmp/client-check/session.js
+RUN ./node_modules/.bin/tsc src/features/uploads/selection.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/upload-check \
+    && node tests/upload_selection.test.mjs file:///tmp/upload-check/features/uploads/selection.js
 
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1

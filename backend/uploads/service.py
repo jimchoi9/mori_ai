@@ -7,7 +7,7 @@ from sqlalchemy import select
 from backend.models import Upload, Page, MediaAsset
 from backend.uploads import repository as repo
 from backend.albums import repository as albums
-from backend.albums.page_order import active_pages, reorder, finish_batch, sort_date
+from backend.albums.page_order import active_pages, reorder, finish_batch, sort_date, bump_version
 from backend.albums.service import utc, get_album_detail
 from backend.http.errors import APIError
 from backend.http.idempotency import replay
@@ -20,8 +20,9 @@ MIMES={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'imag
 def now(): return datetime.now(timezone.utc)
 
 
-def touch(album):
-    album.version+=1; album.updated_at=now()
+def touch(session, album):
+    bump_version(session, album)
+    album.updated_at=now()
 
 
 def config(settings):
@@ -40,7 +41,9 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     uploads=list((await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.album_id==album_id,Page.removed_at.is_(None)))).all())
     stamp=now()
     for u in uploads:
-        if u.status=='reserved' and stamp>=u.expires_at: u.status='expired'
+        if u.status=='reserved' and stamp>=u.expires_at:
+            u.status='expired'
+            bump_version(session, await session.get(Page, u.page_id))
     await session.flush()
     for batch in {u.batch_id for u in uploads if u.status=='expired'}:
         await finish_batch(session,parent,batch)
@@ -68,7 +71,7 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     # Cover always follows current first page, including reserved/failed pages.
     await session.flush()
     parent.cover_page_id=(await active_pages(session,album_id))[0].id
-    touch(parent)
+    touch(session, parent)
     data={'batch_id':str(batch),'album_version':parent.version,'uploads':result}
     await albums.save_record(session,owner,operation,key,hashed,album_id,201,data)
     return 201,data
@@ -80,7 +83,9 @@ def view(parent,u):
 
 async def expire(session,parent,u):
     if u.status=='reserved' and now()>=u.expires_at:
-        u.status='expired'; touch(parent)
+        u.status='expired'
+        bump_version(session, await session.get(Page, u.page_id))
+        touch(session, parent)
         await finish_batch(session,parent,u.batch_id)
 
 
@@ -90,10 +95,16 @@ async def remove_page(session,owner,album_id,page_id,expected):
     page=await session.get(Page,page_id)
     if page is None or page.album_id!=album_id or page.removed_at is not None: raise APIError(404,'RESOURCE_NOT_FOUND')
     page.removed_at=now()
+    bump_version(session, page)
     assets=(await session.scalars(select(MediaAsset).where(MediaAsset.page_id==page_id,MediaAsset.album_id==album_id,MediaAsset.owner_id==owner))).all()
     for asset in assets:
         await enqueue_job(session,'cleanup_asset',asset.id)
-    await session.flush(); await reorder(session,parent,await active_pages(session,album_id)); touch(parent)
+    upload = await session.scalar(select(Upload).where(Upload.page_id == page_id, Upload.album_id == album_id))
+    await session.flush()
+    # Removal can make the remaining active batch terminal without another worker result.
+    if upload is None or not await finish_batch(session, parent, upload.batch_id):
+        await reorder(session, parent, await active_pages(session, album_id))
+    touch(session, parent)
     return await get_album_detail(session,owner,album_id)
 
 
@@ -101,7 +112,12 @@ async def order(session,owner,album_id,body):
     parent=await repo.album(session,owner,album_id); repo.draft(parent,body.expected_version)
     pages=await active_pages(session,album_id); by_id={p.id:p for p in pages}
     if len(body.page_ids)!=len(pages) or set(body.page_ids)!=set(by_id): raise APIError(422,'VALIDATION_ERROR')
-    await reorder(session,parent,[by_id[p] for p in body.page_ids]); parent.order_mode='manual'; touch(parent)
+    changed = await reorder(session,parent,[by_id[p] for p in body.page_ids])
+    if parent.order_mode != 'manual':
+        parent.order_mode = 'manual'
+        changed = True
+    if changed:
+        touch(session, parent)
     return await get_album_detail(session,owner,album_id)
 
 
@@ -140,6 +156,8 @@ async def complete_upload(sessions,store,owner,album_id,upload_id):
             if size!=u.declared_bytes or size>20971520: raise APIError(422,'VALIDATION_ERROR')
             asset.bytes=size; asset.sha256=checksum
             u.status='validating'; await enqueue_job(s,'validate_upload',u.id)
+            bump_version(s, page)
+            touch(s, parent)
         return (202 if u.status=='validating' else 200),view(parent,u)
 
 

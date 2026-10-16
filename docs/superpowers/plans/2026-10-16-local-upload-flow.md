@@ -64,12 +64,12 @@
 
 **Interfaces:** LocalStorage는 opaque key의 bounded PUT/read/stat/delete 및 제한된 접근 URL을 제공한다. source URL은 일반 조회에 발급하지 않는다. reservation/complete/status/page delete/page-order/media-access는 v1.3 endpoint/DTO를 따른다. validate_upload(job_claim: backend.worker.jobs.JobClaim) → None은 normalize_in_process를 호출하고 현재 fence·owner/album/page 상태를 확인해 source/normalized/thumbnail을 연결한다.
 
-- [ ] 실제 DB 테스트 작성: 미동의 예약 403·행/URL 0개, 50/51장·20MiB/300MiB 경계, 동시 예약 제한, MIME 빈 HEIC 예약, path traversal, 만료/다른 사용자 URL, 선언 bytes 불일치.
-- [ ] 테스트 실패 확인 후 비공개 local storage·서명·원자 예약을 구현한다. PUT 원본은 확정 후 덮어쓰기를 금지하고 정규화 완료만 ready로 처리한다.
-- [ ] complete 중복 job 1개, validation 강제 종료→재시작, stale fence/삭제 후 결과 연결 금지·파생본 cleanup 검사를 추가하고 실패를 확인한다.
-- [ ] 독립 session/heartbeat의 job runner와 validation·cleanup handler를 구현한다. 파일 저장과 subprocess 대기는 DB row lock 밖에서 수행한다.
-- [ ] EXIF 현지 날짜→File.lastModified Asia/Seoul→예약시각, 동률 selection_index, batch 종료 시 date 정렬, manual 유지·뒤 추가·전체 page-order·실패 페이지 제거를 검증한다.
-- [ ] 8bit HEIC·투명 PNG·회전 JPEG의 실제 업로드→WebP ready를 통과시킨다. HDR 실패는 명시적으로 표시하며 HEIC 전체 지원 성공으로 보고하지 않는다. 총괄 commit.
+- [x] 실제 DB 테스트 작성: 미동의 예약 403·행/URL 0개, 50/51장·20MiB/300MiB 경계, 동시 예약 제한, MIME 빈 HEIC 예약, path traversal, 만료/다른 사용자 URL, 선언 bytes 불일치.
+- [x] 테스트 실패 확인 후 비공개 local storage·서명·원자 예약을 구현한다. PUT 원본은 확정 후 덮어쓰기를 금지하고 정규화 완료만 ready로 처리한다.
+- [x] complete 중복 job 1개, validation 강제 종료→재시작, stale fence/삭제 후 결과 연결 금지·파생본 cleanup 검사를 추가하고 실패를 확인한다.
+- [x] 독립 session/heartbeat의 job runner와 validation·cleanup handler를 구현한다. 파일 저장과 subprocess 대기는 DB row lock 밖에서 수행한다.
+- [x] EXIF 현지 날짜→File.lastModified Asia/Seoul→예약시각, 동률 selection_index, batch 종료 시 date 정렬, manual 유지·뒤 추가·전체 page-order·실패 페이지 제거를 검증한다.
+- [x] 8bit HEIC·투명 PNG·회전 JPEG의 실제 업로드→WebP ready를 통과시킨다. HDR 실패는 명시적으로 표시하며 HEIC 전체 지원 성공으로 보고하지 않는다. 총괄 commit.
 
 ## Task 4: 브라우저 흐름 연결·통합 검증
 
@@ -79,10 +79,10 @@
 
 **Interfaces:** frontend는 공개 HTTP만 호출한다. query cache key에 사용자 구분을 포함하고 logout 때 삭제한다. upload는 reservation→required_headers PUT→complete→status polling 순서다.
 
-- [ ] 개발 로그인 표시·동의·책장·초안·업로드 진행/실패·서버 썸네일·수동 정렬·삭제 화면을 구현한다. 생성 버튼은 후속 기능임을 표시하며 가짜 성공으로 이동하지 않는다.
-- [ ] Idempotency-Key는 사용자 의도 한 번에 생성하고 네트워크 재전송에 재사용한다. 만료/401/409는 입력을 보존하고 최신값과 비교하도록 처리한다.
-- [ ] 실제 로컬 브라우저에서 두 사용자 격리, 동의 거절, 다중 파일·HEIC 미리보기 대체, 실패 제거, reload·재시도·삭제를 확인한다. 빌드·전체 DB 회귀·기존 격리 검증을 통과시킨다.
-- [ ] 독립 Orca 검토 후 Critical/Important를 수정한다. README에 실제 실행 방법, dev auth 표시/한계·HDR 미완료·외부 연동 미실행을 기록하고 총괄 commit.
+- [x] 개발 로그인 표시·동의·책장·초안·업로드 진행/실패·서버 썸네일·수동 정렬·삭제 화면을 구현한다. 생성 버튼은 후속 기능임을 표시하며 가짜 성공으로 이동하지 않는다.
+- [x] Idempotency-Key는 사용자 의도 한 번에 생성하고 네트워크 재전송에 재사용한다. 만료/401/409는 입력을 보존하고 최신값과 비교하도록 처리한다.
+- [x] 실제 로컬 브라우저에서 두 사용자 격리, 동의 거절, 다중 파일·HEIC 미리보기 대체, 실패 제거, reload·재시도·삭제를 확인한다. 빌드·전체 DB 회귀·기존 격리 검증을 통과시킨다.
+- [x] 독립 Orca 검토 후 Critical/Important를 수정한다. README에 실제 실행 방법, dev auth 표시/한계·HDR 미완료·외부 연동 미실행을 기록하고 총괄 commit.
 
 ## 자체 점검과 완료 경계
 
@@ -91,3 +91,5 @@
 2026-10-16 사용자 계획 검토 완료: ‘계획대로 착수’. 실행은 첫 기반 독립 검토의 중요 문제 해결 후 시작한다.
 
 2026-10-16 합류 checkpoint: 실제 DB 213 passed·설치/Node6·환경 격리·브라우저 로그인/동의/복수 업로드/HEIC/수동순서/실패삭제/PUT 응답유실/계정 격리를 확인했다. 독립 검토 Important3·Minor1은 별도 수정 Task로 진행 중이며 해당 문제 해결 전 완료 처리하거나 다음 묶음 구현을 시작하지 않는다. 상세: docs/로컬업로드-독립검토.md.
+
+최종 총괄 판정: Important3·Minor1의 원인에 대응하는 수정과 실제 DB 회귀가 완료됐다. 실제 DB 224 passed, Node11·tsc/Vite·재현 설치 통과. 원래 독립 검토의 Not ready는 수정 전 HEAD 판정이며 이 checkpoint는 수정 후 근거로 로컬 연동 완료로 판정한다. 실제 외부 연동·HDR/실기기 합격으로 확대하지 않는다. 수정 작업자 보고서는 별도 보존한다.

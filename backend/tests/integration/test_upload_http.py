@@ -219,3 +219,44 @@ async def test_same_owner_relogin_put_retry_new_csrf_and_immutable(client,db):
     from backend.tests.integration.test_auth_http import config
     async with db() as s: asset=await s.get(MediaAsset,UUID(u['asset_id']))
     assert LocalStorage(config().storage_root).path(asset.storage_key).read_bytes()==b'abcd'
+
+
+@pytest.mark.asyncio
+async def test_page_order_versions_only_change_for_real_public_changes(client, db):
+    me, album = await setup(client)
+    await consent(client, me)
+    entries = (await reserve(client, me, album, [file(size=1) for _ in range(3)])).json()['data']['uploads']
+    ids = [entry['page_id'] for entry in entries]
+    path = f'/api/v1/albums/{album}/page-order'
+    first = await client.put(path, json={'page_ids': [ids[1], ids[0], ids[2]], 'expected_version': 2}, headers=headers(me))
+    assert first.status_code == 200
+    detail = first.json()['data']['detail']
+    assert detail['album']['version'] == 3 and detail['order_mode'] == 'manual'
+    assert [page['version'] for page in detail['pages']] == [2, 2, 1]
+    repeated = await client.put(path, json={'page_ids': [ids[1], ids[0], ids[2]], 'expected_version': 3}, headers=headers(me))
+    assert repeated.status_code == 200 and repeated.json()['data']['detail'] == detail
+    assert (await client.get('/api/v1/albums/' + album)).json()['data']['detail'] == detail
+    removed = await client.delete(f'/api/v1/albums/{album}/pages/{ids[1]}?expected_version=3', headers=headers(me))
+    assert removed.status_code == 200
+    after = removed.json()['data']['detail']
+    assert after['album']['version'] == 4
+    assert [page['id'] for page in after['pages']] == [ids[0], ids[2]]
+    assert [page['version'] for page in after['pages']] == [3, 2]
+
+
+@pytest.mark.asyncio
+async def test_expiry_and_complete_versions_are_atomic_and_terminal_replay_is_noop(client, db):
+    from datetime import datetime, timezone, timedelta
+    me, album = await setup(client)
+    await consent(client, me)
+    entry = (await reserve(client, me, album, [file(size=4)])).json()['data']['uploads'][0]
+    async with db() as session, session.begin():
+        (await session.get(Upload, UUID(entry['upload_id']))).expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    path = f'/api/v1/albums/{album}/uploads/{entry["upload_id"]}'
+    expired = await client.get(path)
+    assert expired.json()['data']['status'] == 'expired' and expired.json()['data']['album_version'] == 3
+    detail = (await client.get('/api/v1/albums/' + album)).json()['data']['detail']
+    assert detail['pages'][0]['version'] == 2
+    assert (await client.get(path)).json()['data'] == expired.json()['data']
+    assert (await client.post(path + '/complete', json={}, headers=headers(me))).json()['data'] == expired.json()['data']
+    assert (await client.get('/api/v1/albums/' + album)).json()['data']['detail'] == detail
