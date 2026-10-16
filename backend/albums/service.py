@@ -105,6 +105,16 @@ async def get_albums(session, user_id, cursor, limit):
             'media_access': await access_entries(session,refs)}
 
 
+def page_dto(page,album,assets,upload=None):
+    """The same public Page in detail and PATCH responses; no internal AI text."""
+    return {'id':str(page.id),'position':page.position,'version':page.version,
+        'upload_status':upload.status if upload else 'reserved',
+        'source':media_ref(scoped_asset(assets,page,'normalized',album)),
+        'result':media_ref(scoped_asset(assets,page,'result',album)),
+        'thumbnail':media_ref(scoped_asset(assets,page,'thumbnail',album)),
+        'caption_text':page.caption_text,'sort_date':page.sort_date,'sort_date_source':page.sort_date_source}
+
+
 async def get_album_detail(session, user_id, album_id):
     album = await repo.find_album(session, user_id, album_id)
     if album is None:
@@ -114,11 +124,7 @@ async def get_album_detail(session, user_id, album_id):
     pages = []
     for p in await repo.album_pages(session, album_id):
         upload = uploads.get(p.id)
-        pages.append({'id': str(p.id), 'position': p.position, 'version': p.version,
-            'upload_status': upload.status if upload else 'reserved',
-            'source': media_ref(scoped_asset(assets,p,'normalized',album)), 'result': media_ref(scoped_asset(assets,p,'result',album)),
-            'thumbnail': media_ref(scoped_asset(assets,p,'thumbnail',album)), 'caption_text': p.caption_text,
-            'sort_date': p.sort_date, 'sort_date_source': p.sort_date_source})
+        pages.append(page_dto(p,album,assets,upload))
     refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
         'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs)}

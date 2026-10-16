@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from backend.albums import service
 from backend.http.errors import APIError, envelope
 from backend.http.idempotency import require_key, request_hash
-from backend.http.schemas import EmptyBody
+from backend.http.schemas import EmptyBody, StrictBody
+from pydantic import Field, StrictInt, StrictStr
 from backend.http.security import AuthContext, require_csrf, require_user
 
 router = APIRouter(prefix='/api/v1/albums')
@@ -52,3 +53,38 @@ async def delete(request: Request, album_id: UUID, expected_version: int = Query
     async with request.app.state.session_factory() as session, session.begin():
         data = await service.delete_album(session, context.user_id, album_id, expected_version)
     return envelope(request, data)
+
+
+class PublishBody(StrictBody):
+    expected_version: StrictInt = Field(ge=1)
+
+
+class CaptionBody(PublishBody):
+    caption_text: StrictStr
+
+
+@router.patch('/{album_id}/pages/{page_id}/caption')
+async def caption(request:Request,album_id:UUID,page_id:UUID,body:CaptionBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    from backend.albums.editing import save_caption
+    async with request.app.state.session_factory() as session,session.begin():
+        data=await save_caption(session,context.user_id,album_id,page_id,body.expected_version,body.caption_text)
+    return envelope(request,data)
+
+
+@router.post('/{album_id}/publish')
+async def publish(request:Request,album_id:UUID,body:PublishBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    from backend.albums.editing import publish_album
+    async with request.app.state.session_factory() as session,session.begin():
+        data=await publish_album(session,context.user_id,album_id,body.expected_version)
+    return envelope(request,data)
+
+
+@router.get('/{album_id}/viewer')
+async def viewer(request:Request,album_id:UUID,context:AuthContext=Depends(require_user)):
+    validate_query(request,())
+    from backend.albums.viewer import get_viewer
+    async with request.app.state.session_factory() as session,session.begin():
+        data=await get_viewer(session,context.user_id,album_id)
+    return envelope(request,data)
