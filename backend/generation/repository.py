@@ -43,6 +43,7 @@ async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int) -
         run = await session.get(Run, task.run_id)
         if run.status == 'queued':
             run.status = 'running'
+            run.started_at = run.started_at or now
         return TaskClaim(task.id, task.fence_version, task.lease_until)
 
 
@@ -89,6 +90,28 @@ async def result_fields(session, rows, result):
         error = None if isinstance(caption, str) and caption.strip() else 'CAPTION_INVALID'
     else:
         error = None if (in_scope and asset.status == 'ready' and asset.deleted_at is None) else 'MEDIA_SAVE_FAILED'
+    if run.config_snapshot.get('execution_mode') == 'local_fake':
+        import unicodedata
+        from backend.storage.local import storage_key
+        if task.stage == 'caption':
+            if error is None and len(unicodedata.normalize('NFC',caption)) > run.config_snapshot.get('caption_max_chars',80):
+                error='CAPTION_INVALID'
+        elif error is None:
+            role='transform_output' if task.stage=='image_transform' else 'result'
+            if asset.role!=role or asset.mime!='image/webp' or not asset.sha256 or not asset.bytes:
+                error='MEDIA_SAVE_FAILED'
+            elif (asset.width is None or asset.height is None or asset.width<=0 or asset.height<=0
+                  or asset.width*4!=asset.height*3):
+                error='IMAGE_RATIO_INVALID'
+            elif asset.storage_key!=storage_key(album.owner_id,album.id,page.id,role):
+                error='MEDIA_SAVE_FAILED'
+            if task.stage=='optimize' and error is None:
+                from uuid import uuid5,NAMESPACE_URL
+                from backend.generation.completion import ready_output
+                key=storage_key(album.owner_id,album.id,page.id,'result_thumbnail')
+                thumb=await session.get(MediaAsset,uuid5(NAMESPACE_URL,key))
+                if not ready_output(thumb,album,page,'thumbnail') or thumb.storage_key!=key:
+                    error='MEDIA_SAVE_FAILED'
     return caption if isinstance(caption, str) else None, asset_id, error
 
 
@@ -111,6 +134,9 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
             return False
         album, run, task, page = rows
         if outcome == 'succeeded':
+            _,_,error=await result_fields(session,rows,{'caption':task.output_caption,'asset_id':task.output_asset_id})
+            if error:
+                return False
             if task.stage == 'caption' and (not isinstance(task.output_caption, str) or not task.output_caption.strip()):
                 return False
             if task.stage != 'caption':
@@ -120,7 +146,9 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
                     return False
             # Link only verified persisted output. Recovery fills these from the attempt.
             if task.output_caption is not None and task.stage == 'caption':
-                if page.caption_text is None:
+                if page.ai_caption is None:
+                    page.ai_caption = task.output_caption
+                if page.caption_text is None and page.caption_edited_at is None:
                     page.caption_text = task.output_caption
                     page.version += 1; album.version += 1
             if task.output_asset_id is not None and task.stage == 'optimize':
@@ -128,10 +156,23 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
                 if (asset is None or asset.owner_id != album.owner_id or asset.album_id != album.id
                         or asset.page_id != page.id or asset.status != 'ready' or asset.deleted_at is not None):
                     return False
+                changed=page.result_asset_id != asset.id
                 page.result_asset_id = asset.id
-                page.version += 1; album.version += 1
+                if run.config_snapshot.get('execution_mode')=='local_fake':
+                    from uuid import uuid5,NAMESPACE_URL
+                    from backend.storage.local import storage_key
+                    thumb_id=uuid5(NAMESPACE_URL,storage_key(album.owner_id,album.id,page.id,'result_thumbnail'))
+                    changed=changed or page.thumbnail_asset_id != thumb_id
+                    page.thumbnail_asset_id=thumb_id
+                if changed:
+                    page.version += 1; album.version += 1
         task.status = outcome
         task.lease_until = None
+        if outcome == 'succeeded':
+            task.completion_kind = 'provider' if task.requires_ai_call else 'local'
+            task.error_code = None
+            from backend.generation.completion import recompute_completion
+            await recompute_completion(session,album,run)
         if outcome in {'failed', 'unknown'}:
             mark_action_required(album, run)
         return True

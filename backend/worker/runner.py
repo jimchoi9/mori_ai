@@ -12,7 +12,7 @@ import json
 import os
 from pathlib import Path
 from uuid import UUID, uuid4
-from sqlalchemy import select, update, or_
+from sqlalchemy import select, update, or_, func
 from backend.models import Task, Attempt, Album, Run
 from backend.generation.repository import claim_task, settle_task, _locked_task, _active, mark_action_required, result_fields, fail_invalid_result, reject_invalid_settlement
 from backend.worker.jobs import enqueue_job, dispatch_outbox, recover_jobs
@@ -84,6 +84,12 @@ class Runner:
             album, run, task, page = rows
             if task.requires_ai_call and run.status == 'action_required':
                 task.status = 'queued'; task.lease_until = None
+                return None
+            used=await s.scalar(select(func.sum(Task.attempt_count)).where(Task.run_id==run.id)) or 0
+            if used >= run.config_snapshot.get('attempt_budget',450):
+                task.status='failed';task.lease_until=None;task.safe_to_retry=False
+                task.error_code='AI_TEMPORARY_FAILURE' if task.requires_ai_call else 'MEDIA_SAVE_FAILED'
+                mark_action_required(album,run)
                 return None
             task.attempt_count += 1
             attempt = Attempt(task_id=task.id, attempt_no=task.attempt_count, fence_version=claim.fence_version)
@@ -159,10 +165,18 @@ class Runner:
             # No handler is not a successful job. Leave unsent attempt for scanner.
             return False
         heartbeat = asyncio.create_task(self._heartbeat(claim))
+        work = None
         try:
             if needs_ai and not await self._mark_sent(claim, attempt_id):
                 return False
-            result = await executor.execute(attempt_id, stage)
+            work = asyncio.create_task(executor.execute(attempt_id, stage))
+            done,_ = await asyncio.wait((work,heartbeat),return_when=asyncio.FIRST_COMPLETED)
+            if heartbeat in done:
+                work.cancel()
+                with suppress(asyncio.CancelledError): await work
+                if heartbeat.exception(): raise heartbeat.exception()
+                return True
+            result = await work
             checksum = await self.store.save(str(attempt_id), result)
             if await self._received(claim, attempt_id, result, checksum):
                 async with self.sessions() as s:
@@ -171,12 +185,28 @@ class Runner:
             return True
         except asyncio.CancelledError:
             raise  # Shutdown preserves dispatch boundary; scanner determines safe recovery.
-        except Exception:
+        except Exception as exc:
+            # Explicit fake failures can prove no external request; generic AI failures cannot.
+            from backend.generation.fake_adapter import FakeExecutionError
+            definitive=isinstance(exc,FakeExecutionError)
+            outcome='failed' if not needs_ai or definitive else 'unknown'
+            async with self.sessions() as s,s.begin():
+                rows=await _locked_task(s,claim.task_id)
+                if rows is not None and _active(*rows,claim.fence_version,utcnow()):
+                    task=rows[2]
+                    task.error_code=exc.code if definitive else 'AI_RESULT_UNKNOWN' if needs_ai else 'MEDIA_SAVE_FAILED'
+                    task.safe_to_retry=exc.safe_to_retry if definitive else not needs_ai and task.has_persisted_input
+                    attempt=await s.get(Attempt,attempt_id)
+                    attempt.error_code=task.error_code
+                    if definitive: attempt.dispatch_state=exc.dispatch_state
             # Without definitive not_sent/rejected evidence, never automatically retry AI.
             async with self.sessions() as s:
-                await settle_task(s, claim.task_id, claim.fence_version, 'unknown' if needs_ai else 'failed', utcnow())
+                await settle_task(s, claim.task_id, claim.fence_version, outcome, utcnow())
             return True
         finally:
+            if work is not None and not work.done():
+                work.cancel()
+                with suppress(asyncio.CancelledError): await work
             heartbeat.cancel()
             with suppress(asyncio.CancelledError):
                 await heartbeat
@@ -192,11 +222,16 @@ class Runner:
                 key = attempt.result_key if attempt else None
                 checksum = attempt.result_sha256 if attempt else None
                 attempt_id = attempt.id if attempt else None
+                recovery_stage = (await s.get(Task,task_id)).stage
                 db_result = ({'caption': attempt.output_caption, 'asset_id': str(attempt.output_asset_id) if attempt.output_asset_id else None} if attempt and attempt.status == 'received' else None)
             # No row lock while looking for deterministic preserved output.
             result = await self.store.load(key, checksum) if key else None
             if result is None:
                 result = db_result
+            if result is None and attempt_id and hasattr(self.adapter,'recover_original'):
+                result = await self.adapter.recover_original(attempt_id,recovery_stage)
+                if result is not None:
+                    await self.store.save(str(attempt_id),result)
             recovered_claim = None
             async with self.sessions() as s, s.begin():
                 rows = await _locked_task(s, task_id)

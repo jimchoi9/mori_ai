@@ -10,7 +10,7 @@ from sqlalchemy import select, update, or_
 from backend.models import Album, Page, MediaAsset, Upload, Job, Task, Attempt
 from backend.media.process import normalize_in_process
 from backend.media.contracts import MediaValidationError
-from backend.storage.local import LocalStorage, storage_key
+from backend.storage.local import LocalStorage, storage_key, canonical_asset_keys
 from backend.uploads.service import config, touch
 from backend.albums.page_order import sort_date, finish_batch, bump_version
 from backend.worker.jobs import claim_job, finish_job, enqueue_job
@@ -197,7 +197,7 @@ class ValidationWorker:
             .join(Album, Album.id == MediaAsset.album_id)
             .join(Page, Page.id == MediaAsset.page_id)
             .where(MediaAsset.owner_id == Album.owner_id, Page.album_id == Album.id,
-                MediaAsset.role.in_(['source', 'normalized', 'thumbnail', 'result']),
+                MediaAsset.role.in_(['source', 'normalized', 'thumbnail', 'result', 'transform_output']),
                 or_(MediaAsset.deleted_at.is_not(None), Album.deleted_at.is_not(None), Page.removed_at.is_not(None)))
             .order_by(MediaAsset.id).limit(limit))
         async with self.sessions() as session:
@@ -238,10 +238,10 @@ class ValidationWorker:
         """Same scoped eligibility for the sweep and the fenced deletion handler."""
         if (album is None or asset is None or page is None or asset.owner_id != album.owner_id
             or asset.album_id != album.id or page.album_id != album.id
-            or asset.role not in {'source', 'normalized', 'thumbnail', 'result'}):
+            or asset.role not in {'source', 'normalized', 'thumbnail', 'result', 'transform_output'}):
             return ()
-        expected = storage_key(album.owner_id, album.id, page.id, asset.role)
-        if asset.storage_key != expected:
+        expected = asset.storage_key
+        if expected not in canonical_asset_keys(album.owner_id, album.id, page.id, asset.role):
             return ()
         deleted = album.deleted_at is not None or page.removed_at is not None
         if not deleted:
@@ -263,7 +263,7 @@ class ValidationWorker:
         keys = [expected]
         if deleted:
             # Covers unlinked files written by an interrupted validation worker.
-            keys.extend(storage_key(album.owner_id, album.id, page.id, role) for role in ('normalized', 'thumbnail'))
+            keys.extend(storage_key(album.owner_id, album.id, page.id, role) for role in ('normalized', 'thumbnail', 'transform_output', 'result', 'result_thumbnail'))
         return tuple(dict.fromkeys(keys))
 
     async def cleanup_album(self,claim):

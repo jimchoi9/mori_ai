@@ -12,7 +12,7 @@ from backend.albums.service import utc, get_album_detail
 from backend.http.errors import APIError
 from backend.http.idempotency import replay
 from backend.worker.jobs import enqueue_job
-from backend.storage.local import storage_key
+from backend.storage.local import storage_key, canonical_asset_keys
 
 MIMES={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.heic':'image/heic','.heif':'image/heif'}
 
@@ -173,6 +173,8 @@ async def media_access(session,owner,album_id,asset_ids,signing):
     await repo.album(session,owner,album_id,lock=False)
     for asset_id in asset_ids:
         asset=await repo.visible_asset(session,owner,album_id,asset_id)
+        if asset.storage_key not in canonical_asset_keys(owner,album_id,asset.page_id,asset.role):
+            raise APIError(404,'RESOURCE_NOT_FOUND')
         path=f'/api/v1/private/albums/{album_id}/media/{asset_id}'
         entries.append({'asset_id':str(asset_id),'url':signing.url('GET',path,asset_id,int(expiry.timestamp()),asset.mime),'expires_at':utc(expiry)})
     return {'media_access':entries}
