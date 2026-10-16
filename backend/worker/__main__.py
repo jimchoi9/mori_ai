@@ -21,6 +21,7 @@ async def main() -> None:
     runner = Runner(sessions, ResultStore(settings.storage_root), executor, local_executor=executor)
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
+    next_oauth_cleanup = 0.0
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stopped.set)
     logging.info('Worker DB recovery ready; upload validation/cleanup enabled; %s',
@@ -28,6 +29,11 @@ async def main() -> None:
     try:
         while not stopped.is_set():
             try:
+                if loop.time() >= next_oauth_cleanup:
+                    from backend.auth.oauth_repository import prune_login_requests
+                    async with sessions() as session, session.begin():
+                        await prune_login_requests(session, datetime.now(timezone.utc))
+                    next_oauth_cleanup = loop.time() + 60
                 await runner.maintenance()
                 await validation.scan_incomplete_uploads(datetime.now(timezone.utc))
                 await validation.run_once()

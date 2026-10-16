@@ -17,6 +17,9 @@ RUN ./node_modules/.bin/esbuild tests/generation_session_entry.ts --bundle --pla
     && node tests/session_reset.test.mjs file:///tmp/session-check.mjs \
     && node tests/generation_session.test.mjs file:///tmp/session-check.mjs \
     && node tests/generation_recovery.test.mjs file:///tmp/session-check.mjs
+RUN ./node_modules/.bin/tsc src/features/auth/oauth.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/oauth-check \
+    && ./node_modules/.bin/esbuild src/features/auth/AuthGate.tsx --bundle --platform=node --format=esm --packages=external --jsx=automatic --outfile=/build/auth-gate-check.mjs \
+    && node tests/oauth_login.test.mjs file:///tmp/oauth-check/features/auth/oauth.js file:///build/auth-gate-check.mjs
 
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -40,4 +43,4 @@ COPY --chown=mori:mori backend/ /app/backend/
 COPY --from=frontend --chown=mori:mori /build/dist /app/frontend/dist
 USER mori
 EXPOSE 8000
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

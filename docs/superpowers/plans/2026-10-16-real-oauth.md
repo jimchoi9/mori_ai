@@ -37,7 +37,7 @@
 
 **Files:** 총괄은 backend/models.py, backend/settings.py, backend/migrations/versions/0003_real_oauth.py(실행 전 현재 head 및 파일명 충돌 확인), compose.yaml을 소유한다. 작업자는 backend/auth/oauth_repository.py 및 backend/tests/integration/test_oauth_repository.py를 편집한다.
 
-**Interfaces:** OAuthIdentity(provider, subject, display_name)는 backend/auth/oauth_types.py의 frozen dataclass. provider는 google/kakao, subject는 비어 있지 않은 최대 255자 문자열이다. OAuthLoginRequest는 UUID id, provider, state_hash(unique), binding_hash, return_to, expires_at, consumed_at을 갖는다. UserIdentity는 provider+subject unique, user_id FK를 갖는다.
+**Interfaces:** OAuthIdentity(provider, subject, display_name)는 backend/auth/oauth_types.py의 frozen dataclass. provider는 google/kakao, subject는 비어 있지 않은 최대 255자 문자열이다. OAuthLoginRequest는 UUID id, provider, state_hash(unique), binding_hash, return_to, expires_at, consumed_at을 갖는다. 기존 AuthIdentity(provider, provider_subject, user_id)를 재사용한다. 이미 provider+provider_subject unique 및 user_id FK를 갖고 있으므로 별도 identity 테이블은 추가하지 않는다.
 - begin_login(session, provider: str, state_hash: str, binding_hash: str, return_to: str, expires_at: datetime) -> UUID.
 - consume_login(session, provider: str, state_hash: str, binding_hash: str, now: datetime) -> str | None: 성공 시 허용된 return_to 반환, 그 외 None.
 - resolve_identity(session, identity: OAuthIdentity) -> User: 최초 생성/재로그인 경합 수렴, 삭제된 user는 거부.
@@ -82,6 +82,8 @@
 
 기존 계약 endpoint·세션·소유권·동의 규칙을 보존한다. 추가하는 DB identity/state 및 client-config의 공개 제공자 목록은 타입·샘플·회귀를 동반한다. 다섯 Review Focus는 Task별 검증에 배정했다. R2/AI 예산 ledger와 실제 AI 호출은 이 계획에 포함하지 않았다.
 
-이 계획은 아직 사용자 검토 전이며 구현·Orca worker 실행을 시작하지 않았다. 검토 대상은 위 로그인 요청 TTL/내부 복귀 허용 목록/이메일 미요청/실패 복귀 정책을 포함한다. 실행 방식은 이미 지정된 Orca를 유지한다.
+2026-10-16 사용자가 “응 착수시켜”로 검토·실행을 승인했다. Run run_e4206c698a2c에서 구현을 시작했다. 검토 대상은 위 로그인 요청 TTL/내부 복귀 허용 목록/이메일 미요청/실패 복귀 정책을 포함한다. 실행 방식은 이미 지정된 Orca를 유지한다.
 
 공식 근거: [Google 웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [Kakao REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api).
+
+실행 소유권 구체화: Task1 worker는 oauth_types.py까지 소유한다. 제공자 adapter는 독립 Task로 선행 병렬화하며 해당 worker가 oauth_providers.py·단위 검사만 소유한다. HTTP/service는 저장소·adapter 고정 후 후속 Dispatch로 배정한다. frontend는 root가 고정한 auth_providers 공개 인터페이스를 소비한다. shared checkout의 공통 파일은 총괄만 편집하며 기존 사용자 .gitignore 변경은 보존한다.

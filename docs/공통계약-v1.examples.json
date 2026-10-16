@@ -26,7 +26,8 @@
         ".webp",
         ".heif",
         ".heic"
-      ]
+      ],
+      "auth_providers": []
     },
     "request_id": "req-example"
   },

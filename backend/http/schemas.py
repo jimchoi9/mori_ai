@@ -21,6 +21,7 @@ class ConsentBody(StrictBody):
 
 
 CLIENT_CONFIG = {
+    'auth_providers': [],
     'album_min_photos': 1, 'album_max_photos': 50, 'caption_max_chars': 80,
     'caption_ai_target_min_chars': 20, 'caption_ai_target_max_chars': 45,
     'caption_allow_empty': True,

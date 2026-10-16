@@ -4,7 +4,7 @@
 
 ## 1. 현재 단계와 작업 범위
 
-- 현재 단계는 **승인된 로컬 로그인·책장·업로드와 가짜 AI·수정·뷰어 연동**이다. 첫 기반 구현·병렬 검증과 독립 리뷰 수정을 마쳤다. 2026-10-16 사용자가 docs/superpowers/plans/2026-10-16-local-upload-flow.md를 검토하고 ‘계획대로 착수’로 승인했다. 같은 날 사용자가 docs/superpowers/plans/2026-10-16-local-generation-viewer.md도 ‘계획대로 이어서 진행’으로 승인했다. 두 계획의 로컬 구현·통합 검증과 중요 리뷰 수정을 완료했다. 최종 근거는 docs/로컬생성화면-검증결과.md를 따른다. 외부 연동 준비 상태와 예산은 아래 최신 기록을 따른다. 현재 실행 코드는 로컬·가짜 adapter이며 실제 연동 완료를 뜻하지 않는다.
+- 현재 단계는 **로컬 묶음 완료 후 승인된 Google·Kakao OAuth 실제 연동 구현**이다. 첫 기반 구현·병렬 검증과 독립 리뷰 수정을 마쳤다. 2026-10-16 사용자가 docs/superpowers/plans/2026-10-16-local-upload-flow.md를 검토하고 ‘계획대로 착수’로 승인했다. 같은 날 사용자가 docs/superpowers/plans/2026-10-16-local-generation-viewer.md도 ‘계획대로 이어서 진행’으로 승인했다. 두 계획의 로컬 구현·통합 검증과 중요 리뷰 수정을 완료했다. 최종 근거는 docs/로컬생성화면-검증결과.md를 따른다. 외부 연동 준비 상태와 예산은 아래 최신 기록을 따른다. 현재 실행 코드는 로컬·가짜 adapter이며 실제 연동 완료를 뜻하지 않는다.
 - 2026-10-15 사용자가 기술 구성 조사와 병렬 문서 조사를 승인했다. 재사용·요구사항·검증 조사는 진행할 수 있으며, 제품 구현이나 기술 구성 확정으로 확대하지 않는다.
 - 구현 대상은 이 저장소의 AI 사진첩 서비스다. 기존 서비스 `/Users/choijimin/dev/active/moriai`는 읽기 전용 참고·선별 재사용 소스다.
 - 문서의 작업 순서와 역할은 향후 개발 기준이며, 실행 중인 Orca Run이나 배정된 Task를 뜻하지 않는다.
@@ -77,3 +77,7 @@
 - PostHog 데이터 조회와 작업은 CLI가 있으면 `posthog-cli api`를 사용한다.
 - 세션 첫 PostHog 명령 전에 `posthog-cli api --agent-help`를 실행하고 전체 출력을 읽어 지침으로 따른다.
 - PostHog 작업 전에 `posthog-cli api skill list`로 일치하는 스킬을 확인한다. 있으면 `posthog-cli api skill install <skill-id>`로 설치하고 `.agents/skills/<skill-id>/SKILL.md`를 읽는다. 기존 설치 갱신에는 `--force`를 사용한다.
+
+## 현재 OAuth 실행 범위
+
+2026-10-16 사용자가 docs/superpowers/plans/2026-10-16-real-oauth.md 착수를 승인했다. Orca Run run_e4206c698a2c로 진행한다. .env의 항목 존재/형식 검사는 완료했으나 실제 자격증명 유효성은 미검증이다. worker는 .env를 읽지 않고 총괄이 필요한 OAuth 설정만 주입한다. R2 및 실제 AI 호출은 이 OAuth 묶음에 포함하지 않는다.

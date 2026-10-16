@@ -34,7 +34,7 @@ async def login(request: Request, body: DevLogin):
 
 @router.get('/api/v1/client-config')
 async def client_config(request: Request):
-    return envelope(request, CLIENT_CONFIG)
+    return envelope(request, {**CLIENT_CONFIG, 'auth_providers': request.app.state.settings.auth_providers})
 
 
 @router.get('/api/v1/me')
