@@ -9,7 +9,7 @@ from io import BytesIO
 from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
 import pillow_heif
 from .contracts import MediaValidationError, NormalizedImage
-from . import png_color
+from . import png_color, icc_sdr
 
 pillow_heif.register_heif_opener(thumbnails=False)
 MAX_PIXELS = 40_000_000
@@ -45,10 +45,11 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
     try:
         png = png_color.declarations(source)
         image = Image.open(BytesIO(source))
-        if image.format not in {'JPEG', 'PNG', 'WEBP', 'HEIF'}:
+        if image.format not in {'JPEG', 'MPO', 'PNG', 'WEBP', 'HEIF'}:
             raise MediaValidationError('UNSUPPORTED_MEDIA')
         # The pinned pillow-heif plugin opens primary_index and applies
-        # container transforms; do not seek/decode auxiliary frames.
+        # container transforms. MPO opens its first primary JPEG frame.
+        # Do not seek/decode secondary or auxiliary frames in either container.
         if image.width * image.height > MAX_PIXELS:
             raise MediaValidationError('IMAGE_PIXEL_LIMIT_EXCEEDED')
         if png is not None:
@@ -66,12 +67,19 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
         transfer = nclx.get('transfer_characteristics') if isinstance(nclx, dict) else None
         xmp = str(info.get('xmp', info.get('XML:com.adobe.xmp', b''))).lower()
         aux = str(info.get('aux', {})).lower()
-        hdr_hint = any(token in xmp or token in aux for token in
-                       ('hdr-gain-map', 'hdrgm:', 'hdrgainmap', 'gainmap', 'gain_map'))
+        hdr_tokens = ('hdr-gain-map', 'hdrgm:', 'hdrgainmap', 'gainmap', 'gain_map')
+        main_hdr = any(token in xmp for token in hdr_tokens)
+        aux_hdr = any(token in aux for token in hdr_tokens)
+        # Auxiliary gain maps do not make the primary pixels HDR. Require
+        # affirmative 8-bit/sRGB-TRC evidence; never decode/apply that gain map.
+        sdr_primary = (image.format == 'HEIF' and image.mode in {'RGB', 'RGBA'}
+                       and info.get('bit_depth') == 8
+                       and transfer in {None, 2, 13}
+                       and icc_sdr.has_srgb_transfer(info.get('icc_profile')))
         wide_without_icc = (nclx.get('color_primaries', 1) not in {1, 2}
                             and not info.get('icc_profile'))
         if (info.get('bit_depth', 8) > 8 or transfer in {16, 18}
-                or hdr_hint or wide_without_icc
+                or main_hdr or (aux_hdr and not sdr_primary) or wide_without_icc
                 or (transfer not in {None, 2, 13} and not info.get('icc_profile'))
                 or info.get('content_light_level')
                 or info.get('mastering_display_colour_volume')
