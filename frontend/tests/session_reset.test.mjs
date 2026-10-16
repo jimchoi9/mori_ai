@@ -8,12 +8,14 @@ test('logout clears private data and updates the mounted session observer', asyn
   const cache = new QueryClient();
   cache.setQueryData(['session'], {user: {id: 'alpha'}});
   cache.setQueryData(['albums', 'alpha'], [{id: 'private-album'}]);
+  cache.setQueryData(['client-config', 'alpha'], {auth_providers: ['google']});
   cache.setQueryData(['dev-config'], {dev_auth_enabled: true});
   const observer = new QueryObserver(cache, {queryKey: ['session'], enabled: false});
   const unsubscribe = observer.subscribe(() => {});
   await session.resetSession(cache);
   assert.equal(observer.getCurrentResult().data, null);
   assert.equal(cache.getQueryData(['albums', 'alpha']), undefined);
+  assert.equal(cache.getQueryData(['client-config', 'alpha']), undefined);
   assert.deepEqual(cache.getQueryData(['dev-config']), {dev_auth_enabled: true});
   cache.setQueryData(['session'], {user: {id: 'beta'}});
   assert.equal(observer.getCurrentResult().data.user.id, 'beta');
@@ -49,5 +51,22 @@ test('an initial 401 does not cancel the public development login configuration'
   await pending;
   assert.equal(cancelled, false);
   assert.deepEqual(cache.getQueryData(['dev-config']), {dev_auth_enabled: true});
+  cache.clear();
+});
+
+test('session expiry preserves the pending public OAuth provider configuration', async () => {
+  const cache = new QueryClient();
+  let cancelled = false;
+  let finish;
+  const pending = cache.fetchQuery({queryKey: ['client-config'], retry: false,
+    queryFn: ({signal}) => new Promise(resolve => {
+      finish = resolve;
+      signal.addEventListener('abort', () => {cancelled = true;});
+    })}).catch(() => undefined);
+  await session.resetSession(cache, 'expired');
+  finish({auth_providers: ['google']});
+  await pending;
+  assert.equal(cancelled, false);
+  assert.deepEqual(cache.getQueryData(['client-config']), {auth_providers: ['google']});
   cache.clear();
 });
