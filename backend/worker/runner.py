@@ -87,6 +87,12 @@ class Runner:
                 from backend.generation.completion import recompute_completion
                 await recompute_completion(s, album, run)
                 return None
+            handler=self.adapter if task.requires_ai_call else self.local_executor
+            if hasattr(handler,'accepts_config') and not handler.accepts_config(run.config_snapshot):
+                task.status='failed';task.lease_until=None;task.safe_to_retry=False
+                task.error_code='AI_TEMPORARY_FAILURE'
+                mark_action_required(album,run)
+                return None
             used=await s.scalar(select(func.sum(Task.attempt_count)).where(Task.run_id==run.id)) or 0
             if used >= run.config_snapshot.get('attempt_budget',450):
                 task.status='failed';task.lease_until=None;task.safe_to_retry=False
@@ -157,7 +163,7 @@ class Runner:
         if self.adapter is None and self.local_executor is None:
             return False
         async with self.sessions() as s:
-            claim = await claim_task(s, utcnow(), self.lease_seconds)
+            claim = await claim_task(s, utcnow(), self.lease_seconds, execution_mode=getattr(self.adapter,'execution_mode',None))
         if claim is None:
             return False
         prepared = await self.prepare(claim)
@@ -171,7 +177,7 @@ class Runner:
         heartbeat = asyncio.create_task(self._heartbeat(claim))
         work = None
         try:
-            if needs_ai and not await self._mark_sent(claim, attempt_id):
+            if needs_ai and not getattr(executor,'manages_dispatch',False) and not await self._mark_sent(claim, attempt_id):
                 return False
             work = asyncio.create_task(executor.execute(attempt_id, stage))
             done,_ = await asyncio.wait((work,heartbeat),return_when=asyncio.FIRST_COMPLETED)
@@ -192,14 +198,22 @@ class Runner:
         except Exception as exc:
             # Explicit fake failures can prove no external request; generic AI failures cannot.
             from backend.generation.fake_adapter import FakeExecutionError
-            definitive=isinstance(exc,FakeExecutionError)
-            outcome='failed' if not needs_ai or definitive else 'unknown'
+            from backend.generation.real_adapter import RealExecutionError
+            # Import optional provider only for real mode; fake installations need no SDK.
+            provider_failure = ()
+            if getattr(executor,'manages_dispatch',False):
+                from backend.generation.openai_provider import ProviderFailure
+                provider_failure = (ProviderFailure,)
+            definitive=isinstance(exc,(FakeExecutionError,RealExecutionError)+provider_failure)
+            state=exc.dispatch_state if definitive else 'accepted_or_unknown'
+            known_invalid=definitive and exc.code in {'CAPTION_INVALID','IMAGE_RATIO_INVALID','AI_REFUSED'}
+            outcome='failed' if not needs_ai or definitive and (state in {'not_sent','rejected','responded'} or known_invalid) else 'unknown'
             async with self.sessions() as s,s.begin():
                 rows=await _locked_task(s,claim.task_id)
                 if rows is not None and _active(*rows,claim.fence_version,utcnow()):
                     task=rows[2]
                     task.error_code=exc.code if definitive else 'AI_RESULT_UNKNOWN' if needs_ai else 'MEDIA_SAVE_FAILED'
-                    task.safe_to_retry=exc.safe_to_retry if definitive else not needs_ai and task.has_persisted_input
+                    task.safe_to_retry=(exc.safe_to_retry and state in {'not_sent','rejected'}) if definitive else not needs_ai and task.has_persisted_input
                     attempt=await s.get(Attempt,attempt_id)
                     attempt.error_code=task.error_code
                     if definitive: attempt.dispatch_state=exc.dispatch_state
@@ -236,6 +250,8 @@ class Runner:
                 result = await self.adapter.recover_original(attempt_id,recovery_stage)
                 if result is not None:
                     await self.store.save(str(attempt_id),result)
+            if result is not None and attempt_id and hasattr(self.adapter,'recover_accounting'):
+                await self.adapter.recover_accounting(attempt_id,result)
             recovered_claim = None
             async with self.sessions() as s, s.begin():
                 rows = await _locked_task(s, task_id)

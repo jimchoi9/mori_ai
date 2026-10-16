@@ -25,8 +25,14 @@ class FakeExecutionError(Exception):
 
 
 class FakeExecutor:
+    execution_mode = 'local_fake'
     def __init__(self,sessions,store):
         self.sessions=sessions;self.store=store
+
+    def accepts_config(self,config):
+        return (config.get('execution_mode')=='local_fake'
+            and config.get('image_provider')=='local_fake' and config.get('caption_provider')=='local_fake'
+            and config.get('image_model')=='fake-canvas-v1' and config.get('caption_model')=='fake-sentence-v1')
 
     async def _context(self,attempt_id,stage,*,recover=False):
         async with self.sessions() as s,s.begin():
@@ -39,9 +45,7 @@ class FakeExecutor:
                 and album.status!='deleted' and page.removed_at is None and run.status!='cancelled')
             snapshot=next((x for x in run.input_snapshot if x['page_id']==str(page.id)),None)
             if (not valid or attempt.attempt_no!=task.attempt_count or task.stage!=stage or snapshot is None
-                or run.config_snapshot.get('execution_mode')!='local_fake'
-                or run.config_snapshot.get('image_provider')!='local_fake' or run.config_snapshot.get('caption_provider')!='local_fake'
-                or run.config_snapshot.get('image_model')!='fake-canvas-v1' or run.config_snapshot.get('caption_model')!='fake-sentence-v1'):
+                or not self.accepts_config(run.config_snapshot)):
                 raise FakeExecutionError('MEDIA_SAVE_FAILED')
             asset=await s.get(MediaAsset,UUID(snapshot['normalized_asset_id']))
             if (asset is None or asset.owner_id!=album.owner_id or asset.album_id!=album.id or asset.page_id!=page.id
@@ -82,6 +86,7 @@ class FakeExecutor:
         def metadata():
             with Image.open(BytesIO(data)) as image:
                 if image.format!='WEBP' or image.width*4!=image.height*3:raise FakeExecutionError('IMAGE_RATIO_INVALID')
+                image.load()
                 return image.size
         width,height=await asyncio.to_thread(metadata)
         sha=hashlib.sha256(data).hexdigest()
@@ -90,6 +95,7 @@ class FakeExecutor:
             rows=await _locked_task(s,context['task'])
             album,run,task,page=rows
             if (album.deleted_at is not None or page.removed_at is not None or run.status=='cancelled'
+                or not self.accepts_config(run.config_snapshot)
                 or task.attempt_count!=context['attempt_no']
                 or (not recover and not _active(*rows,context['fence'],datetime.now(timezone.utc)))):
                 raise FakeExecutionError('MEDIA_SAVE_FAILED')
@@ -112,6 +118,7 @@ class FakeExecutor:
             album,run,task,page=await _locked_task(s,context['task'])
             asset=await s.get(MediaAsset,identity)
             if (album.deleted_at is not None or page.removed_at is not None or run.status=='cancelled'
+                or not self.accepts_config(run.config_snapshot)
                 or task.attempt_count!=context['attempt_no']
                 or (not recover and not _active(album,run,task,page,context['fence'],datetime.now(timezone.utc)))):
                 from backend.worker.jobs import enqueue_job

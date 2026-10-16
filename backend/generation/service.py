@@ -1,4 +1,4 @@
-"""Local generation admission; caller owns the transaction.
+"""Generation admission with frozen fake/real mode; caller owns the transaction.
 
 Lock order: User -> Album -> Run -> Task. No executor or file I/O here.
 """
@@ -16,8 +16,9 @@ ACTIVE_RUNS = ('queued', 'running', 'action_required')
 
 
 def require_local_ai(settings):
-    if settings.app_env != 'local' or not settings.dev_ai_enabled:
-        raise APIError(503, 'TEMPORARILY_UNAVAILABLE', '개발용 가짜 AI가 비활성화되어 있습니다.', retryable=False)
+    """Compatibility entrypoint: admit only explicitly enabled fake or real AI."""
+    if not getattr(settings, 'ai_real_calls_enabled', False) and (settings.app_env != 'local' or not settings.dev_ai_enabled):
+        raise APIError(503, 'TEMPORARILY_UNAVAILABLE', 'AI 생성이 비활성화되어 있습니다.', retryable=False)
 
 
 async def owned_album(session, owner_id, album_id):
@@ -40,11 +41,11 @@ def check_version(album, expected_version):
 
 
 def config_snapshot(settings):
-    """Fake identifiers never impersonate a provider model; costs are always zero.
+    """Snapshot mode/models independently from future worker configuration.
 
     attempt_budget is a local test execution bound, not an operating cost quota.
     """
-    return {
+    snapshot = {
         'snapshot_version':1, 'execution_mode':'local_fake', **CLIENT_CONFIG,
         'image_provider':'local_fake', 'image_model':'fake-canvas-v1',
         'caption_provider':'local_fake', 'caption_model':'fake-sentence-v1',
@@ -59,6 +60,12 @@ def config_snapshot(settings):
         'image_timeout_seconds':300, 'caption_timeout_seconds':60,
         'lease_seconds':90, 'heartbeat_seconds':15,
     }
+
+    if getattr(settings, 'ai_real_calls_enabled', False):
+        snapshot.update(execution_mode='openai', image_provider='openai', caption_provider='openai',
+            image_model=settings.openai_image_model, caption_model=settings.openai_caption_model,
+            prompt_version='openai-v1', pricing_profile='openai-standard-2026-10-16-v1', budget_scope='validation_usd', estimated_cost=None)
+    return snapshot
 
 
 def within_attempt_budget(run, tasks, proposed):
@@ -169,6 +176,11 @@ async def resume_generation(session, owner_id, album_id, run_id, expected_versio
     if not within_attempt_budget(run,tasks,len(eligible)):
         raise APIError(429,'USAGE_LIMIT_EXCEEDED')
     require_local_ai(settings)
+    expected = config_snapshot(settings)
+    if any(run.config_snapshot.get(k) != expected[k] for k in ('execution_mode','image_model','caption_model')):
+        raise APIError(409,'RESUME_NOT_ALLOWED')
+    if expected['execution_mode']=='openai' and any(run.config_snapshot.get(k)!=expected[k] for k in ('prompt_version','pricing_profile')):
+        raise APIError(409,'RESUME_NOT_ALLOWED')
     resumed = resume_locked_tasks(album,run,tasks)
     from backend.worker.jobs import enqueue_job
     for task in tasks:

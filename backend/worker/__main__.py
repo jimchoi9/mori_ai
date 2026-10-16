@@ -15,7 +15,14 @@ async def main() -> None:
     sessions = session_factory(settings.database_url)
     validation = ValidationWorker(sessions, settings)
     executor = None
-    if settings.app_env == 'local' and settings.dev_ai_enabled:
+    if settings.ai_real_calls_enabled:
+        from backend.generation.real_adapter import RealExecutor
+        from backend.generation.openai_provider import OpenAIProvider
+        from backend.generation.budget import BudgetLedger
+        executor = RealExecutor(sessions, validation.store, OpenAIProvider(settings),
+            BudgetLedger(sessions, limit_usd=settings.ai_validation_initial_budget_usd,
+                hard_limit_usd=settings.ai_validation_budget_usd), settings)
+    elif settings.app_env == 'local' and settings.dev_ai_enabled:
         from backend.generation.fake_adapter import FakeExecutor
         executor = FakeExecutor(sessions, validation.store)
     from backend.storage.factory import result_store
@@ -28,7 +35,7 @@ async def main() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stopped.set)
     logging.info('Worker DB recovery ready; upload validation/cleanup enabled; %s',
-                 'local fake AI executor enabled' if executor else 'AI executor is not configured')
+                 ('real AI executor enabled' if settings.ai_real_calls_enabled else 'local fake AI executor enabled') if executor else 'AI executor is not configured')
     try:
         while not stopped.is_set():
             # Claim useful work before maintenance; storage outages in recovery or
@@ -84,6 +91,8 @@ async def main() -> None:
                 await storage_scan
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.remove_signal_handler(sig)
+        if settings.ai_real_calls_enabled and executor is not None:
+            await executor.provider.aclose()
         await sessions.kw['bind'].dispose()
         logging.info('Worker stopped safely')
 

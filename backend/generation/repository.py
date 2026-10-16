@@ -19,7 +19,7 @@ class TaskClaim:
     lease_until: datetime
 
 
-async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int) -> TaskClaim | None:
+async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *, execution_mode=None) -> TaskClaim | None:
     if lease_seconds <= 0:
         raise ValueError('lease_seconds must be positive')
     image = aliased(Task)
@@ -33,6 +33,8 @@ async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int) -
                         or_(Run.status != 'action_required', and_(Task.requires_ai_call.is_(False), Task.has_persisted_input.is_(True))),
                         or_(Task.stage != 'optimize', exists(select(image.id).where(image.run_id == Task.run_id, image.page_id == Task.page_id, image.stage == 'image_transform', image.status == 'succeeded'))))
                  .order_by(Task.id).with_for_update(skip_locked=True).limit(1))
+        if execution_mode is not None:
+            query = query.where(Run.config_snapshot['execution_mode'].astext == execution_mode)
         # Lock all selected parent rows as well: new dispatch and action_required serialize.
         task = await session.scalar(query)
         if task is None:
@@ -90,7 +92,7 @@ async def result_fields(session, rows, result):
         error = None if isinstance(caption, str) and caption.strip() else 'CAPTION_INVALID'
     else:
         error = None if (in_scope and asset.status == 'ready' and asset.deleted_at is None) else 'MEDIA_SAVE_FAILED'
-    if run.config_snapshot.get('execution_mode') == 'local_fake':
+    if run.config_snapshot.get('execution_mode') in {'local_fake','openai'}:
         import unicodedata
         from backend.storage.local import storage_key
         if task.stage == 'caption':
@@ -158,7 +160,7 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
                     return False
                 changed=page.result_asset_id != asset.id
                 page.result_asset_id = asset.id
-                if run.config_snapshot.get('execution_mode')=='local_fake':
+                if run.config_snapshot.get('execution_mode') in {'local_fake','openai'}:
                     from uuid import uuid5,NAMESPACE_URL
                     from backend.storage.local import storage_key
                     thumb_id=uuid5(NAMESPACE_URL,storage_key(album.owner_id,album.id,page.id,'result_thumbnail'))

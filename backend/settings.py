@@ -1,5 +1,6 @@
 """Shared web/worker settings. Credentials must be explicitly configured."""
 from pathlib import Path
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -16,6 +17,31 @@ class Settings(BaseSettings):
     app_env: Literal["local", "test", "production"] = "production"
     dev_auth_enabled: bool = False
     dev_ai_enabled: bool = False
+    ai_real_calls_enabled: bool = False
+    openai_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    openai_org_id: str = ""
+    openai_project_id: str = ""
+    openai_caption_model: str = "gpt-5.4-mini"
+    openai_image_model: str = "gpt-image-2"
+    ai_validation_budget_usd: Decimal = Field(default=Decimal('100'), gt=0, le=100, allow_inf_nan=False)
+    ai_validation_initial_budget_usd: Decimal = Field(default=Decimal('5'), gt=0, le=100, allow_inf_nan=False)
+
+    @property
+    def generation_enabled(self) -> bool:
+        return self.ai_real_calls_enabled or (self.app_env == 'local' and self.dev_ai_enabled)
+
+    @model_validator(mode="after")
+    def validate_real_ai(self):
+        if self.ai_validation_initial_budget_usd > self.ai_validation_budget_usd:
+            raise ValueError('initial AI budget must not exceed total authorized budget')
+        if self.ai_real_calls_enabled:
+            if self.dev_ai_enabled:
+                raise ValueError('real and fake AI modes are mutually exclusive')
+            if not self.openai_api_key.get_secret_value().strip():
+                raise ValueError('real AI requires an explicit API key')
+            if self.openai_caption_model != 'gpt-5.4-mini' or self.openai_image_model != 'gpt-image-2':
+                raise ValueError('real AI requires a reviewed model pricing profile')
+        return self
     app_origin: str = "http://127.0.0.1:8000"
     session_cookie_allow_insecure_local: bool = False
     session_ttl_seconds: int = Field(default=86400, ge=60, le=604800)

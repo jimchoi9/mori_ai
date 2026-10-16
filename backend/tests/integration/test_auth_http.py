@@ -43,7 +43,7 @@ async def test_dev_route_default_off(db):
     async with app.router.lifespan_context(app):
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as c:
             assert (await c.post('/api/dev/login', json={'account': 'alpha'}, headers={'Origin': ORIGIN})).status_code == 404
-            assert (await c.get('/api/dev/config')).json()['data'] == {'dev_auth_enabled': False, 'dev_ai_enabled': False}
+            assert (await c.get('/api/dev/config')).json()['data'] == {'dev_auth_enabled': False, 'dev_ai_enabled': False, 'generation_enabled': False, 'generation_mode': None}
 
 
 @pytest.mark.parametrize('values', [
@@ -137,7 +137,7 @@ async def test_public_config_and_unauthenticated_envelope(client):
     r = await client.get('/api/v1/client-config')
     assert r.status_code == 200 and r.json()['data']['upload_max_file_bytes'] == 20971520
     assert 'dev_auth_enabled' not in r.json()['data']
-    assert (await client.get('/api/dev/config')).json()['data'] == {'dev_auth_enabled': True, 'dev_ai_enabled': False}
+    assert (await client.get('/api/dev/config')).json()['data'] == {'dev_auth_enabled': True, 'dev_ai_enabled': False, 'generation_enabled': False, 'generation_mode': None}
 
 
 @pytest.mark.asyncio

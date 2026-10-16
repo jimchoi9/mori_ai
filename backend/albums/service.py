@@ -4,6 +4,7 @@ import binascii
 import json
 from datetime import datetime, timezone
 from uuid import UUID
+from sqlalchemy import select
 from backend.albums import repository as repo
 from backend.http.errors import APIError
 from backend.http.idempotency import replay
@@ -119,6 +120,15 @@ def page_dto(page,album,assets,upload=None):
         'caption_text':page.caption_text,'sort_date':page.sort_date,'sort_date_source':page.sort_date_source}
 
 
+async def generation_mode(session, album_id):
+    """Persisted provenance, independent of today's enabled executor."""
+    from backend.models import Run
+    run = await session.scalar(select(Run).where(Run.album_id == album_id)
+        .order_by(Run.created_at.desc(), Run.id.desc()).limit(1))
+    mode = run.config_snapshot.get('execution_mode') if run else None
+    return mode if mode in {'local_fake', 'openai'} else None
+
+
 async def get_album_detail(session, user_id, album_id):
     album = await repo.find_album(session, user_id, album_id)
     if album is None:
@@ -131,7 +141,7 @@ async def get_album_detail(session, user_id, album_id):
         pages.append(page_dto(p,album,assets,upload))
     refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
-        'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs,user_id)}
+        'pages': pages, 'generation_mode': await generation_mode(session, album_id), 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs,user_id)}
 
 
 async def delete_album(session, user_id, album_id, expected_version):

@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.4",
+  "contract_version": "1.5",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -120,7 +120,8 @@
               "sort_date_source": "exif"
             }
           ],
-          "active_run_id": null
+          "active_run_id": null,
+          "generation_mode": null
         },
         "media_access": [
           {
@@ -240,7 +241,8 @@
               "sort_date_source": "exif"
             }
           ],
-          "active_run_id": "00000000-0000-4000-8000-000000000601"
+          "active_run_id": "00000000-0000-4000-8000-000000000601",
+          "generation_mode": "openai"
         },
         "media_access": [
           {
@@ -360,7 +362,8 @@
               "sort_date_source": "exif"
             }
           ],
-          "active_run_id": "00000000-0000-4000-8000-000000000601"
+          "active_run_id": "00000000-0000-4000-8000-000000000601",
+          "generation_mode": "openai"
         },
         "media_access": [
           {
@@ -485,7 +488,8 @@
               "sort_date_source": "exif"
             }
           ],
-          "active_run_id": null
+          "active_run_id": null,
+          "generation_mode": "openai"
         },
         "media_access": [
           {
@@ -610,7 +614,8 @@
               "sort_date_source": "exif"
             }
           ],
-          "active_run_id": null
+          "active_run_id": null,
+          "generation_mode": "openai"
         },
         "media_access": [
           {
@@ -736,7 +741,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -833,7 +839,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -930,7 +937,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -1027,7 +1035,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -1124,7 +1133,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -1221,7 +1231,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -1318,7 +1329,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     },
@@ -1415,7 +1427,8 @@
               }
             ]
           }
-        ]
+        ],
+        "generation_mode": "openai"
       },
       "request_id": "req-example"
     }
@@ -1536,7 +1549,8 @@
           "expires_at": "2026-10-15T10:05:00Z"
         }
       ],
-      "music": null
+      "music": null,
+      "generation_mode": "openai"
     },
     "request_id": "req-example"
   },
@@ -1675,5 +1689,14 @@
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "notes": "형식 설명용 합성 예시이며 실제 업로드 파일의 SHA256으로 대체해야 함. local은 {} 호환."
+  },
+  "generation_capabilities": {
+    "data": {
+      "dev_auth_enabled": false,
+      "dev_ai_enabled": false,
+      "generation_enabled": true,
+      "generation_mode": "openai"
+    },
+    "request_id": "req-example"
   }
 }

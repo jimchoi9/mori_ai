@@ -117,7 +117,7 @@ async def test_viewer_exact_dto_first_two_urls_and_private_expiry(client,db,tmp_
     published=await publish(client,me,album,detail['album']['version']);assert published.status_code==200
     r=await client.get(f'/api/v1/albums/{album}/viewer');assert r.status_code==200
     view=r.json()['data']
-    assert set(view)=={'album_id','title','version','pages','media_access','music'}
+    assert set(view)=={'album_id','title','version','pages','media_access','music','generation_mode'}
     assert view['music'] is None and [p['position'] for p in view['pages']]==[1,2,3]
     assert [p['id'] for p in view['pages']]==[p['id'] for p in detail['pages']]
     for page in view['pages']:
@@ -252,3 +252,18 @@ async def test_publish_and_viewer_reject_unready_or_out_of_scope_outputs(client,
         a=await s.get(Album,UUID(album));assert a.version==version and a.status=='review_ready'
         a.status='published'
     assert (await client.get(f'/api/v1/albums/{album}/viewer')).status_code==409
+
+@pytest.mark.asyncio
+async def test_generation_provenance_survives_current_mode_switch(client,db,tmp_path):
+    me,album,detail,store=await review(client,db,tmp_path,count=1)
+    assert detail['generation_mode']=='local_fake'
+    progress=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
+    assert progress['generation_mode']=='local_fake'
+    assert (await publish(client,me,album,detail['album']['version'])).status_code==200
+    real_settings=config(dev_ai_enabled=False,ai_real_calls_enabled=True,openai_api_key='test-only',storage_root=tmp_path/'private')
+    app=create_app(settings=real_settings,session_factory=db)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url=ORIGIN,cookies=client.cookies) as switched:
+            assert (await switched.get('/api/dev/config')).json()['data']['generation_mode']=='openai'
+            assert (await switched.get(f'/api/v1/albums/{album}')).json()['data']['detail']['generation_mode']=='local_fake'
+            assert (await switched.get(f'/api/v1/albums/{album}/viewer')).json()['data']['generation_mode']=='local_fake'

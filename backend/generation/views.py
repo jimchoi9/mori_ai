@@ -48,5 +48,6 @@ async def generation_view(session, owner_id, album_id, run_id=None):
              and grouped[str(t.page_id)]['image_transform'].status == 'succeeded')) for t in tasks)
     poll=None if run.status in {'succeeded','cancelled'} or (run.status=='action_required' and not active) else 3000
     return {'run_id':str(run.id),'album_id':str(album.id),'album_status':album.status,'run_status':run.status,
+        'generation_mode':run.config_snapshot.get('execution_mode') if run.config_snapshot.get('execution_mode') in {'local_fake','openai'} else None,
         'total_pages':total,**counts,'progress_percent':counts['completed_pages']*100//total if total else 0,
         'can_resume':bool(eligible),'poll_after_ms':poll,'pages':rows}

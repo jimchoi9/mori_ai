@@ -23,6 +23,9 @@ async def db():
         assert 170000 <= int(version) < 180000
         await session.execute(text('TRUNCATE users CASCADE'))
         await session.execute(text('TRUNCATE outbox_events, background_jobs'))
+        # Financial records intentionally do not cascade from product data.
+        # Only this guarded disposable test database resets validation spending.
+        await session.execute(text('TRUNCATE ai_budget_entries, ai_budget_accounts'))
         await session.commit()
     yield factory
     await factory.kw['bind'].dispose()

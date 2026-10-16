@@ -1,7 +1,8 @@
 """Shared workflow and local HTTP persistence models."""
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID, uuid4
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -213,3 +214,27 @@ class IdempotencyRecord(Identity, Created, Base):
     http_status: Mapped[int]
     response_body: Mapped[dict] = mapped_column(JSONB)
     __table_args__ = (UniqueConstraint('owner_id', 'operation', 'key'),)
+
+
+class AIBudgetAccount(Base):
+    """Singleton serialization point; overruns require explicit operator review."""
+    __tablename__ = 'ai_budget_accounts'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    blocked: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='false')
+    __table_args__ = (CheckConstraint('id = 1'),)
+
+
+class AIBudgetEntry(Created, Base):
+    """Financial records deliberately have no product-data foreign keys."""
+    __tablename__ = 'ai_budget_entries'
+    attempt_id: Mapped[UUID] = mapped_column(primary_key=True)
+    reserved_usd: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    actual_usd: Mapped[Decimal | None] = mapped_column(Numeric)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    usage: Mapped[dict | None] = mapped_column(JSONB)
+    provider_request_id: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (
+        CheckConstraint('reserved_usd > 0'),
+        CheckConstraint('actual_usd IS NULL OR actual_usd >= 0'),
+        CheckConstraint("status IN ('reserved','unknown','settled','released')"),
+    )

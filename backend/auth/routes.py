@@ -19,7 +19,9 @@ async def require_dev(request: Request):
 async def dev_config(request: Request):
     settings = request.app.state.settings
     return envelope(request, {'dev_auth_enabled': settings.app_env == 'local' and settings.dev_auth_enabled,
-                              'dev_ai_enabled': settings.app_env == 'local' and settings.dev_ai_enabled})
+                              'dev_ai_enabled': settings.app_env == 'local' and settings.dev_ai_enabled,
+                              'generation_enabled': settings.generation_enabled,
+                              'generation_mode': 'openai' if settings.ai_real_calls_enabled else 'local_fake' if settings.dev_ai_enabled else None})
 
 
 @router.post('/api/dev/login', dependencies=[Depends(require_dev)])

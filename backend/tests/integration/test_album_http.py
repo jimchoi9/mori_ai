@@ -30,7 +30,7 @@ async def test_default_serialization_replay_and_version_priority(client, db):
     for field in ['created_at', 'updated_at']:
         assert datetime.fromisoformat(album[field].replace('Z', '+00:00')).utcoffset().total_seconds() == 0
     detail = await client.get('/api/v1/albums/' + album['id'])
-    assert detail.json()['data'] == {'detail': {'album': album, 'order_mode': 'date', 'pages': [], 'active_run_id': None}, 'media_access': []}
+    assert detail.json()['data'] == {'detail': {'album': album, 'order_mode': 'date', 'pages': [], 'active_run_id': None, 'generation_mode': None}, 'media_access': []}
     async with db() as s, s.begin():
         await s.execute(update(Album).values(version=2))
     replay = await create(client, me)
