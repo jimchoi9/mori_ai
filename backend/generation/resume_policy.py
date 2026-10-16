@@ -31,11 +31,22 @@ async def resume_failed_tasks(session, run_id):
         if album.deleted_at is not None or album.status == 'deleted' or run.status != 'action_required':
             return []
         tasks = (await session.scalars(select(Task).where(Task.run_id == run_id).order_by(Task.id).with_for_update())).all()
-        unknown = any(t.status == 'unknown' for t in tasks)
-        eligible = eligible_resume_tasks(tasks, unknown)
-        for task in tasks:
-            if task.id in eligible:
-                task.status = 'queued'; task.next_retry_at = None
-        if eligible and not unknown:
-            run.status = 'queued'; album.status = 'processing'; album.version += 1
-        return eligible
+        return resume_locked_tasks(album, run, tasks)
+
+
+def resume_locked_tasks(album, run, tasks):
+    """Caller already holds Album -> Run -> Task locks and owns its transaction."""
+    if album.deleted_at is not None or album.status == 'deleted' or run.status != 'action_required':
+        return []
+    unknown = any(t.status == 'unknown' for t in tasks)
+    eligible = eligible_resume_tasks(tasks, unknown)
+    for task in tasks:
+        if task.id in eligible:
+            task.status = 'queued'
+            task.next_retry_at = None
+            task.error_code = None
+    if eligible and not unknown:
+        run.status = 'queued'
+        album.status = 'processing'
+        album.version += 1
+    return eligible

@@ -18,7 +18,8 @@ async def require_dev(request: Request):
 @router.get('/api/dev/config')
 async def dev_config(request: Request):
     settings = request.app.state.settings
-    return envelope(request, {'dev_auth_enabled': settings.app_env == 'local' and settings.dev_auth_enabled})
+    return envelope(request, {'dev_auth_enabled': settings.app_env == 'local' and settings.dev_auth_enabled,
+                              'dev_ai_enabled': settings.app_env == 'local' and settings.dev_ai_enabled})
 
 
 @router.post('/api/dev/login', dependencies=[Depends(require_dev)])

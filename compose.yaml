@@ -23,6 +23,7 @@ services:
     environment: &backend_environment
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mori}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mori}
       APP_ENV: ${APP_ENV:-production}
+      DEV_AI_ENABLED: ${DEV_AI_ENABLED:-false}
       DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-false}
       APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:8000}
       SESSION_COOKIE_ALLOW_INSECURE_LOCAL: ${SESSION_COOKIE_ALLOW_INSECURE_LOCAL:-false}

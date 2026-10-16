@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     database_url: str = Field(repr=False)
     app_env: Literal["local", "test", "production"] = "production"
     dev_auth_enabled: bool = False
+    dev_ai_enabled: bool = False
     app_origin: str = "http://127.0.0.1:8000"
     session_cookie_allow_insecure_local: bool = False
     session_ttl_seconds: int = Field(default=86400, ge=60, le=604800)
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_auth(self):
+        if self.dev_ai_enabled and self.app_env != "local":
+            raise ValueError("DEV_AI_ENABLED requires APP_ENV=local")
         if self.dev_auth_enabled and self.app_env != "local":
             raise ValueError("DEV_AUTH_ENABLED requires APP_ENV=local")
         if self.session_cookie_allow_insecure_local and self.app_env != "local":
