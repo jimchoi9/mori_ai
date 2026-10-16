@@ -9,6 +9,7 @@ from io import BytesIO
 from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
 import pillow_heif
 from .contracts import MediaValidationError, NormalizedImage
+from . import png_color
 
 pillow_heif.register_heif_opener(thumbnails=False)
 MAX_PIXELS = 40_000_000
@@ -42,6 +43,7 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
     if len(source) > MAX_INPUT_BYTES:
         raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
     try:
+        png = png_color.declarations(source)
         image = Image.open(BytesIO(source))
         if image.format not in {'JPEG', 'PNG', 'WEBP', 'HEIF'}:
             raise MediaValidationError('UNSUPPORTED_MEDIA')
@@ -49,6 +51,11 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
         # container transforms; do not seek/decode auxiliary frames.
         if image.width * image.height > MAX_PIXELS:
             raise MediaValidationError('IMAGE_PIXEL_LIMIT_EXCEEDED')
+        if png is not None:
+            # verify() checks the decoder path without loading pixel samples.
+            image.verify()
+            image = Image.open(BytesIO(source))
+            png_color.validate(png, image.info)
         exif = image.getexif()
         nested = exif.get_ifd(0x8769) if 0x8769 in exif else {}
         captured = nested.get(36867, exif.get(36867))
@@ -81,14 +88,23 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
         width, height = image.size
         exact = width * 4 == height * 3
         has_alpha = 'A' in image.getbands() or 'transparency' in image.info
-        image = image.convert('RGBA' if has_alpha else 'RGB')
+        alpha = image.convert('RGBA').getchannel('A') if has_alpha else None
+        # Palette expansion and alpha separation do not discard CMYK/L channels.
+        if image.mode in {'LA', 'La'}:
+            color = image.getchannel('L')
+        elif image.mode in {'CMYK', 'L', 'RGB'}:
+            color = image
+        else:
+            color = image.convert('RGBA').convert('RGB') if has_alpha else image.convert('RGB')
         if info.get('icc_profile'):
-            alpha = image.getchannel('A') if has_alpha else None
-            image = ImageCms.profileToProfile(image.convert('RGB'),
+            color = ImageCms.profileToProfile(color,
                 ImageCms.ImageCmsProfile(BytesIO(info['icc_profile'])),
                 ImageCms.createProfile('sRGB'), outputMode='RGB')
-            if alpha is not None:
-                image.putalpha(alpha)
+        else:
+            color = png_color.to_srgb(color.convert('RGB'), png)
+        image = color
+        if alpha is not None:
+            image.putalpha(alpha)
         edge = min(_setting('NORMALIZED_MAX_EDGE', 4096), 16383)
         byte_limit = _setting('NORMALIZED_MAX_BYTES', 20971520)
         if os.environ.get('NORMALIZED_WEBP_LOSSLESS', 'true').lower() != 'true':

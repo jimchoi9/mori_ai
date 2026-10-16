@@ -71,6 +71,37 @@ def mark_action_required(album, run):
         album.version += 1
 
 
+async def result_fields(session, rows, result):
+    """Validate before assigning FK/text columns; the durable envelope stays intact."""
+    album, run, task, page = rows
+    caption = result.get('caption') if isinstance(result, dict) else None
+    raw_asset = result.get('asset_id') if isinstance(result, dict) else None
+    try:
+        asset_id = UUID(str(raw_asset)) if raw_asset else None
+    except (ValueError, TypeError, AttributeError):
+        asset_id = None
+    asset = await session.get(MediaAsset, asset_id) if asset_id else None
+    # This ID is also used for cleanup: existence alone grants no authority.
+    in_scope = (asset is not None and asset.owner_id == album.owner_id
+                and asset.album_id == album.id and asset.page_id == page.id)
+    asset_id = asset.id if in_scope else None
+    if task.stage == 'caption':
+        error = None if isinstance(caption, str) and caption.strip() else 'CAPTION_INVALID'
+    else:
+        error = None if (in_scope and asset.status == 'ready' and asset.deleted_at is None) else 'MEDIA_SAVE_FAILED'
+    return caption if isinstance(caption, str) else None, asset_id, error
+
+
+def fail_invalid_result(rows, attempt, error):
+    album, run, task, page = rows
+    task.status = 'failed'; task.lease_until = None
+    task.error_code = error
+    # Replaying this envelope cannot repair invalid output; no new paid request.
+    task.safe_to_retry = False
+    attempt.error_code = error
+    mark_action_required(album, run)
+
+
 async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome: str, now: datetime) -> bool:
     if outcome not in {'succeeded', 'failed', 'unknown', 'retry_wait'}:
         raise ValueError('invalid settlement outcome')
@@ -80,12 +111,12 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
             return False
         album, run, task, page = rows
         if outcome == 'succeeded':
-            if task.stage == 'caption' and task.output_caption is None:
+            if task.stage == 'caption' and (not isinstance(task.output_caption, str) or not task.output_caption.strip()):
                 return False
             if task.stage != 'caption':
                 asset = await session.get(MediaAsset, task.output_asset_id) if task.output_asset_id else None
                 if (asset is None or asset.owner_id != album.owner_id or asset.album_id != album.id
-                        or asset.page_id != page.id or asset.status != 'ready'):
+                        or asset.page_id != page.id or asset.status != 'ready' or asset.deleted_at is not None):
                     return False
             # Link only verified persisted output. Recovery fills these from the attempt.
             if task.output_caption is not None and task.stage == 'caption':
@@ -95,7 +126,7 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
             if task.output_asset_id is not None and task.stage == 'optimize':
                 asset = await session.get(MediaAsset, task.output_asset_id)
                 if (asset is None or asset.owner_id != album.owner_id or asset.album_id != album.id
-                        or asset.page_id != page.id or asset.status != 'ready'):
+                        or asset.page_id != page.id or asset.status != 'ready' or asset.deleted_at is not None):
                     return False
                 page.result_asset_id = asset.id
                 page.version += 1; album.version += 1
@@ -104,3 +135,18 @@ async def settle_task(session: AsyncSession, task_id: UUID, fence: int, outcome:
         if outcome in {'failed', 'unknown'}:
             mark_action_required(album, run)
         return True
+
+
+async def reject_invalid_settlement(session, task_id, fence, now):
+    """A false settle can be stale/deleted or invalid; only fail the active claim."""
+    from backend.models import Attempt
+    async with session.begin():
+        rows = await _locked_task(session, task_id)
+        if rows is None or not _active(*rows, fence, now):
+            return
+        task = rows[2]
+        _, _, error = await result_fields(session, rows, {'caption': task.output_caption, 'asset_id': task.output_asset_id})
+        if error:
+            attempt = await session.scalar(select(Attempt).where(Attempt.task_id == task.id, Attempt.attempt_no == task.attempt_count))
+            if attempt:
+                fail_invalid_result(rows, attempt, error)

@@ -34,7 +34,7 @@ V01은 Linux amd64 설치·빌드·HTTP 경계·환경 격리를 검증했다. V
 
 ## 첫 개발 묶음
 
-[실행 계획](docs/superpowers/plans/2026-10-16-development-foundation.md)은 최소 기반 V01 후 미디어 V02/V09와 DB·worker V03/V04를 병렬 검증하는 범위다. 2026-10-16 기술 시작 기준·계약 v1.3 반영 완료. 실행 계획은 승인되었고 세 구현 Task가 완료 보고를 제출했다. 총괄 통합 검증과 독립 검토로 마무리한다. 실제 OAuth·R2·OpenAI 자원은 아직 준비 전이므로 후속 개발도 로컬·가짜 adapter로 진행한다. 기준 커밋에는 현재 문서와 계약을 포함하고 원본 PDF·UI 참고 파일은 별도로 유지한다.
+[실행 계획](docs/superpowers/plans/2026-10-16-development-foundation.md)은 최소 기반 V01 후 미디어 V02/V09와 DB·worker V03/V04를 병렬 검증하는 범위다. 2026-10-16 기술 시작 기준·계약 v1.3 반영 완료. 실행 계획은 승인되었고 세 구현 Task가 완료 보고를 제출했다. 독립 검토의 색상·복구 결함을 수정하고 실제 DB 전체 163개 검증을 통과했다. [검토 및 수정 판정](docs/기반독립검토.md)에 근거를 남겼다. 실제 OAuth·R2·OpenAI 자원은 아직 준비 전이므로 후속 개발도 로컬·가짜 adapter로 진행한다. 기준 커밋에는 현재 문서와 계약을 포함하고 원본 PDF·UI 참고 파일은 별도로 유지한다.
 
 ## 로컬 기반 실행
 
@@ -58,3 +58,5 @@ make verify-isolation
 실행 버전·image digest·22개 테스트와 격리 검증 근거는 [기반 검증 결과](docs/기반검증-결과.md)에 기록했다. 검증용 isolation 명령은 자신이 만든 임시 프로젝트와 volume만 정리한다.
 
 추가 검증 명령: make verify-codecs, make verify-db, make verify-worker, make verify-media-load. 실제 DB 연결 전체 테스트는 bash scripts/verify-db.sh backend/tests로 실행한다. 설치 검증은 DB 테스트를 명시적으로 skip하고 이 명령에서 실제 실행한다. 상세 결과는 [미디어 검증](docs/미디어검증-결과.md)과 [DB/worker 검증](docs/DB-worker검증-결과.md)을 참고한다.
+
+다음 승인 범위는 [로컬 로그인·책장·업로드 연동](docs/superpowers/plans/2026-10-16-local-upload-flow.md)이며 실제 OAuth/R2/AI 계정 없이 개발한다.

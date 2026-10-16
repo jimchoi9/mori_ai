@@ -23,5 +23,3 @@ def test_invalid_media_environment_fails_startup(monkeypatch, name, value):
     monkeypatch.setenv(name, value)
     with pytest.raises(ValidationError):
         Settings(database_url='postgresql+asyncpg://localhost/test')
-
-

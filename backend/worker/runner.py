@@ -14,7 +14,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 from sqlalchemy import select, update, or_
 from backend.models import Task, Attempt, Album, Run
-from backend.generation.repository import claim_task, settle_task, _locked_task, _active, mark_action_required
+from backend.generation.repository import claim_task, settle_task, _locked_task, _active, mark_action_required, result_fields, fail_invalid_result, reject_invalid_settlement
 from backend.worker.jobs import enqueue_job, dispatch_outbox, recover_jobs
 
 
@@ -120,20 +120,25 @@ class Runner:
                 return False
             album, run, task, page = rows
             attempt = await s.get(Attempt, attempt_id)
+            # Only owner/album/page-scoped IDs may reach cleanup or DB references.
+            caption, asset_id, error = await result_fields(s, rows, result)
             # Preserve the original response even if scanner has marked it unknown.
             # Never let an older attempt replace the current attempt's result.
             if attempt.attempt_no != task.attempt_count:
-                if result.get('asset_id'):
-                    await enqueue_job(s, 'cleanup_asset', UUID(result['asset_id']))
+                if asset_id:
+                    await enqueue_job(s, 'cleanup_asset', asset_id)
                 return False
             attempt.status = 'received'; attempt.result_sha256 = checksum; attempt.finished_at = utcnow()
-            attempt.output_caption = result.get('caption')
-            attempt.output_asset_id = UUID(result['asset_id']) if result.get('asset_id') else None
+            attempt.output_caption = caption
+            attempt.output_asset_id = asset_id
             if album.deleted_at is not None or album.status == 'deleted' or page.removed_at is not None:
                 if attempt.output_asset_id:
                     await enqueue_job(s, 'cleanup_asset', attempt.output_asset_id)
                 return False
             if not _active(*rows, claim.fence_version, utcnow()):
+                return False
+            if error:
+                fail_invalid_result(rows, attempt, error)
                 return False
             task.output_caption = attempt.output_caption; task.output_asset_id = attempt.output_asset_id
             return True
@@ -161,7 +166,8 @@ class Runner:
             checksum = await self.store.save(str(attempt_id), result)
             if await self._received(claim, attempt_id, result, checksum):
                 async with self.sessions() as s:
-                    await settle_task(s, claim.task_id, claim.fence_version, 'succeeded', utcnow())
+                    if not await settle_task(s, claim.task_id, claim.fence_version, 'succeeded', utcnow()):
+                        await reject_invalid_settlement(s, claim.task_id, claim.fence_version, utcnow())
             return True
         except asyncio.CancelledError:
             raise  # Shutdown preserves dispatch boundary; scanner determines safe recovery.
@@ -186,7 +192,7 @@ class Runner:
                 key = attempt.result_key if attempt else None
                 checksum = attempt.result_sha256 if attempt else None
                 attempt_id = attempt.id if attempt else None
-                db_result = ({'caption': attempt.output_caption} if attempt and attempt.status == 'received' and attempt.output_caption is not None else None)
+                db_result = ({'caption': attempt.output_caption, 'asset_id': str(attempt.output_asset_id) if attempt.output_asset_id else None} if attempt and attempt.status == 'received' else None)
             # No row lock while looking for deterministic preserved output.
             result = await self.store.load(key, checksum) if key else None
             if result is None:
@@ -202,15 +208,19 @@ class Runner:
                 latest = await s.scalar(select(Attempt).where(Attempt.task_id == task_id).order_by(Attempt.attempt_no.desc()).limit(1))
                 if (latest.id if latest else None) != attempt_id:
                     continue
+                caption, asset_id, error = await result_fields(s, rows, result)
                 if album.deleted_at is not None or album.status == 'deleted' or page.removed_at is not None or run.status == 'cancelled':
                     task.status = 'cancelled'; task.fence_version += 1; task.lease_until = None
-                    if result and result.get('asset_id'):
-                        await enqueue_job(s, 'cleanup_asset', UUID(result['asset_id']))
+                    if asset_id:
+                        await enqueue_job(s, 'cleanup_asset', asset_id)
                     continue
                 if result is not None:
                     latest.status = 'received'; latest.finished_at = now
-                    latest.output_caption = result.get('caption')
-                    latest.output_asset_id = UUID(result['asset_id']) if result.get('asset_id') else None
+                    latest.output_caption = caption
+                    latest.output_asset_id = asset_id
+                    if error:
+                        fail_invalid_result(rows, latest, error)
+                        continue
                     task.output_caption = latest.output_caption; task.output_asset_id = latest.output_asset_id
                     task.fence_version += 1; task.status = 'running'; task.lease_until = now+timedelta(seconds=self.lease_seconds)
                     from backend.generation.repository import TaskClaim
@@ -233,6 +243,8 @@ class Runner:
                 async with self.sessions() as s:
                     if await settle_task(s, task_id, recovered_claim.fence_version, 'succeeded', now):
                         recovered += 1
+                    else:
+                        await reject_invalid_settlement(s, task_id, recovered_claim.fence_version, now)
         return recovered
 
     async def maintenance(self):
