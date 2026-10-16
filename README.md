@@ -48,7 +48,7 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면은 구현했고 실제 계정 왕복은 검증 대기다. R2·AI의 실제 adapter는 아직 연결하지 않았다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면을 구현했으며 사용자가 두 제공자의 실제 로그인 성공을 확인했다. 서버의 별도 사용자·동의 기록도 확인했다. R2·AI의 실제 adapter는 아직 연결하지 않았다.
 
 ```bash
 make verify-install
@@ -77,4 +77,4 @@ make verify-isolation
 
 OAuth 실행 중 검증 기록: [구현 계획](docs/superpowers/plans/2026-10-16-real-oauth.md), [저장소](docs/OAuth-저장소-구현결과.md), [제공자 adapter](docs/OAuth-provider-구현결과.md), [화면](docs/OAuth-화면-구현결과.md). 실제 Google/Kakao 왕복 성공은 별도 최종 검증 결과로 판정한다. container의 기본 Uvicorn은 callback query의 인증 code가 로그에 남지 않도록 access log를 끈다. 직접 실행할 때도 `--no-access-log`를 사용한다.
 
-OAuth의 현재 전체 판정과 실제 로그인 대기 상태는 [최종 검증 결과](docs/실제OAuth-검증결과.md)를 따른다.
+OAuth의 현재 전체 판정과 실제 로그인 확인 범위는 [최종 검증 결과](docs/실제OAuth-검증결과.md)를 따른다.

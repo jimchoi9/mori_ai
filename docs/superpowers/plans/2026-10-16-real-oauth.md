@@ -89,3 +89,5 @@
 실행 소유권 구체화: Task1 worker는 oauth_types.py까지 소유한다. 제공자 adapter는 독립 Task로 선행 병렬화하며 해당 worker가 oauth_providers.py·단위 검사만 소유한다. HTTP/service는 저장소·adapter 고정 후 후속 Dispatch로 배정한다. frontend는 root가 고정한 auth_providers 공개 인터페이스를 소비한다. shared checkout의 공통 파일은 총괄만 편집하며 기존 사용자 .gitignore 변경은 보존한다.
 
 최종 자동 검증: 실제 DB482/Node43/타입·빌드 통과, 독립 중요 결함0. source/검증 근거와 실제 로그인 대기 경계는 [최종 결과](../../실제OAuth-검증결과.md)를 따른다. 실제 계정 왕복과 그 후 QA 정리는 미완료로 유지한다.
+
+사용자 후속 확인: Google/Kakao 모두 실제 로그인 성공, DB 별도 사용자2명·제공자별 동의 기록 확인. 정상 인증 경로는 확인했으나 위 실제 취소/재로그인/교차 접근의 전체 수동 조합과 QA 종료 정리는 미완료로 유지한다. 최신 근거는 최종 결과 문서의 사용자 실계정 로그인 확인 절을 따른다.
