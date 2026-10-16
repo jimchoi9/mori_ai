@@ -539,7 +539,9 @@ async def _crash_main(phase,root):
         async def slow_image(*args,**kwargs):
             marker=root/'child_pid'
             await _run_child([sys.executable,'-c',
-                'import os,time,pathlib; pathlib.Path('+repr(str(marker))+').write_text(str(os.getpid())); time.sleep(30)'],120)
+                'import os,time,pathlib; marker=pathlib.Path('+repr(str(marker))+'); '
+                'pending=marker.with_name(marker.name+".tmp"); pending.write_text(str(os.getpid())); '
+                'pending.replace(marker); time.sleep(30)'],120)
         fake_adapter.fake_transform=slow_image
         os.environ.update(APP_ENV='local',DEV_AI_ENABLED='true',STORAGE_ROOT=str(root),WORKER_POLL_SECONDS='.01')
         from backend.worker.__main__ import main
