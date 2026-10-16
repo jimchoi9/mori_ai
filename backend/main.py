@@ -31,6 +31,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     from backend.auth.routes import router
     install_errors(app)
     app.include_router(router)
+    from backend.albums.routes import router as albums_router
+    app.include_router(albums_router)
     build_dir = (static_dir if static_dir is not None else BUILD_DIR).resolve()
 
     @app.get("/health")

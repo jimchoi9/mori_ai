@@ -20,7 +20,7 @@ def test_health_ok(client):
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.parametrize("path", ["/api", "/api/v1", "/api/v1/albums", "/api/v1/absent"])
+@pytest.mark.parametrize("path", ["/api", "/api/v1", "/api/v1/absent"])
 def test_missing_api_is_404(client, path):
     response = client.get(path)
     assert response.status_code == 404

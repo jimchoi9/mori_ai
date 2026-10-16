@@ -51,10 +51,10 @@
 
 **Interfaces:** /api/v1/albums GET/POST, /albums/{id} GET/DELETE. create_album(user_id, key, request_hash) → AlbumSummary. get_album_detail(user_id, album_id) → AlbumDetail. delete_album(user_id, album_id, expected_version) → deleted 응답. repository는 transaction 내 소유권·삭제·버전을 검사하고 album_cleanup outbox를 저장한다.
 
-- [ ] 테스트 작성: 기본 제목·UUID·UTC·version=1, 동일 키 동시 생성 1개, 다른 요청 hash 409, 삭제 후 키 재전송 404, cursor 경계/동률, 다른 사용자 404, stale delete 409.
-- [ ] 테스트 실패를 확인하고 repository/application/routes를 구현한다. idempotency 재생은 버전 검사보다 앞서되 소유권·삭제 검사를 생략하지 않는다.
-- [ ] 삭제는 DB 접근 즉시 차단·비동기 cleanup으로 처리한다. 실제 파일 정리 handler는 Task 3이 담당한다.
-- [ ] 실제 DB HTTP 테스트와 기존 회귀를 통과시킨 뒤 총괄 commit.
+- [x] 테스트 작성: 기본 제목·UUID·UTC·version=1, 동일 키 동시 생성 1개, 다른 요청 hash 409, 삭제 후 키 재전송 404, cursor 경계/동률, 다른 사용자 404, stale delete 409.
+- [x] 테스트 실패를 확인하고 repository/application/routes를 구현한다. idempotency 재생은 버전 검사보다 앞서되 소유권·삭제 검사를 생략하지 않는다.
+- [x] 삭제는 DB 접근 즉시 차단·비동기 cleanup으로 처리한다. 실제 파일 정리 handler는 Task 3이 담당한다.
+- [x] 실제 DB HTTP 테스트와 기존 회귀를 통과시킨 뒤 총괄 commit.
 
 ## Task 3: 비공개 로컬 PUT·validation worker·페이지 순서
 
