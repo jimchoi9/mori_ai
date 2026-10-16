@@ -23,3 +23,7 @@ verify-db:
 
 verify-worker:
 	./scripts/verify-worker.sh
+
+.PHONY: verify-storage
+verify-storage:
+	./scripts/verify-storage.sh

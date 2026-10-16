@@ -11,6 +11,7 @@ KEY = re.compile(rf'{UUID_PART}/{UUID_PART}/{UUID_PART}/(source|normalized|thumb
 
 
 class LocalStorage:
+    mode = 'local'
     def __init__(self, root):
         self.root=Path(root)
         self.root.mkdir(parents=True,exist_ok=True)
@@ -35,6 +36,9 @@ class LocalStorage:
 
     def stat(self,key):
         return self.path(key).stat()
+
+    def exists(self,key):
+        return self.path(key).is_file()
 
     def checksum(self,key):
         digest=hashlib.sha256()

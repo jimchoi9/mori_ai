@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from urllib.parse import urlsplit
+import re
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -72,8 +73,34 @@ class Settings(BaseSettings):
     def session_cookie_secure(self) -> bool:
         return not (self.app_env == "local" and self.session_cookie_allow_insecure_local)
 
-    storage_mode: Literal["local"] = "local"
+    storage_mode: Literal["local", "r2"] = "local"
     storage_root: Path = Path("/app/media")
+    r2_bucket_name: str = ""
+    r2_endpoint_url: str = ""
+    r2_access_key_id: SecretStr = Field(default=SecretStr(""), repr=False)
+    r2_secret_access_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    r2_region: Literal["auto"] = "auto"
+    r2_key_prefix: str = "mori-ai/"
+
+    @model_validator(mode="after")
+    def validate_r2(self):
+        if self.storage_mode != "r2":
+            return self
+        endpoint = urlsplit(self.r2_endpoint_url)
+        if (endpoint.scheme != "https" or endpoint.username or endpoint.password
+                or endpoint.port is not None or endpoint.path not in {"", "/"}
+                or endpoint.query or endpoint.fragment
+                or not re.fullmatch(r"[0-9a-f]{32}(?:\.(?:eu|fedramp))?\.r2\.cloudflarestorage\.com", endpoint.hostname or "")):
+            raise ValueError("R2 requires the exact Cloudflare S3 HTTPS endpoint")
+        if (not re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]", self.r2_bucket_name)
+                or ".." in self.r2_bucket_name):
+            raise ValueError("invalid R2 bucket name")
+        if not self.r2_access_key_id.get_secret_value() or not self.r2_secret_access_key.get_secret_value():
+            raise ValueError("R2 requires explicit S3 credentials")
+        if (len(self.r2_key_prefix) > 200
+                or not re.fullmatch(r"(?:[A-Za-z0-9_-]+/)+", self.r2_key_prefix)):
+            raise ValueError("R2 prefix must contain safe segments and end with a slash")
+        return self
     worker_poll_seconds: float = Field(default=1, gt=0, le=60, allow_inf_nan=False)
     normalized_webp_lossless: bool = True
     normalized_max_edge: int = Field(default=4096, ge=4, le=16383)

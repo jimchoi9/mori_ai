@@ -8,3 +8,4 @@ alembic>=1.15,<2
 Pillow>=11,<13
 pillow-heif>=1,<2
 httpx>=0.28,<1
+boto3>=1.40,<2

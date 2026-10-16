@@ -18,10 +18,9 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
         from backend.database import session_factory as make_session_factory
         app.state.settings = settings if settings is not None else Settings()
         factory = session_factory if session_factory is not None else make_session_factory(app.state.settings.database_url)
-        from backend.storage.local import LocalStorage
-        from backend.storage.signing import Signer
-        app.state.media_storage = media_storage if media_storage is not None else LocalStorage(app.state.settings.storage_root)
-        app.state.media_signer = Signer(app.state.media_storage.root)
+        from backend.storage.factory import media_storage as make_storage, media_signer
+        app.state.media_storage = media_storage if media_storage is not None else make_storage(app.state.settings)
+        app.state.media_signer = media_signer(app.state.media_storage)
         def request_session():
             session = factory()
             session.info['media_signer'] = app.state.media_signer

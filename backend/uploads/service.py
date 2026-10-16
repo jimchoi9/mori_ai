@@ -1,5 +1,6 @@
 """Atomic reservation, immutable completion, and edit policies."""
 import asyncio
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import PurePath
 from uuid import uuid4
@@ -62,11 +63,12 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         mime=MIMES[PurePath(f.filename).suffix.lower()]
         asset=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='source',storage_key=storage_key(owner,album_id,page.id,'source'),mime=mime,status='pending')
         session.add(asset); await session.flush(); page.source_asset_id=asset.id
-        u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime},created_at=stamp)
+        u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode},created_at=stamp)
         session.add(u)
         path=f'/api/v1/private/uploads/{u.id}'
+        upload_url,required_headers=signer.upload_url(asset.storage_key,path,u.id,int(expiry.timestamp()),mime,f.bytes)
         result.append({'client_file_id':str(f.client_file_id),'upload_id':str(u.id),'page_id':str(page.id),'asset_id':str(asset.id),'status':'reserved','method':'PUT',
-                       'upload_url':signer.url('PUT',path,u.id,int(expiry.timestamp()),mime),'required_headers':{'Content-Type':mime},'expires_at':utc(expiry)})
+                       'upload_url':upload_url,'required_headers':required_headers,'expires_at':utc(expiry)})
     if not pages: parent.cover_page_id=page.id if len(body.files)==1 else None
     # Cover always follows current first page, including reserved/failed pages.
     await session.flush()
@@ -137,23 +139,43 @@ async def accept_put(session,owner,album_id,upload_id):
         raise APIError(409,'STATE_CONFLICT')
 
 
-async def complete_upload(sessions,store,owner,album_id,upload_id):
+def check_complete_hash(store,asset,expected_sha256):
+    if getattr(store,'mode','local')!='r2': return
+    if not isinstance(expected_sha256,str) or re.fullmatch('[0-9a-f]{64}',expected_sha256) is None:
+        raise APIError(422,'VALIDATION_ERROR')
+    if asset.sha256 is not None and asset.sha256!=expected_sha256:
+        raise APIError(409,'STATE_CONFLICT')
+
+
+async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha256=None):
     async with sessions() as s,s.begin():
         parent,u,page,asset=await repo.upload(s,owner,album_id,upload_id)
         await expire(s,parent,u)
+        if u.status=='expired': return 200,view(parent,u)
+        check_complete_hash(store,asset,expected_sha256)
         if u.status!='reserved': return (202 if u.status=='validating' else 200),view(parent,u)
         repo.draft(parent); key=asset.storage_key
+        if key not in canonical_asset_keys(owner,album_id,page.id,'source'): raise APIError(404,'RESOURCE_NOT_FOUND')
     # PUT has durably finalized a no-overwrite object. File I/O never holds a DB lock.
     try:
         size=await asyncio.to_thread(lambda:store.stat(key).st_size)
         checksum=await asyncio.to_thread(store.checksum,key)
     except FileNotFoundError: raise APIError(422,'UPLOAD_NOT_READY') from None
+    except ValueError: raise APIError(422,'VALIDATION_ERROR') from None
+    except Exception as exc:
+        from backend.storage.r2 import StorageUnavailable
+        if isinstance(exc,StorageUnavailable):
+            raise APIError(503,'TEMPORARILY_UNAVAILABLE',retryable=True) from None
+        raise
     async with sessions() as s,s.begin():
         parent,u,page,asset=await repo.upload(s,owner,album_id,upload_id)
         await expire(s,parent,u)
+        if u.status=='expired': return 200,view(parent,u)
+        check_complete_hash(store,asset,expected_sha256)
         if u.status=='reserved':
             repo.draft(parent)
             if size!=u.declared_bytes or size>20971520: raise APIError(422,'VALIDATION_ERROR')
+            if getattr(store,'mode','local')=='r2' and checksum!=expected_sha256: raise APIError(409,'STATE_CONFLICT')
             asset.bytes=size; asset.sha256=checksum
             u.status='validating'; await enqueue_job(s,'validate_upload',u.id)
             bump_version(s, page)
@@ -176,5 +198,5 @@ async def media_access(session,owner,album_id,asset_ids,signing):
         if asset.storage_key not in canonical_asset_keys(owner,album_id,asset.page_id,asset.role):
             raise APIError(404,'RESOURCE_NOT_FOUND')
         path=f'/api/v1/private/albums/{album_id}/media/{asset_id}'
-        entries.append({'asset_id':str(asset_id),'url':signing.url('GET',path,asset_id,int(expiry.timestamp()),asset.mime),'expires_at':utc(expiry)})
+        entries.append({'asset_id':str(asset_id),'url':signing.read_url(asset.storage_key,path,asset_id,int(expiry.timestamp()),asset.mime),'expires_at':utc(expiry)})
     return {'media_access':entries}

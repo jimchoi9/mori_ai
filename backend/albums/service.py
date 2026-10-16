@@ -34,7 +34,7 @@ def scoped_asset(assets,page,role,album):
     return asset
 
 
-async def access_entries(session,refs):
+async def access_entries(session,refs,owner):
     signing=session.info.get('media_signer')
     if signing is None: return []
     from datetime import timedelta
@@ -42,8 +42,12 @@ async def access_entries(session,refs):
     entries=[]
     for album_id,ref in refs:
         asset_id=ref['asset_id']
+        from backend.uploads.repository import visible_asset
+        from backend.storage.local import canonical_asset_keys
+        asset=await visible_asset(session,owner,album_id,UUID(str(asset_id)))
+        if asset.storage_key not in canonical_asset_keys(owner,album_id,asset.page_id,asset.role): not_found()
         path=f'/api/v1/private/albums/{album_id}/media/{asset_id}'
-        entries.append({'asset_id':asset_id,'url':signing.url('GET',path,asset_id,int(expiry.timestamp()),ref['mime']),'expires_at':utc(expiry)})
+        entries.append({'asset_id':asset_id,'url':signing.read_url(asset.storage_key,path,asset_id,int(expiry.timestamp()),asset.mime),'expires_at':utc(expiry)})
     return entries
 
 
@@ -102,7 +106,7 @@ async def get_albums(session, user_id, cursor, limit):
     items=[await summary(session, album) for album in rows]
     refs=[(album.id,item['cover']) for album,item in zip(rows,items) if item['cover']]
     return {'items': items, 'next_cursor': encode_cursor(rows[-1]) if more else None,
-            'media_access': await access_entries(session,refs)}
+            'media_access': await access_entries(session,refs,user_id)}
 
 
 def page_dto(page,album,assets,upload=None):
@@ -127,7 +131,7 @@ async def get_album_detail(session, user_id, album_id):
         pages.append(page_dto(p,album,assets,upload))
     refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
-        'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs)}
+        'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs,user_id)}
 
 
 async def delete_album(session, user_id, album_id, expected_version):

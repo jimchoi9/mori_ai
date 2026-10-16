@@ -34,4 +34,4 @@ async def get_viewer(session,owner_id,album_id):
     rows=await ready_pages(session,album)
     pages=[{'id':str(page.id),'position':page.position,'image':media_ref(asset),'caption_text':page.caption_text} for page,asset in rows]
     return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,
-        'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]]),'music':None}
+        'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':None}

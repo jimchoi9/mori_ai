@@ -9,7 +9,7 @@
 | 문서 | 확인할 내용 |
 |---|---|
 | 1. [기능요구명세서](기능요구명세서.md) | 무엇을 만들고 무엇을 제외하는가 |
-| 2. [공통계약 v1.3](docs/공통계약-v1.md) · [샘플 JSON](docs/공통계약-v1.examples.json) | 데이터·API·상태·오류의 현재 기준 |
+| 2. [공통계약 v1.4](docs/공통계약-v1.md) · [샘플 JSON](docs/공통계약-v1.examples.json) | 데이터·API·상태·오류의 현재 기준 |
 | 3. [화면과 기술 설계](docs/설계.md) | 화면·기술 목록·버전·배포·worker·미디어·복구 제안 |
 | 4. [재사용 조사](docs/재사용조사.md) | 기존 코드에서 가져올 후보와 다시 작성할 부분 |
 | 5. [검증 계획](docs/검증계획.md) | 남은 결정과 설치·codec·DB·AI·모바일의 통과 조건 |
@@ -48,7 +48,7 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면을 구현했으며 사용자가 두 제공자의 실제 로그인 성공을 확인했다. 서버의 별도 사용자·동의 기록도 확인했다. R2·AI의 실제 adapter는 아직 연결하지 않았다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면을 구현했으며 사용자가 두 제공자의 실제 로그인 성공을 확인했다. 서버의 별도 사용자·동의 기록도 확인했다. R2 adapter를 추가했으며 실제 AI adapter는 후속 범위다.
 
 ```bash
 make verify-install
@@ -73,8 +73,18 @@ make verify-isolation
 
 권장 합류 순서는 OAuth → R2 → 실제 글귀 → 이미지 변환 → 전체 흐름 검증이다. 먼저 모의 응답으로 실패·복구·예산 경계를 검사하고, 실제 호출은 대표 사진의 소량 검증부터 시작한다. 글귀 모델의 이미지 입력·텍스트 출력 지원은 [OpenAI 공식 문서](https://developers.openai.com/api/docs/models/gpt-5.4-mini)에서 확인했다. 해당 계정의 모델 접근 가능 여부와 사진별 비용은 실제 검증 대상이다.
 
-`.env.example`을 `.env`로 복사하고 Google/Kakao client 값, R2 bucket·S3 endpoint·자격증명, OpenAI API 키를 채운다. 각 항목의 주석을 따른다. 기존 `.env`가 있다면 복사로 덮어쓰지 말고 필요한 항목만 추가한다. Google/Kakao OAuth 설정은 Settings/Compose에서 명시적으로 전달한다. R2/OpenAI/AI 예산 항목은 후속 adapter 구현용 준비값이며 아직 연결하지 않았다. 실제 AI 호출은 비활성으로 두고, 최초 검증은 전체 $100에 포함되는 최대 $5 범위부터 시작한다. 이미지 모델과 선택적 organization/project는 확인 전 비워둘 수 있다. Google의 [웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), Kakao의 [REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api), R2의 [S3 자격증명·endpoint](https://developers.cloudflare.com/r2/get-started/s3/) 문서를 참고한다.
+`.env.example`을 `.env`로 복사하고 Google/Kakao client 값, R2 bucket·S3 endpoint·자격증명, OpenAI API 키를 채운다. 각 항목의 주석을 따른다. 기존 `.env`가 있다면 복사로 덮어쓰지 말고 필요한 항목만 추가한다. Google/Kakao OAuth 설정은 Settings/Compose에서 명시적으로 전달한다. R2 항목은 STORAGE_MODE=r2에서 사용한다. OpenAI/AI 예산 항목은 후속 구현 준비값이다. 실제 AI 호출은 비활성으로 두고, 최초 검증은 전체 $100에 포함되는 최대 $5 범위부터 시작한다. 이미지 모델과 선택적 organization/project는 확인 전 비워둘 수 있다. Google의 [웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), Kakao의 [REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api), R2의 [S3 자격증명·endpoint](https://developers.cloudflare.com/r2/get-started/s3/) 문서를 참고한다.
 
 OAuth 실행 중 검증 기록: [구현 계획](docs/superpowers/plans/2026-10-16-real-oauth.md), [저장소](docs/OAuth-저장소-구현결과.md), [제공자 adapter](docs/OAuth-provider-구현결과.md), [화면](docs/OAuth-화면-구현결과.md). 실제 Google/Kakao 왕복 성공은 별도 최종 검증 결과로 판정한다. container의 기본 Uvicorn은 callback query의 인증 code가 로그에 남지 않도록 access log를 끈다. 직접 실행할 때도 `--no-access-log`를 사용한다.
 
 OAuth의 현재 전체 판정과 실제 로그인 확인 범위는 [최종 검증 결과](docs/실제OAuth-검증결과.md)를 따른다.
+
+### R2 검증
+
+`STORAGE_MODE=r2`와 `.env.example`의 R2 설정을 사용한다. 비공개 bucket의 로컬 CORS는 [정확한 JSON](docs/storage/r2-cors.local.json)을 콘솔 Settings → CORS Policy에 넣는다. 허용 origin은 `http://127.0.0.1:8000`이다. `localhost`는 다른 origin이다.
+
+`make verify-storage`는 실제 R2에 작은 합성 PNG/JPEG/HEIF를 업로드하고 hash·조건부 덮어쓰기 거부·서명 GET/HEAD·CORS·만료·삭제·attempt envelope를 확인한다. 고유 `mori-ai-storage-check/<UUID>/` namespace만 사용하고 종료 시 생성 객체를 삭제한다. 원본 사진·기존 namespace·AI는 사용하지 않는다. 저장소 소량 API 요청은 발생한다.
+
+local DB/volume을 그대로 R2 모드로 바꾸면 기존 local 객체를 찾을 수 없다. 새 DB와 namespace에서 테스트하며 기존 local DB/media volume은 보존한다. [실사진 정규화 수정](docs/실사진-정규화-수정결과.md), [R2 adapter](docs/R2-adapter-구현결과.md), [R2 worker](docs/R2-worker-구현결과.md), [업로드 화면](docs/R2-업로드-구현결과.md)을 참조한다.
+
+2026-10-16 [R2 통합 검증](docs/R2-통합검증.md) 완료: 실제 세 형식의 업로드·정규화·읽기·조건부 재전송·CORS·만료·삭제 및 가짜 생성/뷰어를 확인했다. 현재 8000의 별도 R2 QA는 Google/Kakao 로그인과 R2 업로드만 활성화했고, 개발 로그인·가짜 AI·실제 AI 호출은 비활성이다. 이전 local QA DB/media는 보존했다. 최종 검토 Critical0/Important0.

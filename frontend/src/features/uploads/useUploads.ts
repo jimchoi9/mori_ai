@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError, errorText, uploadHeaders } from '../../api/client';
+import { uploadStep } from './putFile';
 import type { Detail, Reservation, UploadView } from '../../api/types';
 interface Intent { key:string; files:{file:File;id:string}[]; body:unknown; reservation?:Reservation; put:Set<string>; complete:Set<string> }
 const drafts = new Map<string,{files:File[];intent:Intent|null}>();
@@ -32,18 +33,9 @@ export function useUploads(albumId:string, userId:string, refresh:()=>Promise<un
    for (const upload of current.reservation.uploads) {
     const file=current.files.find(f=>f.id===upload.client_file_id)!.file;
     setProgress(`${file.name} · 업로드 중`);
-    if (!current.put.has(upload.upload_id)) {
-     const state=await api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}`,{signal:abort.signal});
-     if(state.status==='reserved') {
-      const response=await fetch(upload.upload_url,{method:upload.method,headers:uploadHeaders(upload.upload_url,upload.required_headers),body:file,credentials:'same-origin',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(120000)])});
-      if(!response.ok)throw new Error(`파일 전송 실패 (${response.status}). 같은 요청으로 다시 시도해 주세요.`);
-     }
-     current.put.add(upload.upload_id);
-    }
-    if(!current.complete.has(upload.upload_id)) {
-     await api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}/complete`,{method:'POST',body:{},signal:abort.signal});
-     current.complete.add(upload.upload_id);
-    }
+    await uploadStep(upload,file,current,abort.signal,uploadHeaders(upload.upload_url,upload.required_headers),
+     ()=>api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}`,{signal:abort.signal}),
+     body=>api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}/complete`,{method:'POST',body,signal:abort.signal}));
    }
    await refresh(); intent.current=null; setFiles([]); setProgress('전송 완료 · 서버에서 사진을 검증하고 정규화합니다.');
   }catch(e){if(!abort.signal.aborted){if(e instanceof ApiError && e.status!==401 && e.status<500 && !intent.current?.reservation)intent.current=null;setError(errorText(e)); await refresh().catch(()=>undefined);}}finally{if(!abort.signal.aborted)setBusy(false);}

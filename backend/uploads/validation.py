@@ -10,7 +10,9 @@ from sqlalchemy import select, update, or_
 from backend.models import Album, Page, MediaAsset, Upload, Job, Task, Attempt
 from backend.media.process import normalize_in_process
 from backend.media.contracts import MediaValidationError
-from backend.storage.local import LocalStorage, storage_key, canonical_asset_keys
+from backend.storage.local import storage_key, canonical_asset_keys
+from backend.storage.factory import media_storage
+from backend.storage.r2 import StorageUnavailable
 from backend.uploads.service import config, touch
 from backend.albums.page_order import sort_date, finish_batch, bump_version
 from backend.worker.jobs import claim_job, finish_job, enqueue_job
@@ -31,7 +33,7 @@ def source_mime(path):
 class ValidationWorker:
     def __init__(self,sessions,settings,*,lease_seconds=90,heartbeat_seconds=15):
         if not 0<heartbeat_seconds<lease_seconds: raise ValueError('invalid heartbeat')
-        self.sessions=sessions; self.settings=settings; self.store=LocalStorage(settings.storage_root)
+        self.sessions=sessions; self.settings=settings; self.store=media_storage(settings)
         self.lease_seconds=lease_seconds; self.heartbeat_seconds=heartbeat_seconds
         self._deleted_scan_after = None
 
@@ -106,19 +108,22 @@ class ValidationWorker:
         error=None; normalized=None
         keys={role:storage_key(owner,album_id,page_id,role) for role in ('normalized','thumbnail')}
         try:
-            if config_version!=1: raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
+            if config_version!=1 or saved.get('storage_mode','local')!=self.store.mode:
+                raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
             size=await asyncio.to_thread(lambda:self.store.stat(key).st_size)
             checksum=await asyncio.to_thread(self.store.checksum,key)
             if size!=declared or size>20971520: raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
             if expected is None or checksum!=expected: raise MediaValidationError('IMAGE_DECODE_FAILED')
-            mime=await asyncio.to_thread(source_mime,self.store.path(key))
-            normalized=await normalize_in_process(self.store.path(key),'source',config=snapshot)
+            source_path=await asyncio.to_thread(self.store.path,key)
+            mime=await asyncio.to_thread(source_mime,source_path)
+            normalized=await normalize_in_process(source_path,'source',config=snapshot)
             if normalized.sha256!=expected or await asyncio.to_thread(self.store.checksum,key)!=expected:
                 raise MediaValidationError('IMAGE_DECODE_FAILED')
             # Deterministic object names and no-overwrite writes make restart idempotent.
             await asyncio.to_thread(self.store.write,keys['normalized'],normalized.webp_bytes)
             await asyncio.to_thread(self.store.write,keys['thumbnail'],normalized.thumbnail_bytes)
             with Image.open(BytesIO(normalized.thumbnail_bytes)) as thumb: thumb_size=thumb.size
+        except StorageUnavailable: raise
         except MediaValidationError as exc: error=exc.code
         except FileNotFoundError: error='IMAGE_DECODE_FAILED'
         except (OSError,ValueError): error='IMAGE_NORMALIZATION_FAILED'
@@ -207,6 +212,8 @@ class ValidationWorker:
                 rows = list((await session.execute(query)).all())
         self._deleted_scan_after = rows[-1].id if len(rows) == limit else None
         count = 0
+        # Only this sweep shares observations. The next sweep must discover late PUTs.
+        existence = {}
         for asset_id, album_id in rows:
             async with self.sessions() as session:
                 album = await session.get(Album, album_id)
@@ -217,7 +224,18 @@ class ValidationWorker:
                 continue
             # Neither file checks nor file removal hold DB row locks.
             try:
-                present = await asyncio.to_thread(lambda: any(self.store.path(key).is_file() for key in keys))
+                present = False
+                for key in keys:
+                    if key not in existence:
+                        if self.store.mode == 'r2':
+                            existence[key] = await asyncio.to_thread(self.store.exists, key)
+                        else:
+                            existence[key] = await asyncio.to_thread(lambda: self.store.path(key).is_file())
+                    if existence[key]:
+                        present = True
+                        break
+            except StorageUnavailable:
+                raise
             except (ValueError, OSError):
                 continue
             if not present:

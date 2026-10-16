@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import Field, StrictInt, field_validator
-from backend.http.schemas import StrictBody, EmptyBody
+from backend.http.schemas import StrictBody
 from backend.http.security import AuthContext, require_user, require_csrf, csrf_token, COOKIE_NAME
 from backend.http.errors import APIError, envelope
 from backend.http.idempotency import require_key, request_hash
@@ -39,6 +39,10 @@ class OrderBody(StrictBody):
     page_ids: list[UUID]=Field(max_length=50)
 
 
+class CompleteBody(StrictBody):
+    sha256: str|None=Field(default=None,pattern=r'^[0-9a-f]{64}$')
+
+
 class AccessBody(StrictBody):
     asset_ids: list[UUID]=Field(max_length=150)
 
@@ -49,6 +53,7 @@ def signer(request): return request.app.state.media_signer
 
 
 async def private_user(request: Request):
+    if getattr(storage(request),'mode','local')=='r2': raise APIError(404,'RESOURCE_NOT_FOUND')
     try:
         return await require_user(request)
     except APIError as exc:
@@ -91,9 +96,9 @@ async def put(request:Request,upload_id:UUID,expires:int,signature:str,context:A
 
 
 @router.post('/albums/{album_id}/uploads/{upload_id}/complete')
-async def complete(request:Request,album_id:UUID,upload_id:UUID,body:EmptyBody,context:AuthContext=Depends(require_user)):
+async def complete(request:Request,album_id:UUID,upload_id:UUID,body:CompleteBody,context:AuthContext=Depends(require_user)):
     require_csrf(request,context); validate_query(request,())
-    status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id)
+    status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id,expected_sha256=body.sha256)
     return JSONResponse(envelope(request,data),status_code=status)
 
 

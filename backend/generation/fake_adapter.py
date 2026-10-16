@@ -8,6 +8,8 @@ from PIL import Image
 from sqlalchemy import select
 from backend.models import Album,Page,Run,Task,Attempt,MediaAsset
 from backend.storage.local import storage_key
+from backend.storage.factory import result_store
+from backend.storage.r2 import StorageUnavailable
 from backend.generation.repository import _locked_task,_active
 from backend.media.fake_transform import fake_transform,optimize_in_process
 
@@ -69,6 +71,7 @@ class FakeExecutor:
             try:
                 actual=await asyncio.to_thread(self.store.checksum,key)
                 actual_size=await asyncio.to_thread(lambda:self.store.stat(key).st_size)
+            except StorageUnavailable:raise
             except (OSError,ValueError):raise FakeExecutionError('MEDIA_SAVE_FAILED') from None
             if actual!=sha or actual_size!=size:raise FakeExecutionError('MEDIA_SAVE_FAILED')
 
@@ -120,28 +123,39 @@ class FakeExecutor:
 
     async def execute(self,attempt_id,stage):
         context=await self._context(attempt_id,stage)
-        await self._verify(context)
+        try:
+            await self._verify(context)
+        except StorageUnavailable:
+            # No result or external request exists at this input-only boundary.
+            raise FakeExecutionError('MEDIA_SAVE_FAILED',safe_to_retry=True) from None
         if stage=='caption':
             result={'caption':CAPTION}
         elif stage=='image_transform':
-            data=await fake_transform(self.store.path(context['key']),max_edge=min(context['config'].get('normalized_max_edge',4096),4096))
-            await self._verify(context)
+            try:
+                source_path=await asyncio.to_thread(self.store.path,context['key'])
+                data=await fake_transform(source_path,max_edge=min(context['config'].get('normalized_max_edge',4096),4096))
+                await self._verify(context)
+            except StorageUnavailable:
+                # Local fake bytes are disposable until persistence starts. Do not
+                # extend this handler over _persist, envelope writes or recovery.
+                raise FakeExecutionError('MEDIA_SAVE_FAILED',safe_to_retry=True) from None
             asset_id=await self._persist(context,'transform_output',data)
             if asset_id is None:raise FakeExecutionError('MEDIA_SAVE_FAILED')
             result={'asset_id':str(asset_id)}
         elif stage=='optimize':
             try:
-                data,thumb,_=await optimize_in_process(self.store.path(context['key']),context['config'])
+                source_path=await asyncio.to_thread(self.store.path,context['key'])
+                data,thumb,_=await optimize_in_process(source_path,context['config'])
                 await self._verify(context)
                 asset_id=await self._persist(context,'result',data)
                 thumb_id=await self._persist(context,'result_thumbnail',thumb)
                 if asset_id is None or thumb_id is None:raise FakeExecutionError('MEDIA_SAVE_FAILED')
                 result={'asset_id':str(asset_id),'thumbnail_asset_id':str(thumb_id)}
+            except StorageUnavailable:raise
             except OSError:raise FakeExecutionError('MEDIA_SAVE_FAILED',safe_to_retry=True) from None
         else:raise FakeExecutionError('MEDIA_SAVE_FAILED')
         # Same durable envelope as Runner; a crash after this write needs no adapter call.
-        from backend.worker.runner import ResultStore
-        await ResultStore(self.store.root).save(str(attempt_id),result)
+        await result_store(self.store).save(str(attempt_id),result)
         return result
 
     async def recover_original(self,attempt_id,stage):
@@ -152,7 +166,8 @@ class FakeExecutor:
             await self._verify(context)
             key=storage_key(context['owner'],context['album'],context['page'],'transform_output')
             if context['original_output_id']!=uuid5(NAMESPACE_URL,key):return None
-            data=await asyncio.to_thread(self.store.path(key).read_bytes)
+            data=await asyncio.to_thread(lambda:self.store.path(key).read_bytes())
             asset_id=await self._persist(context,'transform_output',data,recover=True)
             return {'asset_id':str(asset_id)} if asset_id else None
+        except StorageUnavailable:raise
         except (OSError,ValueError,FakeExecutionError):return None
