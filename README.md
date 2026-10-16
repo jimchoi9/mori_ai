@@ -48,15 +48,19 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 기반 준비 shell이며 사진첩 제품 기능은 후속 구현 대상이다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·초안·사진 업로드와 정규화를 연결한다. 실제 OAuth·R2·AI는 아직 연결하지 않았다.
 
 ```bash
 make verify-install
 make verify-isolation
 ```
 
-실행 버전·image digest·22개 테스트와 격리 검증 근거는 [기반 검증 결과](docs/기반검증-결과.md)에 기록했다. 검증용 isolation 명령은 자신이 만든 임시 프로젝트와 volume만 정리한다.
+실행 버전·image digest·초기 기반 테스트와 격리 검증 근거는 [기반 검증 결과](docs/기반검증-결과.md)에 기록했다. 검증용 isolation 명령은 자신이 만든 임시 프로젝트와 volume만 정리한다.
 
 추가 검증 명령: make verify-codecs, make verify-db, make verify-worker, make verify-media-load. 실제 DB 연결 전체 테스트는 bash scripts/verify-db.sh backend/tests로 실행한다. 설치 검증은 DB 테스트를 명시적으로 skip하고 이 명령에서 실제 실행한다. 상세 결과는 [미디어 검증](docs/미디어검증-결과.md)과 [DB/worker 검증](docs/DB-worker검증-결과.md)을 참고한다.
 
 다음 승인 범위는 [로컬 로그인·책장·업로드 연동](docs/superpowers/plans/2026-10-16-local-upload-flow.md)이며 실제 OAuth/R2/AI 계정 없이 개발한다.
+
+로컬 개발 로그인을 사용하려면 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`를 지정한다. 기본값은 개발 로그인을 비활성화한다. 운영 환경에서는 개발 로그인·insecure cookie 설정을 허용하지 않는다. HDR/10bit 사진은 명시적으로 거부한다.
+
+업로드 합류 검증은 [화면 검증 결과](docs/로컬화면-검증결과.md)에 기록한다. 다음 승인된 작업은 [가짜 AI·수정·뷰어](docs/superpowers/plans/2026-10-16-local-generation-viewer.md)다.

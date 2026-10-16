@@ -25,11 +25,33 @@ def media_ref(asset):
     return {'asset_id': str(asset.id), 'mime': asset.mime, 'width': asset.width, 'height': asset.height}
 
 
+def scoped_asset(assets,page,role,album):
+    asset=assets.get(getattr(page,role+'_asset_id'))
+    if (asset is None or asset.role!=role or asset.owner_id!=album.owner_id or asset.album_id!=album.id
+        or asset.page_id!=page.id or page.removed_at is not None
+        or (role=='normalized' and album.status not in {'draft','processing','action_required'})):
+        return None
+    return asset
+
+
+async def access_entries(session,refs):
+    signing=session.info.get('media_signer')
+    if signing is None: return []
+    from datetime import timedelta
+    expiry=datetime.now(timezone.utc).replace(microsecond=0)+timedelta(seconds=300)
+    entries=[]
+    for album_id,ref in refs:
+        asset_id=ref['asset_id']
+        path=f'/api/v1/private/albums/{album_id}/media/{asset_id}'
+        entries.append({'asset_id':asset_id,'url':signing.url('GET',path,asset_id,int(expiry.timestamp()),ref['mime']),'expires_at':utc(expiry)})
+    return entries
+
+
 async def summary(session, album):
     pages = await repo.album_pages(session, album.id)
     assets = {a.id: a for a in await repo.ready_assets(session, album.id)}
-    cover_page = next((p for p in pages if p.id == album.cover_page_id), None)
-    cover = assets.get(cover_page.thumbnail_asset_id) if cover_page else None
+    cover_page = pages[0] if pages else None
+    cover = scoped_asset(assets, cover_page, 'thumbnail', album) if cover_page else None
     return {'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
         'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}
@@ -77,8 +99,10 @@ async def get_albums(session, user_id, cursor, limit):
     rows = await repo.list_albums(session, user_id, decode_cursor(cursor), limit)
     more = len(rows) > limit
     rows = rows[:limit]
-    return {'items': [await summary(session, album) for album in rows],
-            'next_cursor': encode_cursor(rows[-1]) if more else None, 'media_access': []}
+    items=[await summary(session, album) for album in rows]
+    refs=[(album.id,item['cover']) for album,item in zip(rows,items) if item['cover']]
+    return {'items': items, 'next_cursor': encode_cursor(rows[-1]) if more else None,
+            'media_access': await access_entries(session,refs)}
 
 
 async def get_album_detail(session, user_id, album_id):
@@ -92,11 +116,12 @@ async def get_album_detail(session, user_id, album_id):
         upload = uploads.get(p.id)
         pages.append({'id': str(p.id), 'position': p.position, 'version': p.version,
             'upload_status': upload.status if upload else 'reserved',
-            'source': media_ref(assets.get(p.normalized_asset_id)), 'result': media_ref(assets.get(p.result_asset_id)),
-            'thumbnail': media_ref(assets.get(p.thumbnail_asset_id)), 'caption_text': p.caption_text,
+            'source': media_ref(scoped_asset(assets,p,'normalized',album)), 'result': media_ref(scoped_asset(assets,p,'result',album)),
+            'thumbnail': media_ref(scoped_asset(assets,p,'thumbnail',album)), 'caption_text': p.caption_text,
             'sort_date': p.sort_date, 'sort_date_source': p.sort_date_source})
+    refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
-        'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': []}
+        'pages': pages, 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs)}
 
 
 async def delete_album(session, user_id, album_id, expected_version):

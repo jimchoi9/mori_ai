@@ -1,0 +1,228 @@
+"""Fenced validation and cleanup jobs. No AI executor is installed here."""
+import asyncio
+from contextlib import suppress
+from datetime import datetime, timezone, timedelta
+import hashlib
+from io import BytesIO
+from uuid import uuid5, NAMESPACE_URL
+from PIL import Image
+from sqlalchemy import select, update, or_
+from backend.models import Album, Page, MediaAsset, Upload, Job, Task, Attempt
+from backend.media.process import normalize_in_process
+from backend.media.contracts import MediaValidationError
+from backend.storage.local import LocalStorage, storage_key
+from backend.uploads.service import config, touch
+from backend.albums.page_order import sort_date, finish_batch
+from backend.worker.jobs import claim_job, finish_job, enqueue_job
+
+
+def now(): return datetime.now(timezone.utc)
+
+
+def source_mime(path):
+    with path.open('rb') as f: head=f.read(64)
+    if head.startswith(b'\xff\xd8\xff'): return 'image/jpeg'
+    if head.startswith(b'\x89PNG\r\n\x1a\n'): return 'image/png'
+    if head[:4]==b'RIFF' and head[8:12]==b'WEBP': return 'image/webp'
+    if head[4:8]==b'ftyp': return 'image/heic' if any(x in head for x in (b'heic',b'heix',b'hevc',b'hevx')) else 'image/heif'
+    raise MediaValidationError('IMAGE_DECODE_FAILED')
+
+
+class ValidationWorker:
+    def __init__(self,sessions,settings,*,lease_seconds=90,heartbeat_seconds=15):
+        if not 0<heartbeat_seconds<lease_seconds: raise ValueError('invalid heartbeat')
+        self.sessions=sessions; self.settings=settings; self.store=LocalStorage(settings.storage_root)
+        self.lease_seconds=lease_seconds; self.heartbeat_seconds=heartbeat_seconds
+
+    async def _heartbeat(self,claim):
+        while True:
+            await asyncio.sleep(self.heartbeat_seconds)
+            async with self.sessions() as s,s.begin():
+                stamp=now()
+                result=await s.execute(update(Job).where(Job.id==claim.job_id,Job.status=='running',Job.fence_version==claim.fence_version,Job.lease_until>stamp).values(lease_until=stamp+timedelta(seconds=self.lease_seconds)))
+                if not result.rowcount: return
+
+    async def run_once(self):
+        async with self.sessions() as s:
+            claim=await claim_job(s,now(),self.lease_seconds,('validate_upload','cleanup_album','cleanup_asset'))
+        if claim is None: return False
+        heartbeat=asyncio.create_task(self._heartbeat(claim))
+        work=asyncio.create_task(self.handle(claim))
+        try:
+            done,_=await asyncio.wait((work,heartbeat),return_when=asyncio.FIRST_COMPLETED)
+            if heartbeat in done:
+                # Lost lease/heartbeat failure cancels and reaps the media child.
+                work.cancel()
+                with suppress(asyncio.CancelledError): await work
+                if heartbeat.exception(): raise heartbeat.exception()
+            else:
+                await work
+        except asyncio.CancelledError:
+            work.cancel()
+            with suppress(asyncio.CancelledError): await work
+            raise
+        except Exception:
+            async with self.sessions() as s:
+                await finish_job(s,claim,now(),'retry_wait')
+            raise
+        finally:
+            heartbeat.cancel()
+            with suppress(asyncio.CancelledError): await heartbeat
+        return True
+
+    async def handle(self,claim):
+        if claim.kind=='validate_upload': await self.validate_upload(claim)
+        elif claim.kind=='cleanup_album': await self.cleanup_album(claim)
+        elif claim.kind=='cleanup_asset': await self.cleanup_asset(claim)
+        else: raise ValueError('unsupported job')
+
+    async def _rows(self,s,claim):
+        album_id=await s.scalar(select(Upload.album_id).where(Upload.id==claim.target_id))
+        album=await s.scalar(select(Album).where(Album.id==album_id).with_for_update()) if album_id else None
+        upload=await s.get(Upload,claim.target_id)
+        page=await s.get(Page,upload.page_id) if upload else None
+        asset=await s.get(MediaAsset,upload.asset_id) if upload else None
+        job=await s.scalar(select(Job).where(Job.id==claim.job_id).with_for_update())
+        valid=job is not None and job.status=='running' and job.fence_version==claim.fence_version and job.lease_until is not None and job.lease_until>now()
+        active=(album is not None and album.deleted_at is None and album.status!='deleted' and page is not None and page.removed_at is None
+                and asset is not None and asset.owner_id==album.owner_id and asset.album_id==album.id and asset.page_id==page.id
+                and page.album_id==album.id and page.source_asset_id==asset.id and asset.role=='source'
+                and asset.storage_key==storage_key(album.owner_id,album.id,page.id,'source')
+                and asset.deleted_at is None and asset.status in {'pending','ready'} and upload.status=='validating')
+        return album,upload,page,asset,job,valid,active
+
+    async def validate_upload(self,claim):
+        async with self.sessions() as s,s.begin():
+            album,u,page,asset,job,valid,active=await self._rows(s,claim)
+            if not valid: return
+            if not active:
+                job.status='cancelled'; job.lease_until=None; job.finished_at=now(); return
+            key=asset.storage_key; expected=asset.sha256; declared=u.declared_bytes
+            owner=album.owner_id; album_id=album.id; page_id=page.id
+            saved=u.validation_config or {}
+            snapshot=saved.get('media',saved) if saved else config(self.settings)
+            config_version=saved.get('version',1)
+        error=None; normalized=None
+        keys={role:storage_key(owner,album_id,page_id,role) for role in ('normalized','thumbnail')}
+        try:
+            if config_version!=1: raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
+            size=await asyncio.to_thread(lambda:self.store.stat(key).st_size)
+            checksum=await asyncio.to_thread(self.store.checksum,key)
+            if size!=declared or size>20971520: raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
+            if expected is None or checksum!=expected: raise MediaValidationError('IMAGE_DECODE_FAILED')
+            mime=await asyncio.to_thread(source_mime,self.store.path(key))
+            normalized=await normalize_in_process(self.store.path(key),'source',config=snapshot)
+            if normalized.sha256!=expected or await asyncio.to_thread(self.store.checksum,key)!=expected:
+                raise MediaValidationError('IMAGE_DECODE_FAILED')
+            # Deterministic object names and no-overwrite writes make restart idempotent.
+            await asyncio.to_thread(self.store.write,keys['normalized'],normalized.webp_bytes)
+            await asyncio.to_thread(self.store.write,keys['thumbnail'],normalized.thumbnail_bytes)
+            with Image.open(BytesIO(normalized.thumbnail_bytes)) as thumb: thumb_size=thumb.size
+        except MediaValidationError as exc: error=exc.code
+        except FileNotFoundError: error='IMAGE_DECODE_FAILED'
+        except (OSError,ValueError): error='IMAGE_NORMALIZATION_FAILED'
+        clean=False
+        async with self.sessions() as s,s.begin():
+            album,u,page,asset,job,valid,active=await self._rows(s,claim)
+            if not valid: return # New owner may be reusing the same deterministic objects.
+            if not active:
+                job.status='cancelled'; job.lease_until=None; job.finished_at=now(); clean=True
+            elif error:
+                u.status='rejected'; u.error_code=error; asset.status='rejected'; clean=True
+                job.status='failed'; job.error_code=error; job.lease_until=None; job.finished_at=now()
+                touch(album); await finish_batch(s,album,u.batch_id)
+            else:
+                for role,data,dimensions in [('normalized',normalized.webp_bytes,(normalized.width,normalized.height)),('thumbnail',normalized.thumbnail_bytes,thumb_size)]:
+                    identity=uuid5(NAMESPACE_URL,keys[role])
+                    derived=await s.get(MediaAsset,identity)
+                    if derived is None:
+                        derived=MediaAsset(id=identity,owner_id=owner,album_id=album_id,page_id=page_id,role=role,storage_key=keys[role],mime='image/webp',status='ready',bytes=len(data),width=dimensions[0],height=dimensions[1],sha256=hashlib.sha256(data).hexdigest())
+                        s.add(derived); await s.flush()
+                    if (derived.owner_id!=owner or derived.album_id!=album_id or derived.page_id!=page_id or derived.deleted_at is not None
+                        or derived.sha256!=hashlib.sha256(data).hexdigest()): raise ValueError('derived scope/checksum conflict')
+                    setattr(page,role+'_asset_id',identity)
+                asset.mime=mime; asset.bytes=size; asset.sha256=expected; asset.status='ready'
+                page.input_is_3_4=normalized.input_is_3_4
+                page.captured_at_raw=normalized.captured_at_raw; page.captured_timezone=normalized.captured_timezone
+                page.sort_date,page.sort_date_source=sort_date(normalized.captured_at_raw,u.file_last_modified_at,u.created_at)
+                u.status='ready'; u.error_code=None; touch(album)
+                job.status='succeeded'; job.lease_until=None; job.finished_at=now()
+                await s.flush(); await finish_batch(s,album,u.batch_id)
+        if clean:
+            for derived_key in keys.values(): await asyncio.to_thread(self.store.delete,derived_key)
+
+    async def scan_incomplete_uploads(self,stamp,limit=100):
+        """24h incomplete-source policy only; never scans ready/validating inputs."""
+        cutoff=stamp-timedelta(hours=24)
+        async with self.sessions() as s:
+            candidates=list((await s.execute(select(Upload.id,Upload.album_id).join(MediaAsset,MediaAsset.id==Upload.asset_id)
+                .where(Upload.status.in_(['reserved','expired','rejected']),Upload.created_at<=cutoff,MediaAsset.deleted_at.is_(None))
+                .order_by(Upload.created_at,Upload.id).limit(limit))).all())
+        count=0
+        for upload_id,album_id in candidates:
+            async with self.sessions() as s,s.begin():
+                album=await s.scalar(select(Album).where(Album.id==album_id).with_for_update())
+                upload=await s.scalar(select(Upload).where(Upload.id==upload_id).with_for_update())
+                if album is None or upload is None: continue
+                page=await s.get(Page,upload.page_id);asset=await s.get(MediaAsset,upload.asset_id)
+                if (upload.status not in {'reserved','expired','rejected'} or upload.created_at>cutoff
+                    or page is None or page.album_id!=album.id or asset is None or asset.owner_id!=album.owner_id
+                    or asset.album_id!=album.id or asset.page_id!=page.id or page.source_asset_id!=asset.id
+                    or asset.role!='source' or asset.deleted_at is not None
+                    or asset.storage_key!=storage_key(album.owner_id,album.id,page.id,'source')): continue
+                validation=await s.scalar(select(Job).where(Job.kind=='validate_upload',Job.target_id==upload.id).with_for_update())
+                if validation and validation.status in {'queued','running','retry_wait'}: continue
+                if upload.status=='reserved':
+                    upload.status='expired';touch(album)
+                    await s.flush();await finish_batch(s,album,upload.batch_id)
+                await enqueue_job(s,'cleanup_asset',asset.id);count+=1
+        return count
+
+    async def cleanup_album(self,claim):
+        async with self.sessions() as s,s.begin():
+            album=await s.scalar(select(Album).where(Album.id==claim.target_id).with_for_update())
+            if album is None or album.deleted_at is None or album.status!='deleted':
+                targets=[]
+            else:
+                targets=list((await s.scalars(select(MediaAsset.id).where(MediaAsset.album_id==album.id,MediaAsset.owner_id==album.owner_id))).all())
+        for asset_id in targets: await self._cleanup(asset_id,claim)
+        async with self.sessions() as s: await finish_job(s,claim,now())
+
+    async def _cleanup(self,asset_id,claim=None):
+        async with self.sessions() as s,s.begin():
+            album_id=await s.scalar(select(MediaAsset.album_id).where(MediaAsset.id==asset_id))
+            album=await s.scalar(select(Album).where(Album.id==album_id).with_for_update()) if album_id else None
+            if claim is not None:
+                job=await s.scalar(select(Job).where(Job.id==claim.job_id).with_for_update())
+                if (job is None or job.status!='running' or job.fence_version!=claim.fence_version
+                    or job.lease_until is None or job.lease_until<=now()): return
+            asset=await s.get(MediaAsset,asset_id)
+            page=await s.get(Page,asset.page_id) if asset else None
+            if album is None or asset is None or asset.owner_id!=album.owner_id or page is None or page.album_id!=album.id: return
+            deleted=album.deleted_at is not None or page.removed_at is not None
+            if not deleted:
+                linked=await s.scalar(select(Page.id).where(or_(Page.source_asset_id==asset_id,Page.normalized_asset_id==asset_id,Page.thumbnail_asset_id==asset_id,Page.result_asset_id==asset_id)))
+                task=await s.scalar(select(Task.id).where(Task.output_asset_id==asset_id))
+                attempt=await s.scalar(select(Attempt.id).where(Attempt.output_asset_id==asset_id))
+                incomplete=False
+                if asset.role=='source' and not task and not attempt:
+                    upload=await s.scalar(select(Upload).where(Upload.asset_id==asset.id,Upload.album_id==album.id).with_for_update())
+                    if upload and upload.page_id==page.id and upload.status in {'expired','rejected'} and upload.created_at<=now()-timedelta(hours=24):
+                        validation=await s.scalar(select(Job).where(Job.kind=='validate_upload',Job.target_id==upload.id).with_for_update())
+                        incomplete=validation is None or validation.status in {'succeeded','failed','cancelled'}
+                if (linked or task or attempt) and not incomplete: return
+            # Scope/canonical checks precede bytes deletion, never follow external keys.
+            expected=storage_key(album.owner_id,album.id,page.id,asset.role)
+            if asset.storage_key!=expected: return
+            key=asset.storage_key
+            asset.status='deleted'; asset.deleted_at=asset.deleted_at or now()
+        await asyncio.to_thread(self.store.delete,key)
+        # Remove deterministic files written immediately before a deleted validation
+        # result could be linked. Attempt result envelopes are deliberately preserved.
+        if deleted:
+            for role in ('normalized','thumbnail'):
+                await asyncio.to_thread(self.store.delete,storage_key(album.owner_id,album.id,page.id,role))
+
+    async def cleanup_asset(self,claim):
+        await self._cleanup(claim.target_id,claim)
+        async with self.sessions() as s: await finish_job(s,claim,now())

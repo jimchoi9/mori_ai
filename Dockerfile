@@ -5,6 +5,9 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN node --version && npm --version && npm ci && npm ls --depth=0
 COPY frontend/ ./
 RUN npm run build
+RUN ./node_modules/.bin/tsc src/api/client.ts src/api/session.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/client-check \
+    && node tests/upload_headers.test.mjs file:///tmp/client-check/client.js \
+    && node tests/session_reset.test.mjs file:///tmp/client-check/session.js
 
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1

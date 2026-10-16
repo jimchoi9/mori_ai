@@ -12,13 +12,21 @@ from backend.settings import Settings
 BUILD_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
-def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None) -> FastAPI:
+def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None, media_storage=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         from backend.database import session_factory as make_session_factory
         app.state.settings = settings if settings is not None else Settings()
         factory = session_factory if session_factory is not None else make_session_factory(app.state.settings.database_url)
-        app.state.session_factory = factory
+        from backend.storage.local import LocalStorage
+        from backend.storage.signing import Signer
+        app.state.media_storage = media_storage if media_storage is not None else LocalStorage(app.state.settings.storage_root)
+        app.state.media_signer = Signer(app.state.media_storage.root)
+        def request_session():
+            session = factory()
+            session.info['media_signer'] = app.state.media_signer
+            return session
+        app.state.session_factory = request_session
         try:
             yield
         finally:
@@ -33,6 +41,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(router)
     from backend.albums.routes import router as albums_router
     app.include_router(albums_router)
+    from backend.uploads.routes import router as uploads_router
+    app.include_router(uploads_router)
     build_dir = (static_dir if static_dir is not None else BUILD_DIR).resolve()
 
     @app.get("/health")

@@ -49,7 +49,10 @@ async def page_uploads(session, album_id):
 
 
 async def ready_assets(session, album_id):
-    return (await session.scalars(select(MediaAsset).where(MediaAsset.album_id == album_id,
+    return (await session.scalars(select(MediaAsset).join(Album, Album.id == MediaAsset.album_id)
+        .join(Page, Page.id == MediaAsset.page_id).where(MediaAsset.album_id == album_id,
+        MediaAsset.owner_id == Album.owner_id, Page.album_id == Album.id, Page.removed_at.is_(None),
+        Album.deleted_at.is_(None), Album.status != 'deleted',
         MediaAsset.status == 'ready', MediaAsset.deleted_at.is_(None)))).all()
 
 

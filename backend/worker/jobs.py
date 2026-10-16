@@ -8,7 +8,15 @@ from backend.models import Upload, Job, Outbox, Task, Album, Page
 
 
 async def enqueue_job(session, kind, target_id):
-    await session.execute(insert(Job).values(kind=kind, target_id=target_id).on_conflict_do_nothing(index_elements=['kind', 'target_id']))
+    statement=insert(Job).values(kind=kind,target_id=target_id)
+    if kind in {'cleanup_album','cleanup_asset'}:
+        # A previous live-reference no-op must not suppress a later real deletion.
+        statement=statement.on_conflict_do_update(index_elements=['kind','target_id'],
+            set_={'status':'queued','finished_at':None,'next_retry_at':None},
+            where=Job.status.in_(['succeeded','failed','cancelled']))
+    else:
+        statement=statement.on_conflict_do_nothing(index_elements=['kind','target_id'])
+    await session.execute(statement)
 
 
 async def reserve_upload_validation(session, upload_id: UUID, now: datetime) -> str:
