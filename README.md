@@ -2,7 +2,7 @@
 
 사진을 올리면 AI가 세로 3:4 이미지와 한 문장 글귀를 만들고, 사용자가 글귀를 수정해 모바일 사진첩으로 감상하는 서비스다. 초기 범위는 책장·사진 입력·생성·수정·뷰어이며 Google/Kakao 로그인과 HEIF/HEIC 입력·서버 WebP 정규화를 포함한다.
 
-2026-10-16 사용자가 순차 진행을 승인했다. 기술 시작 기준과 계약 v1.3을 반영했고 첫 개발 묶음 실행 계획을 승인하고 개발 기반을 구현하는 단계다. 제품 코드·설치·배포·외부 연동 성공을 기록한 상태가 아니다. GPT Image 2의 사진 변환 품질은 사용자가 확인했으며 실제 서비스 계정의 시간·비용·오류 복구·codec는 별도 검증한다.
+2026-10-16 사용자가 순차 진행을 승인했다. 기술 시작 기준과 계약 v1.3을 반영했고 승인된 첫 개발 묶음의 로컬 실행 기반·미디어 경계·DB/worker 복구를 구현하고 통합 검토하는 단계다. 제품 전체 기능과 실제 외부 연동은 후속 범위다. GPT Image 2의 사진 변환 품질은 사용자가 확인했으며 실제 서비스 계정의 시간·비용·오류 복구·codec는 별도 검증한다.
 
 ## 읽는 순서
 
@@ -26,7 +26,7 @@
 - 미결정 D 항목과 검증 A/F/V 결과는 검증계획에 기록한다.
 - Task 배정·환경 격리·일정·통합 상태는 개발운영에 기록한다.
 
-V01은 Linux amd64 설치·빌드·HTTP 경계·환경 격리 검증을 통과했다. V02~V10은 아직 전체 완료로 판정하지 않았다. make verify-install·verify-isolation은 실제 실행 가능하며 나머지 verify 명령은 담당 구현 후 연결한다. 실제 실행 절차는 코드 기반을 마련한 뒤 이 README에 추가한다. 기존 moriai의 명령·운영 계정·DB·파일은 새 프로젝트의 실행 자원으로 사용하지 않는다.
+V01은 Linux amd64 설치·빌드·HTTP 경계·환경 격리를 검증했다. V03/V04는 이번 DB·worker 기반 범위에서 통과했다. V02는 부분 검증이며 HDR/10bit 정규화는 아직 지원하지 않는다. V09는 합성 RGB 최대 크기 50장만 통과했다. V05~V08/V10과 전체 제품 검증은 남아 있다. 기존 moriai의 명령·운영 계정·DB·파일은 새 프로젝트의 실행 자원으로 사용하지 않는다.
 
 ## 문서 정리 이력
 
@@ -34,7 +34,7 @@ V01은 Linux amd64 설치·빌드·HTTP 경계·환경 격리 검증을 통과�
 
 ## 첫 개발 묶음
 
-[실행 계획](docs/superpowers/plans/2026-10-16-development-foundation.md)은 최소 기반 V01 후 미디어 V02/V09와 DB·worker V03/V04를 병렬 검증하는 범위다. 2026-10-16 기술 시작 기준·계약 v1.3 반영 완료. 실행 계획은 승인되었고 기반 Task가 진행 중이다. 제품 기능·외부 연동과 V01 성공은 아직 완료로 판정하지 않았다. 기준 커밋에는 현재 문서와 계약을 포함하고 원본 PDF·UI 참고 파일은 별도로 유지한다.
+[실행 계획](docs/superpowers/plans/2026-10-16-development-foundation.md)은 최소 기반 V01 후 미디어 V02/V09와 DB·worker V03/V04를 병렬 검증하는 범위다. 2026-10-16 기술 시작 기준·계약 v1.3 반영 완료. 실행 계획은 승인되었고 세 구현 Task가 완료 보고를 제출했다. 총괄 통합 검증과 독립 검토로 마무리한다. 실제 OAuth·R2·OpenAI 자원은 아직 준비 전이므로 후속 개발도 로컬·가짜 adapter로 진행한다. 기준 커밋에는 현재 문서와 계약을 포함하고 원본 PDF·UI 참고 파일은 별도로 유지한다.
 
 ## 로컬 기반 실행
 
@@ -48,7 +48,7 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 현재 화면은 기반 준비 shell이며 사진첩 제품 기능은 후속 구현 대상이다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 기반 준비 shell이며 사진첩 제품 기능은 후속 구현 대상이다.
 
 ```bash
 make verify-install
@@ -56,3 +56,5 @@ make verify-isolation
 ```
 
 실행 버전·image digest·22개 테스트와 격리 검증 근거는 [기반 검증 결과](docs/기반검증-결과.md)에 기록했다. 검증용 isolation 명령은 자신이 만든 임시 프로젝트와 volume만 정리한다.
+
+추가 검증 명령: make verify-codecs, make verify-db, make verify-worker, make verify-media-load. 실제 DB 연결 전체 테스트는 bash scripts/verify-db.sh backend/tests로 실행한다. 설치 검증은 DB 테스트를 명시적으로 skip하고 이 명령에서 실제 실행한다. 상세 결과는 [미디어 검증](docs/미디어검증-결과.md)과 [DB/worker 검증](docs/DB-worker검증-결과.md)을 참고한다.

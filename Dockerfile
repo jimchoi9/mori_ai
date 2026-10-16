@@ -16,6 +16,8 @@ FROM backend-base AS verification
 COPY backend/requirements-dev.lock /tmp/requirements-dev.lock
 RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements-dev.lock && pip check
 COPY backend/ /app/backend/
+COPY scripts/ /app/scripts/
+COPY tests/fixtures/media/ /app/tests/fixtures/media/
 COPY --from=frontend /build/dist /app/frontend/dist
 RUN python -m pytest -q
 

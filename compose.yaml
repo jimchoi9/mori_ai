@@ -31,6 +31,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
       interval: 2s
@@ -49,7 +51,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     stop_grace_period: 15s
+  # One-off local initializer, not an additional persistent product service.
+  migrate:
+    image: ${MORI_IMAGE:-mori-ai:dev}
+    platform: linux/amd64
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
+    environment: *backend_environment
+    depends_on:
+      postgres:
+        condition: service_healthy
 volumes:
   postgres_data:
   media:

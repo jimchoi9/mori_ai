@@ -80,13 +80,13 @@
 - Produces: `normalize_in_process(source_path: Path, filename: str, timeout_seconds: int = 120) -> NormalizedImage`. 자식 프로세스 종료와 임시 파일 정리 책임을 소유한다.
 - Consumes: 계약의 HEIF primary·방향·색상·날짜·WebP·최대 크기 규칙. storage/DB에 결과를 연결하지 않는다.
 
-- [ ] **Step 1:** 허용된 synthetic PNG/JPEG/WebP와 EXIF 방향 fixture의 manifest에 checksum·실크기·예상 방향·alpha·비율을 기록한다. 실제 iPhone HDR fixture는 사용 권한 확보 전 미실행으로 남긴다.
-- [ ] **Step 2:** 테스트 `test_rotated_3_4_sets_passthrough`, `test_nearly_3_4_is_not_passthrough`, `test_alpha_survives`, `test_source_bytes_unchanged`, `test_pixel_limit_rejected`, `test_corrupt_input_rejected`를 작성한다. 결과 RIFF/WEBP magic·MIME·정확한 비율·4천만 픽셀 경계도 검증한다.
-- [ ] **Step 3:** `pytest backend/tests/media/test_normalize.py -q` 실패를 확인한 후 공통계약 2.3의 순서로 최소 구현한다. 날짜 추출은 metadata 제거 전에, input_is_3_4는 방향 적용 후 원본 크기로 계산한다.
-- [ ] **Step 4:** `test_timeout_does_not_block_heartbeat`를 작성한다. 고의 지연된 자식은 timeout 후 종료되고 부모 async heartbeat는 계속 증가하며 임시 파일은 정리되어야 한다. 실패 확인 후 process 격리를 구현한다.
-- [ ] **Step 5:** 같은 Linux amd64 image에서 `make verify-codecs`와 `make verify-media-load`를 실행한다. 최대 크기 자료 50개를 동시 1개로 처리하고 RSS·OOM·시간·codec 버전을 기록한다. RSS는 서비스 한도의 80% 이하여야 한다.
-- [ ] **Step 6:** 실제 HEIC/HEIF·ICC/HDR/10bit 자료와 육안 기준이 없으면 V02 전체 성공으로 보고하지 않는다. 단순 8bit 변환을 HDR 합격으로 취급하지 않으며 추가 변환기 선택이 필요하면 근거와 실패 자료를 총괄에 보고한다.
-- [ ] **Step 7:** 담당 파일·검증 결과를 보고한다. 총괄 검토 후 명시 파일만 commit한다.
+- [x] **Step 1:** 허용된 synthetic PNG/JPEG/WebP와 EXIF 방향 fixture의 manifest에 checksum·실크기·예상 방향·alpha·비율을 기록한다. 실제 iPhone HDR fixture는 사용 권한 확보 전 미실행으로 남긴다.
+- [x] **Step 2:** 테스트 `test_rotated_3_4_sets_passthrough`, `test_nearly_3_4_is_not_passthrough`, `test_alpha_survives`, `test_source_bytes_unchanged`, `test_pixel_limit_rejected`, `test_corrupt_input_rejected`를 작성한다. 결과 RIFF/WEBP magic·MIME·정확한 비율·4천만 픽셀 경계도 검증한다.
+- [x] **Step 3:** `pytest backend/tests/media/test_normalize.py -q` 실패를 확인한 후 공통계약 2.3의 순서로 최소 구현한다. 날짜 추출은 metadata 제거 전에, input_is_3_4는 방향 적용 후 원본 크기로 계산한다.
+- [x] **Step 4:** `test_timeout_does_not_block_heartbeat`를 작성한다. 고의 지연된 자식은 timeout 후 종료되고 부모 async heartbeat는 계속 증가하며 임시 파일은 정리되어야 한다. 실패 확인 후 process 격리를 구현한다.
+- [x] **Step 5:** 같은 Linux amd64 image에서 `make verify-codecs`와 `make verify-media-load`를 실행한다. 최대 크기 자료 50개를 동시 1개로 처리하고 RSS·OOM·시간·codec 버전을 기록한다. RSS는 서비스 한도의 80% 이하여야 한다.
+- [x] **Step 6:** 실제 HEIC/HEIF·ICC/HDR/10bit 자료와 육안 기준이 없으면 V02 전체 성공으로 보고하지 않는다. 단순 8bit 변환을 HDR 합격으로 취급하지 않으며 추가 변환기 선택이 필요하면 근거와 실패 자료를 총괄에 보고한다.
+- [x] **Step 7:** 담당 파일·검증 결과를 보고한다. 총괄 검토 후 명시 파일만 commit한다.
 
 ## Task 3: PostgreSQL 실행권·복구와 V03/V04
 
@@ -106,19 +106,19 @@
 - Produces: `reserve_upload_validation(session, upload_id: UUID, now: datetime) -> str`; complete 기한과 같은 시각부터 expired, validating과 unique job은 원자 저장.
 - Consumes: 계약 v1.3 스키마. 이 묶음은 API 인증·업로드·생성 전체 endpoint 구현을 포함하지 않는다.
 
-- [ ] **Step 1:** 실제 PostgreSQL 17의 새 테스트 DB에 최소 users/albums/media/upload/run/task/attempt/outbox/background_jobs 모델과 migration을 작성한다. 나머지 공개 기능은 후속 migration으로 추가하며 기존 migration을 복사하지 않는다.
-- [ ] **Step 2:** 두 DB 연결의 `test_only_one_claim_wins`, `test_stale_fence_cannot_settle`, `test_deleted_album_rejects_late_result`를 작성하고 미구현 repository로 실패함을 확인한다. 이후 claim/settle을 구현한다.
-- [ ] **Step 3:** `test_complete_and_validation_job_are_atomic`, `test_duplicate_complete_has_one_job`, `test_complete_at_deadline_expires`, `test_validating_survives_put_expiry`를 작성한다. 실패 확인 후 원자 접수·unique job·만료 조건을 구현한다.
-- [ ] **Step 4:** `test_sent_attempt_lease_expiry_is_unknown_without_second_call`, `test_unsent_attempt_can_requeue`, `test_saved_result_recovers_without_ai`, `test_outbox_replay_has_one_cleanup_job`를 작성한다. 가짜 adapter에 호출 계수와 barrier를 넣어 강제 종료·재시작을 재현하고 최소 runner/scanner를 구현한다.
-- [ ] **Step 5:** `test_unknown_allows_only_persisted_local_retry`, `test_unknown_blocks_ai_retry`, `test_no_unknown_allows_safe_failed_retry`를 작성한다. 실패 확인 후 resume 정책과 action_required 유지 조건을 구현한다.
-- [ ] **Step 6:** `make verify-db`, `make verify-worker`를 실행한다. 실제 DB 2연결·재시작·호출 계수·fence를 근거로 V03/V04 결과를 기록한다. SQLite·프로세스 내 가짜 상태만으로 통과하지 않는다.
-- [ ] **Step 7:** migration 재적용 재현과 `git diff --check` 후 담당 파일·결과·제약을 보고한다. 총괄 검토 후 명시 파일만 commit한다.
+- [x] **Step 1:** 실제 PostgreSQL 17의 새 테스트 DB에 최소 users/albums/media/upload/run/task/attempt/outbox/background_jobs 모델과 migration을 작성한다. 나머지 공개 기능은 후속 migration으로 추가하며 기존 migration을 복사하지 않는다.
+- [x] **Step 2:** 두 DB 연결의 `test_only_one_claim_wins`, `test_stale_fence_cannot_settle`, `test_deleted_album_rejects_late_result`를 작성하고 미구현 repository로 실패함을 확인한다. 이후 claim/settle을 구현한다.
+- [x] **Step 3:** `test_complete_and_validation_job_are_atomic`, `test_duplicate_complete_has_one_job`, `test_complete_at_deadline_expires`, `test_validating_survives_put_expiry`를 작성한다. 실패 확인 후 원자 접수·unique job·만료 조건을 구현한다.
+- [x] **Step 4:** `test_sent_attempt_lease_expiry_is_unknown_without_second_call`, `test_unsent_attempt_can_requeue`, `test_saved_result_recovers_without_ai`, `test_outbox_replay_has_one_cleanup_job`를 작성한다. 가짜 adapter에 호출 계수와 barrier를 넣어 강제 종료·재시작을 재현하고 최소 runner/scanner를 구현한다.
+- [x] **Step 5:** `test_unknown_allows_only_persisted_local_retry`, `test_unknown_blocks_ai_retry`, `test_no_unknown_allows_safe_failed_retry`를 작성한다. 실패 확인 후 resume 정책과 action_required 유지 조건을 구현한다.
+- [x] **Step 6:** `make verify-db`, `make verify-worker`를 실행한다. 실제 DB 2연결·재시작·호출 계수·fence를 근거로 V03/V04 결과를 기록한다. SQLite·프로세스 내 가짜 상태만으로 통과하지 않는다.
+- [x] **Step 7:** migration 재적용 재현과 `git diff --check` 후 담당 파일·결과·제약을 보고한다. 총괄 검토 후 명시 파일만 commit한다.
 
 ## 통합·검토와 다음 계획의 입력
 
-- [ ] Task 1 완료 후에만 Task 2/3을 Orca의 서로 다른 Task로 동시에 시작한다. 공유 checkout에서 파일 범위가 겹치면 먼저 소유권을 조정하고 필요 시 기준 커밋에서 worktree로 격리한다.
-- [ ] 총괄은 두 작업자의 보고·실제 파일·검증 결과를 확인하고 작업자를 재사용하거나 worker-release한다.
-- [ ] V01~V04/V09의 성공·실패·미실행을 분리해 기록한다. HEIC/HDR 자료 부재는 제품 요구 제거의 근거가 아니다.
+- [x] Task 1 완료 후에만 Task 2/3을 Orca의 서로 다른 Task로 동시에 시작한다. 공유 checkout에서 파일 범위가 겹치면 먼저 소유권을 조정하고 필요 시 기준 커밋에서 worktree로 격리한다.
+- [x] 총괄은 두 작업자의 보고·실제 파일·검증 결과를 확인하고 작업자를 재사용하거나 worker-release한다.
+- [x] V01~V04/V09의 성공·실패·미실행을 분리해 기록한다. HEIC/HDR 자료 부재는 제품 요구 제거의 근거가 아니다.
 - [ ] 이후 기능 묶음은 계약 타입·샘플 UI와 인증/업로드/API를 먼저 연결하고, 실제 AI·R2→검토/완성/뷰어 순으로 구현한다. 전체 서비스 완료는 V05~V08/V10·50장·실기기·세 합류점의 검증 후 판정한다.
 
 ## 계획 자체 점검

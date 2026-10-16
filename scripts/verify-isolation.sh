@@ -17,6 +17,8 @@ cleanup() {
 trap cleanup EXIT
 for project in "$first" "$second"; do
   compose "$project" up --no-build -d --wait --wait-timeout 120
+  # A healthy HTTP shell must not hide an uninitialized worker database.
+  compose "$project" exec -T postgres psql -U mori -d mori -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM alembic_version' >/dev/null
   compose "$project" exec -T web python -c 'import urllib.request; assert urllib.request.urlopen("http://localhost:8000/health").read() == b"{\"status\":\"ok\"}"'
 done
 compose "$first" exec -T postgres psql -U mori -d mori -v ON_ERROR_STOP=1 -c "CREATE TABLE isolation_probe (marker text); INSERT INTO isolation_probe VALUES ('first');"
