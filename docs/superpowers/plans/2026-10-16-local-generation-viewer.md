@@ -39,12 +39,12 @@
 - [ ] 실제 DB HTTP RED: 최신 동의/전부 ready/수량·용량/버전, 같은 key replay가 버전 검사보다 우선, 두 album 동시 요청 중 사용자별 미완료 run 1개, action_required도 점유, 성공 album의 새 생성 거부.
 - [ ] User→Album→Run→Task lock 순서로 immutable input/config snapshot·run/task/outbox·album processing을 원자 저장한다. 각 page의 normalized asset ID·checksum·순서·3:4 판정, fake provider/model·prompt 버전·인코딩·재시도 설정을 보존한다.
 - [ ] GenerationView는 완료→unknown→failed→pending 우선순위로 페이지를 상호 배타 집계한다. task.retryable/can_resume은 기존 eligible_resume_tasks와 일치하며 숨겨진 화면/terminal 상태 polling 정책을 유지한다.
-- [ ] resume의 owner/동의/version/key·unknown 혼합 조건을 테스트하고 기존 caller-owned transaction 경계에 연결한다. 성공 task는 유지하며 unknown 새 호출을 예약하지 않는다.
+- [ ] resume의 owner/동의/version/key·unknown 혼합 조건을 테스트하고 기존 resume_failed_tasks의 자체 transaction 호출을 유지하면서 caller-owned helper를 분리해 HTTP transaction에 연결한다. 성공 task는 유지하며 unknown 새 호출을 예약하지 않는다.
 - [ ] 전용·전체 실제 DB 회귀 통과, 공개 계약 변경 여부/미실행 범위 보고 후 총괄 commit.
 
 ## Task 2: 로컬 fake adapter·실행·전체 완료 집계
 
-**Depends:** Task1. **Files:** Create backend/generation/fake_adapter.py, backend/generation/completion.py, backend/media/fake_transform.py, backend/tests/integration/test_generation_pipeline.py. Modify backend/worker/{runner,__main__}.py, backend/generation/repository.py는 단독 소유권을 이전받아 편집한다. Task3과 동시 변경하지 않는다.
+**Depends:** Task1. **Files:** Create backend/generation/fake_adapter.py, backend/generation/completion.py, backend/media/fake_transform.py, backend/tests/integration/test_generation_pipeline.py. Modify backend/worker/{runner,__main__}.py, backend/generation/repository.py와 backend/storage/local.py·backend/uploads/service.py·validation.py의 canonical key/cleanup 연결은 단독 소유권을 이전받아 편집한다. 기존 초안 thumbnail과 결과 thumbnail의 immutable bytes 충돌을 피하고 공개 계약의 transform_output role를 저장할 수 있게 한다. Task3과 동시 변경하지 않는다.
 
 **Interfaces:** fake adapter의 execute(attempt_id, stage) → {caption:string} 또는 {asset_id:UUID string}. 입력은 run.input_snapshot의 같은 normalized 원본이다. optimize는 보존 transform_output/normalized로 result·thumbnail을 영속화하고 기존 ResultStore envelope와 stage 검증을 사용한다. recompute_completion(session: AsyncSession, album: Album, run: Run) → None은 task settlement와 같은 transaction에서 호출한다.
 
