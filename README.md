@@ -48,7 +48,7 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·초안·사진 업로드와 정규화를 연결한다. 실제 OAuth·R2·AI는 아직 연결하지 않았다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. 실제 OAuth·R2·AI는 아직 연결하지 않았다.
 
 ```bash
 make verify-install
@@ -64,3 +64,5 @@ make verify-isolation
 로컬 개발 로그인을 사용하려면 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`를 지정한다. 기본값은 개발 로그인을 비활성화한다. 운영 환경에서는 개발 로그인·insecure cookie 설정을 허용하지 않는다. HDR/10bit 사진은 명시적으로 거부한다.
 
 업로드 합류 검증은 [화면 검증 결과](docs/로컬화면-검증결과.md)에 기록한다. 다음 승인된 작업은 [가짜 AI·수정·뷰어](docs/superpowers/plans/2026-10-16-local-generation-viewer.md)다.
+
+가짜 생성을 시험하려면 위 로컬 설정에 `DEV_AI_ENABLED=true`를 추가한다. 기본값은 false이며 local에서만 켤 수 있다. 이미지는 전체 사진을 담는 3:4 테스트 canvas, 글귀는 고정 문장이고 실제 AI 호출·비용은 없다. [로컬 생성 화면·통합 검증](docs/로컬생성화면-검증결과.md)을 참고한다. 음악은 준비 전이다.
