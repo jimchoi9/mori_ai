@@ -48,7 +48,7 @@ make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth 연결은 후속 묶음에서 추가하며, R2·AI의 실제 adapter는 아직 연결하지 않았다.
+`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면은 구현했고 실제 계정 왕복은 검증 대기다. R2·AI의 실제 adapter는 아직 연결하지 않았다.
 
 ```bash
 make verify-install
@@ -73,6 +73,8 @@ make verify-isolation
 
 권장 합류 순서는 OAuth → R2 → 실제 글귀 → 이미지 변환 → 전체 흐름 검증이다. 먼저 모의 응답으로 실패·복구·예산 경계를 검사하고, 실제 호출은 대표 사진의 소량 검증부터 시작한다. 글귀 모델의 이미지 입력·텍스트 출력 지원은 [OpenAI 공식 문서](https://developers.openai.com/api/docs/models/gpt-5.4-mini)에서 확인했다. 해당 계정의 모델 접근 가능 여부와 사진별 비용은 실제 검증 대상이다.
 
-`.env.example`을 `.env`로 복사하고 Google/Kakao client 값, R2 bucket·S3 endpoint·자격증명, OpenAI API 키를 채운다. 각 항목의 주석을 따른다. 기존 `.env`가 있다면 복사로 덮어쓰지 말고 필요한 항목만 추가한다. Google/Kakao OAuth 설정은 Settings/Compose에서 명시적으로 전달하도록 추가한다. R2/OpenAI/AI 예산 항목은 후속 adapter 구현용 준비값이며 아직 연결하지 않았다. 실제 AI 호출은 비활성으로 두고, 최초 검증은 전체 $100에 포함되는 최대 $5 범위부터 시작한다. 이미지 모델과 선택적 organization/project는 확인 전 비워둘 수 있다. Google의 [웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), Kakao의 [REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api), R2의 [S3 자격증명·endpoint](https://developers.cloudflare.com/r2/get-started/s3/) 문서를 참고한다.
+`.env.example`을 `.env`로 복사하고 Google/Kakao client 값, R2 bucket·S3 endpoint·자격증명, OpenAI API 키를 채운다. 각 항목의 주석을 따른다. 기존 `.env`가 있다면 복사로 덮어쓰지 말고 필요한 항목만 추가한다. Google/Kakao OAuth 설정은 Settings/Compose에서 명시적으로 전달한다. R2/OpenAI/AI 예산 항목은 후속 adapter 구현용 준비값이며 아직 연결하지 않았다. 실제 AI 호출은 비활성으로 두고, 최초 검증은 전체 $100에 포함되는 최대 $5 범위부터 시작한다. 이미지 모델과 선택적 organization/project는 확인 전 비워둘 수 있다. Google의 [웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), Kakao의 [REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api), R2의 [S3 자격증명·endpoint](https://developers.cloudflare.com/r2/get-started/s3/) 문서를 참고한다.
 
 OAuth 실행 중 검증 기록: [구현 계획](docs/superpowers/plans/2026-10-16-real-oauth.md), [저장소](docs/OAuth-저장소-구현결과.md), [제공자 adapter](docs/OAuth-provider-구현결과.md), [화면](docs/OAuth-화면-구현결과.md). 실제 Google/Kakao 왕복 성공은 별도 최종 검증 결과로 판정한다. container의 기본 Uvicorn은 callback query의 인증 code가 로그에 남지 않도록 access log를 끈다. 직접 실행할 때도 `--no-access-log`를 사용한다.
+
+OAuth의 현재 전체 판정과 실제 로그인 대기 상태는 [최종 검증 결과](docs/실제OAuth-검증결과.md)를 따른다.

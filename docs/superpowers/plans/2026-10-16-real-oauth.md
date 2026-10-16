@@ -42,10 +42,10 @@
 - consume_login(session, provider: str, state_hash: str, binding_hash: str, now: datetime) -> str | None: 성공 시 허용된 return_to 반환, 그 외 None.
 - resolve_identity(session, identity: OAuthIdentity) -> User: 최초 생성/재로그인 경합 수렴, 삭제된 user는 거부.
 
-- [ ] 실제 DB 검사로 같은 provider/subject 동시 생성은 user 1개, 다른 provider는 2개, 삭제 user는 거부함을 먼저 RED 확인한다.
-- [ ] state 만료/재사용/다른 binding/provider/동시 소비 중 성공 1회만 허용하는 검사를 RED 확인한다.
-- [ ] 모델·설정·migration·repository를 구현한다. secret 필드는 repr=False, callback은 APP_ORIGIN과 해당 계약 path에 정확히 일치하도록 검증한다.
-- [ ] 실제 DB 대상 검사와 upgrade→downgrade→upgrade→Alembic check 통과 후 총괄 commit.
+- [x] 실제 DB 검사로 같은 provider/subject 동시 생성은 user 1개, 다른 provider는 2개, 삭제 user는 거부함을 먼저 RED 확인한다.
+- [x] state 만료/재사용/다른 binding/provider/동시 소비 중 성공 1회만 허용하는 검사를 RED 확인한다.
+- [x] 모델·설정·migration·repository를 구현한다. secret 필드는 repr=False, callback은 APP_ORIGIN과 해당 계약 path에 정확히 일치하도록 검증한다.
+- [x] 실제 DB 대상 검사와 upgrade→downgrade→upgrade→Alembic check 통과 후 총괄 commit.
 
 ## Task 2: provider adapter·start/callback
 
@@ -53,11 +53,11 @@
 
 **Interfaces:** authorization_url(settings, provider: str, state: str) -> str; exchange_identity(client: httpx.AsyncClient, settings, provider: str, code: str) -> OAuthIdentity. start_login(factory, settings, provider, return_to) -> tuple[str,str,str]: authorization URL, state, binding token. complete_login(factory, settings, provider, code, state, binding, previous_session_token: str | None) -> tuple[str,str]: 새 원문 session token, return_to.
 
-- [ ] httpx MockTransport로 token/userinfo 성공 및 timeout/5xx/invalid JSON/누락 subject/큰 응답 경계를 RED 확인한다. access token은 Authorization header로만 프로필 요청에 사용한다.
-- [ ] start의 미설정/미지원 provider404, 위험 return_to422, state binding cookie와 no-store를 RED 확인한다.
-- [ ] callback의 중복 query/state 누락·틀림·만료·다른 cookie/provider, code+error 동시 입력 거부, 취소, 세션 회전, 이전 세션 철회, provider 실패 시 새 세션0을 실제 DB 검사로 RED 확인한다.
-- [ ] 공식 REST 흐름과 route를 구현한다. 이전 raw token/새 token/provider token은 응답 URL에 넣지 않는다. callback query를 포함한 access log는 비활성화하거나 query를 제거하도록 bootstrap/로컬 실행 설정을 함께 검증한다. 로그인 시작/실패를 무제한 보존하지 않도록 만료 요청 정리도 추가한다.
-- [ ] 대상 검사 통과 후 실제 DB 전체 회귀와 검토를 진행하고 총괄 commit.
+- [x] httpx MockTransport로 token/userinfo 성공 및 timeout/5xx/invalid JSON/누락 subject/큰 응답 경계를 RED 확인한다. access token은 Authorization header로만 프로필 요청에 사용한다.
+- [x] start의 미설정/미지원 provider404, 위험 return_to422, state binding cookie와 no-store를 RED 확인한다.
+- [x] callback의 중복 query/state 누락·틀림·만료·다른 cookie/provider, code+error 동시 입력 거부, 취소, 세션 회전, 이전 세션 철회, provider 실패 시 새 세션0을 실제 DB 검사로 RED 확인한다.
+- [x] 공식 REST 흐름과 route를 구현한다. 이전 raw token/새 token/provider token은 응답 URL에 넣지 않는다. callback query를 포함한 access log는 비활성화하거나 query를 제거하도록 bootstrap/로컬 실행 설정을 함께 검증한다. 로그인 시작/실패를 무제한 보존하지 않도록 만료 요청 정리도 추가한다.
+- [x] 대상 검사 통과 후 실제 DB 전체 회귀와 검토를 진행하고 총괄 commit.
 
 ## Task 3: 화면·실제 로그인 합류
 
@@ -65,10 +65,10 @@
 
 **Interfaces:** GET /api/v1/client-config에 auth_providers: Array<'google'|'kakao'>를 추가하고 샘플/타입/검사를 함께 갱신한다. 값은 secret이 아니라 설정 완료 제공자 목록이다. 기존 client-config 필드는 보존한다.
 
-- [ ] 설정된 제공자만 실제 로그인 링크를 보여주고 링크가 동일 origin의 /api/v1/auth/{provider}/start를 사용하는 Node 검사를 먼저 RED 확인한다.
-- [ ] 일반 로그인 화면에 두 제공자 버튼·취소/실패 안내·재시도를 연결한다. 가짜 계정은 DEV_AUTH_ENABLED인 local에만 유지한다.
-- [ ] OAuth는 페이지 이동으로 처리하고 기존 세션 복원·계정 변경 캐시 정리·동의 화면을 사용한다. OAuth 왕복 중 새로고침으로 미저장 글귀를 복원한다고 약속하지 않는다.
-- [ ] make verify-install 및 bash scripts/verify-db.sh backend/tests 통과, 독립 전체 코드 리뷰의 중요 문제 해결 후 총괄 판정·commit.
+- [x] 설정된 제공자만 실제 로그인 링크를 보여주고 링크가 동일 origin의 /api/v1/auth/{provider}/start를 사용하는 Node 검사를 먼저 RED 확인한다.
+- [x] 일반 로그인 화면에 두 제공자 버튼·취소/실패 안내·재시도를 연결한다. 가짜 계정은 DEV_AUTH_ENABLED인 local에만 유지한다.
+- [x] OAuth는 페이지 이동으로 처리하고 기존 세션 복원·계정 변경 캐시 정리·동의 화면을 사용한다. OAuth 왕복 중 새로고침으로 미저장 글귀를 복원한다고 약속하지 않는다.
+- [x] make verify-install 및 bash scripts/verify-db.sh backend/tests 통과, 독립 전체 코드 리뷰의 중요 문제 해결 후 총괄 판정·commit.
 - [ ] 실제 브라우저에서 제공자별 로그인→동의→책장→로그아웃→재로그인, Google/Kakao 사용자 격리와 취소를 확인한다. 제공자 로그인 화면의 비밀번호·MFA는 사용자가 직접 입력한다.
 - [ ] mock 성공과 실제 제공자 성공을 구분해 docs/실제OAuth-검증결과.md에 기록한다. 전용 QA만 정리하고 사용자 앱/계정 설정은 임의 수정하지 않는다.
 
@@ -87,3 +87,5 @@
 공식 근거: [Google 웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [Kakao REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api).
 
 실행 소유권 구체화: Task1 worker는 oauth_types.py까지 소유한다. 제공자 adapter는 독립 Task로 선행 병렬화하며 해당 worker가 oauth_providers.py·단위 검사만 소유한다. HTTP/service는 저장소·adapter 고정 후 후속 Dispatch로 배정한다. frontend는 root가 고정한 auth_providers 공개 인터페이스를 소비한다. shared checkout의 공통 파일은 총괄만 편집하며 기존 사용자 .gitignore 변경은 보존한다.
+
+최종 자동 검증: 실제 DB482/Node43/타입·빌드 통과, 독립 중요 결함0. source/검증 근거와 실제 로그인 대기 경계는 [최종 결과](../../실제OAuth-검증결과.md)를 따른다. 실제 계정 왕복과 그 후 QA 정리는 미완료로 유지한다.
