@@ -2,7 +2,8 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
+from urllib.parse import urlsplit
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -11,6 +12,34 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     database_url: str = Field(repr=False)
+    app_env: Literal["local", "test", "production"] = "production"
+    dev_auth_enabled: bool = False
+    app_origin: str = "http://127.0.0.1:8000"
+    session_cookie_allow_insecure_local: bool = False
+    session_ttl_seconds: int = Field(default=86400, ge=60, le=604800)
+    consent_policy_version: str = Field(default="local-2026-10-16", min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def validate_auth(self):
+        if self.dev_auth_enabled and self.app_env != "local":
+            raise ValueError("DEV_AUTH_ENABLED requires APP_ENV=local")
+        if self.session_cookie_allow_insecure_local and self.app_env != "local":
+            raise ValueError("insecure cookie requires APP_ENV=local")
+        origin = urlsplit(self.app_origin)
+        if (origin.scheme not in {"http", "https"} or not origin.hostname
+                or origin.username or origin.password or origin.path
+                or origin.query or origin.fragment or "*" in self.app_origin):
+            raise ValueError("APP_ORIGIN must be an exact HTTP origin without wildcard or path")
+        try:
+            origin.port
+        except ValueError as exc:
+            raise ValueError("invalid APP_ORIGIN port") from exc
+        return self
+
+    @property
+    def session_cookie_secure(self) -> bool:
+        return not (self.app_env == "local" and self.session_cookie_allow_insecure_local)
+
     storage_mode: Literal["local"] = "local"
     storage_root: Path = Path("/app/media")
     worker_poll_seconds: float = Field(default=1, gt=0, le=60, allow_inf_nan=False)

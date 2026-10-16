@@ -12,13 +12,25 @@ from backend.settings import Settings
 BUILD_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
-def create_app(static_dir: Path | None = None) -> FastAPI:
+def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.settings = Settings()
-        yield
+        from backend.database import session_factory as make_session_factory
+        app.state.settings = settings if settings is not None else Settings()
+        factory = session_factory if session_factory is not None else make_session_factory(app.state.settings.database_url)
+        app.state.session_factory = factory
+        try:
+            yield
+        finally:
+            # Injected factories are owned by the caller (including test fixtures).
+            if session_factory is None:
+                await factory.kw['bind'].dispose()
 
     app = FastAPI(title="Mori AI", lifespan=lifespan)
+    from backend.http.errors import install_errors
+    from backend.auth.routes import router
+    install_errors(app)
+    app.include_router(router)
     build_dir = (static_dir if static_dir is not None else BUILD_DIR).resolve()
 
     @app.get("/health")

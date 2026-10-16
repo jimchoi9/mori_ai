@@ -37,11 +37,11 @@
 
 **Interfaces:** create_app은 테스트용 settings/session factory 주입을 허용한다. require_user(request) → AuthContext(user_id, session_id), require_csrf(request, context) → None. GET /api/v1/me·POST /consents·POST /auth/logout·GET /client-config는 계약의 envelope/no-store를 따른다. Session 수명은 개발 기본 24시간, 정책 버전은 명시 설정값이며 실제 OAuth 운영 정책 확정을 대신하지 않는다.
 
-- [ ] 실제 DB HTTP 테스트 작성: 개발 route 기본 off, production+dev_auth 설정 거부, session token hash 저장·만료·logout 철회, CSRF/Origin 누락 403, 동일 consent 201→200, 다른 계정 독립성.
-- [ ] 전용 테스트를 실행해 미구현 실패를 확인한다.
-- [ ] auth_identities·sessions·consents·idempotency_records와 Task 2/3에 필요한 album/page/upload 필드를 단일 migration으로 추가한다. 0001은 수정하지 않는다.
-- [ ] 개발 auth·공통 오류/request_id/extra=forbid·CSRF를 구현한다. 동의 고지는 원본 보관·AI 처리·삭제·복구 예외를 포함한다.
-- [ ] migration upgrade/downgrade/upgrade/check와 실제 DB auth 테스트를 통과시킨다. 총괄 검토 후 commit.
+- [x] 실제 DB HTTP 테스트 작성: 개발 route 기본 off, production+dev_auth 설정 거부, session token hash 저장·만료·logout 철회, CSRF/Origin 누락 403, 동일 consent 201→200, 다른 계정 독립성.
+- [x] 전용 테스트를 실행해 미구현 실패를 확인한다.
+- [x] auth_identities·sessions·consents·idempotency_records와 Task 2/3에 필요한 album/page/upload 필드를 단일 migration으로 추가한다. 0001은 수정하지 않는다.
+- [x] 개발 auth·공통 오류/request_id/extra=forbid·CSRF를 구현한다. 동의 고지는 원본 보관·AI 처리·삭제·복구 예외를 포함한다.
+- [x] migration upgrade/downgrade/upgrade/check와 실제 DB auth 테스트를 통과시킨다. 총괄 검토 후 commit.
 
 ## Task 2: 책장·초안·삭제와 멱등성
 

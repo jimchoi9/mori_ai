@@ -21,6 +21,12 @@ services:
       target: runtime
     environment: &backend_environment
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mori}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mori}
+      APP_ENV: ${APP_ENV:-production}
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-false}
+      APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:8000}
+      SESSION_COOKIE_ALLOW_INSECURE_LOCAL: ${SESSION_COOKIE_ALLOW_INSECURE_LOCAL:-false}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
+      CONSENT_POLICY_VERSION: ${CONSENT_POLICY_VERSION:-local-2026-10-16}
       STORAGE_MODE: ${STORAGE_MODE:-local}
       STORAGE_ROOT: ${STORAGE_ROOT:-/app/media}
       WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-1}

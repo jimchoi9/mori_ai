@@ -83,3 +83,30 @@ async def test_cancellation_reaps_child(tmp_path):
     with pytest.raises(asyncio.CancelledError): await task
     import os
     with pytest.raises(ProcessLookupError): os.kill(pid,0)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_normalizations_use_persisted_settings(tmp_path, monkeypatch):
+    import os
+    from io import BytesIO
+    from PIL import Image
+    output = BytesIO()
+    Image.new('RGB', (300, 400), 'blue').save(output, format='PNG')
+    source = tmp_path / 'source.png'
+    source.write_bytes(output.getvalue())
+    monkeypatch.setenv('NORMALIZED_MAX_EDGE', '4096')
+    results = await asyncio.gather(
+        normalize_in_process(source, 'source.png', 10, config={'NORMALIZED_MAX_EDGE': 120}),
+        normalize_in_process(source, 'source.png', 10, config={'NORMALIZED_MAX_EDGE': 240}),
+    )
+    assert [(r.width, r.height) for r in results] == [(90, 120), (180, 240)]
+    assert os.environ['NORMALIZED_MAX_EDGE'] == '4096'
+
+
+@pytest.mark.asyncio
+async def test_snapshot_cannot_override_arbitrary_child_environment(tmp_path):
+    source = tmp_path / 'source.png'
+    source.write_bytes(b'unused')
+    with pytest.raises(MediaValidationError) as error:
+        await normalize_in_process(source, 'source.png', config={'PYTHONPATH': '/other'})
+    assert error.value.code == 'IMAGE_NORMALIZATION_FAILED'
