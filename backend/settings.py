@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from urllib.parse import urlsplit
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
@@ -19,6 +19,35 @@ class Settings(BaseSettings):
     session_cookie_allow_insecure_local: bool = False
     session_ttl_seconds: int = Field(default=86400, ge=60, le=604800)
     consent_policy_version: str = Field(default="local-2026-10-16", min_length=1, max_length=100)
+    google_client_id: str = ""
+    google_client_secret: SecretStr = Field(default=SecretStr(""), repr=False)
+    google_redirect_uri: str = ""
+    kakao_client_id: str = ""
+    kakao_client_secret: SecretStr = Field(default=SecretStr(""), repr=False)
+    kakao_redirect_uri: str = ""
+
+    @property
+    def auth_providers(self) -> list[str]:
+        return [provider for provider in ("google", "kakao")
+                if getattr(self, f"{provider}_client_id")]
+
+    @model_validator(mode="after")
+    def validate_oauth(self):
+        for provider in ("google", "kakao"):
+            client_id = getattr(self, f"{provider}_client_id")
+            secret = getattr(self, f"{provider}_client_secret").get_secret_value()
+            callback = getattr(self, f"{provider}_redirect_uri")
+            if not client_id:
+                if secret:
+                    raise ValueError("OAuth secret requires client ID")
+                continue
+            if client_id != client_id.strip() or len(client_id) > 1024:
+                raise ValueError("invalid OAuth client ID")
+            if provider == "google" and not secret:
+                raise ValueError("Google OAuth requires client secret")
+            if callback != f"{self.app_origin}/api/v1/auth/{provider}/callback":
+                raise ValueError("OAuth callback must match configured origin and provider path")
+        return self
 
     @model_validator(mode="after")
     def validate_auth(self):

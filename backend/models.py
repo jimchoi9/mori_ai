@@ -175,6 +175,17 @@ class AuthIdentity(Identity, Base):
     __table_args__ = (UniqueConstraint('provider', 'provider_subject'), CheckConstraint("provider IN ('google','kakao')"))
 
 
+class OAuthLoginRequest(Identity, Base):
+    __tablename__ = 'oauth_login_requests'
+    provider: Mapped[str] = mapped_column(String(20))
+    state_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    binding_hash: Mapped[str] = mapped_column(String(64))
+    return_to: Mapped[str] = mapped_column(String(255))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (CheckConstraint("provider IN ('google','kakao')"),)
+
+
 class Session(Identity, Base):
     __tablename__ = 'sessions'
     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), index=True)
