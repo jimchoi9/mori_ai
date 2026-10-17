@@ -110,7 +110,10 @@ async def test_publish_rechecks_ready_and_version_then_replays_current_published
 
 
 @pytest.mark.asyncio
-async def test_viewer_exact_dto_first_two_urls_and_private_expiry(client,db,tmp_path):
+async def test_viewer_exact_dto_first_two_urls_and_private_expiry(client,db,tmp_path,monkeypatch):
+    from backend.albums import music
+    soundtrack=tmp_path/'bgm.mp3';soundtrack.write_bytes(b'ID3'+b'x'*100)
+    monkeypatch.setattr(music,'BGM_PATH',soundtrack)
     from backend.storage.signing import Signer
     me,album,detail,store=await review(client,db,tmp_path,count=3)
     assert (await client.get(f'/api/v1/albums/{album}/viewer')).status_code==409
@@ -118,7 +121,9 @@ async def test_viewer_exact_dto_first_two_urls_and_private_expiry(client,db,tmp_
     r=await client.get(f'/api/v1/albums/{album}/viewer');assert r.status_code==200
     view=r.json()['data']
     assert set(view)=={'album_id','title','version','pages','media_access','music','generation_mode'}
-    assert view['music'] is None and [p['position'] for p in view['pages']]==[1,2,3]
+    assert view['music']=={'track_id':'mori-bgm-v1','title':'사진첩 배경음악','url':'/audio/bgm.mp3'}
+    assert (await client.get(view['music']['url'],headers={'Range':'bytes=0-2'})).status_code==206
+    assert [p['position'] for p in view['pages']]==[1,2,3]
     assert [p['id'] for p in view['pages']]==[p['id'] for p in detail['pages']]
     for page in view['pages']:
         assert set(page)=={'id','position','image','caption_text'}

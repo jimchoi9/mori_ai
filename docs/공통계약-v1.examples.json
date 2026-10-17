@@ -1549,7 +1549,11 @@
           "expires_at": "2026-10-15T10:05:00Z"
         }
       ],
-      "music": null,
+      "music": {
+        "track_id": "mori-bgm-v1",
+        "url": "/audio/bgm.mp3",
+        "title": "사진첩 배경음악"
+      },
       "generation_mode": "openai"
     },
     "request_id": "req-example"

@@ -1,5 +1,6 @@
 """Published owner viewer with checked WebP outputs and two initial signed URLs."""
 from backend.albums import repository as repo
+from backend.albums.music import viewer_music
 from backend.albums.service import not_found,media_ref,access_entries,generation_mode
 from backend.http.errors import APIError
 from backend.storage.local import canonical_asset_keys
@@ -34,4 +35,4 @@ async def get_viewer(session,owner_id,album_id):
     rows=await ready_pages(session,album)
     pages=[{'id':str(page.id),'position':page.position,'image':media_ref(asset),'caption_text':page.caption_text} for page,asset in rows]
     return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),
-        'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':None}
+        'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':viewer_music()}

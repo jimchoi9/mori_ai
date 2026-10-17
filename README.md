@@ -1,90 +1,75 @@
-# Mori AI 사진첩 프로젝트
+# Mori AI 사진첩
 
-사진을 올리면 AI가 세로 3:4 이미지와 한 문장 글귀를 만들고, 사용자가 글귀를 수정해 모바일 사진첩으로 감상하는 서비스다. 초기 범위는 책장·사진 입력·생성·수정·뷰어이며 Google/Kakao 로그인과 HEIF/HEIC 입력·서버 WebP 정규화를 포함한다.
+사진을 올리면 AI가 세로 3:4 이미지와 한 문장 글귀를 만들고, 사용자가 글귀를 수정해 모바일 사진첩으로 감상하는 서비스다. Google/Kakao 로그인, JPEG·PNG·WebP·HEIF/HEIC 업로드, WebP 정규화, 책장·글귀 수정·소유자 뷰어와 배경음악을 포함한다.
 
-2026-10-16 사용자가 순차 진행을 승인했다. 기술 시작 기준과 계약 v1.3을 반영했고 승인된 첫 개발 묶음의 로컬 실행 기반·미디어 경계·DB/worker 복구를 구현하고 통합 검토하는 단계다. 제품 전체 기능과 실제 외부 연동은 후속 범위다. GPT Image 2의 사진 변환 품질은 사용자가 확인했으며 실제 서비스 계정의 시간·비용·오류 복구·codec는 별도 검증한다.
+## 현재 상태 — 2026-10-17
 
-## 읽는 순서
+- Google/Kakao 실제 로그인, R2 실제 업로드·읽기, OpenAI 글귀·이미지 생성이 연결됐다. 사용자가 모바일 기본 흐름, 사진 품질과 최근 성능 개선 결과를 확인했다.
+- 정확한 세로 3:4 사진은 이미지 AI를 생략한다. 글귀는 설정 가능한 `gpt-5.4-mini`, 이미지는 `gpt-image-2`를 사용한다. 새 글귀는 담백한 회상형 `openai-memory-v3`; 기존 run은 생성 당시 프롬프트를 유지한다.
+- 생성 동시 실행은 DB 전역 글귀 4·이미지 2·최적화 1, 업로드 검증은 worker 프로세스당 1이다. 실제 병렬화·중복 다운로드 제거·구간 로그를 반영했다. 업로드 완료 확인만 최대 180초, 일반 API는 30초를 기다린다.
+- BGM은 `assets/audio/bgm.mp3`를 제공하며 버튼으로 시작·반복 재생한다. 뷰어 이탈·백그라운드 전환 시 정지하고 복귀해도 자동 재생하지 않는다.
+- 외부 배포는 아직 수행하지 않았다. 실제 모바일 네트워크 중단·복귀, 장시간 외부 서비스 부하, 배포 환경 메모리 검증이 남아 있다. HDR/10bit 입력은 지원하지 않으며 고밀도 40MP 사진 일부는 이미지 처리 메모리 한도에서 거절된다.
 
-| 문서 | 확인할 내용 |
+## 문서 진입점
+
+| 문서 | 내용 |
 |---|---|
-| 1. [기능요구명세서](기능요구명세서.md) | 무엇을 만들고 무엇을 제외하는가 |
-| 2. [공통계약 v1.4](docs/공통계약-v1.md) · [샘플 JSON](docs/공통계약-v1.examples.json) | 데이터·API·상태·오류의 현재 기준 |
-| 3. [화면과 기술 설계](docs/설계.md) | 화면·기술 목록·버전·배포·worker·미디어·복구 제안 |
-| 4. [재사용 조사](docs/재사용조사.md) | 기존 코드에서 가져올 후보와 다시 작성할 부분 |
-| 5. [검증 계획](docs/검증계획.md) | 남은 결정과 설치·codec·DB·AI·모바일의 통과 조건 |
-| 6. [개발 운영](docs/개발운영.md) | 담당·파일 소유권·병렬 진행·통합·일정 |
+| [기능요구명세서](기능요구명세서.md) | 초기 기능·제외 범위·사용자 테스트와 제출 조건 |
+| [공통계약](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류 기준 |
+| [설계](docs/설계.md) | 화면·구조·worker·복구·배포 설계 |
+| [재사용 조사](docs/재사용조사.md) | 기존 moriai에서 참고한 모듈과 출처 |
+| [검증 계획](docs/검증계획.md) | 인수 기준·실행 결과·남은 확인 |
+| [개발 운영](docs/개발운영.md) · [AGENTS.md](AGENTS.md) | 편집 소유권·환경 격리·Orca 협업 규칙 |
 
-에이전트의 작업 규칙은 [AGENTS.md](AGENTS.md)를 따른다. 현재 사용자 지시와 확정 요구가 우선하며 구현 계약은 공통계약과 샘플이 기준이다. 설계의 기술 시작 기준과 계약 보완 5개는 2026-10-16 채택했다. 이후 추가 제안은 채택 전까지 현재 계약을 대체하지 않는다. 문서를 정리한 것은 구현·기술 승인·검증 완료를 뜻하지 않는다.
+최근 검증 근거: [실제 OAuth](docs/실제OAuth-검증결과.md), [R2](docs/R2-통합검증.md), [실제 AI·비용](docs/실제-AI-검증.md), [성능·업로드 시간 초과](docs/성능-검증결과.md), [병렬 안정성](docs/병렬처리-안정성-검증.md), [BGM](docs/BGM-구현검증.md). 오래된 문서의 ‘미구현/검증 전’ 문장은 당시 이력이며 최신 결과가 우선한다. [문서 이력](docs/archive/2026-10-16/README.md)과 초기 구현 계획은 보존한다.
 
-## 어디에 기록하는가
+## 새 로컬 환경 실행
 
-- 기능 범위·과제 조건은 기능요구명세서에 기록한다.
-- API·DTO·상태 변경은 공통계약과 샘플을 함께 수정한다.
-- 화면·기술·성능 설정 제안은 설계에 기록하고 확정 여부를 표시한다.
-- 원본 코드 출처·채택·이식 내역은 재사용조사에 기록한다.
-- 미결정 D 항목과 검증 A/F/V 결과는 검증계획에 기록한다.
-- Task 배정·환경 격리·일정·통합 상태는 개발운영에 기록한다.
+Docker Desktop을 실행하고 다음 절차를 따른다. 기존 `.env`가 있으면 덮어쓰지 않는다.
 
-V01은 Linux amd64 설치·빌드·HTTP 경계·환경 격리를 검증했다. V03/V04는 이번 DB·worker 기반 범위에서 통과했다. V02는 부분 검증이며 HDR/10bit 정규화는 아직 지원하지 않는다. V09는 합성 RGB 최대 크기 50장만 통과했다. V05~V08/V10과 전체 제품 검증은 남아 있다. 기존 moriai의 명령·운영 계정·DB·파일은 새 프로젝트의 실행 자원으로 사용하지 않는다.
-
-## 문서 정리 이력
-
-2026-10-16 핵심 문서 9종을 역할별 6종으로 통합했다. 이전 문서와 오래된 API 검토·조사 Run 기록은 [이력 목록](docs/archive/2026-10-16/README.md)에 보존했다. 기존 PDF와 UI 시안·프롬프트는 참고 자료로 유지한다.
-
-## 첫 개발 묶음
-
-[실행 계획](docs/superpowers/plans/2026-10-16-development-foundation.md)은 최소 기반 V01 후 미디어 V02/V09와 DB·worker V03/V04를 병렬 검증하는 범위다. 2026-10-16 기술 시작 기준·계약 v1.3 반영 완료. 실행 계획은 승인되었고 세 구현 Task가 완료 보고를 제출했다. 독립 검토의 색상·복구 결함을 수정하고 실제 DB 전체 163개 검증을 통과했다. [검토 및 수정 판정](docs/기반독립검토.md)에 근거를 남겼다. 당시 실제 OAuth·R2·OpenAI 자원은 준비 전이어서 로컬·가짜 adapter로 개발했다. 최신 준비 상태는 아래 기록을 따른다. 기준 커밋에는 현재 문서와 계약을 포함하고 원본 PDF·UI 참고 파일은 별도로 유지한다.
-
-## 로컬 기반 실행
-
-Node·Python을 호스트에 추가 설치하지 않고 Docker Desktop을 실행한 상태에서 사용한다.
-
-```bash
+```sh
 cp .env.example .env
-# .env의 POSTGRES_PASSWORD를 새 로컬 전용 URL-safe 비밀번호로 바꾼다.
-# 다른 작업 공간과 COMPOSE_PROJECT_NAME·WEB_PORT를 다르게 지정한다.
+# POSTGRES_PASSWORD를 새 로컬 전용 값으로 지정하고 사용할 adapter 설정을 채운다.
+# 다른 checkout과 COMPOSE_PROJECT_NAME·WEB_PORT를 다르게 지정한다.
 make up
 make down
 ```
 
-`make down`은 DB·media volume을 보존한다. 새 DB는 일회성 migration 성공 후 web·worker가 시작된다. 현재 화면은 개발 로그인·동의·책장·사진 업로드·정규화·가짜 생성·글귀 수정·완성·소유자 뷰어를 연결한다. Google/Kakao OAuth API·화면을 구현했으며 사용자가 두 제공자의 실제 로그인 성공을 확인했다. 서버의 별도 사용자·동의 기록도 확인했다. R2 adapter를 추가했으며 실제 AI adapter는 후속 범위다.
+`make up`은 이미지 빌드와 migration 후 web·worker를 시작한다. `make down`은 DB·media volume을 보존한다. 기존 moriai의 운영 DB·계정·사진을 복사하거나 연결하지 않는다.
 
-```bash
-make verify-install
-make verify-isolation
+- 개발 로그인: 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`. 운영에서는 개발 로그인과 insecure cookie를 허용하지 않는다.
+- 가짜 AI: 로컬에서만 `DEV_AI_ENABLED=true`. 실제 API와 비용이 없는 고정 글귀·테스트 canvas다.
+- 실제 연동: `.env.example`의 OAuth, R2, OpenAI 항목을 채우고 `STORAGE_MODE=r2`, `AI_REAL_CALLS_ENABLED=true`를 명시한다. SDK 호출은 누적 비용 장부·사전 예약·unknown 보수적 집계를 거친다. 사용자 승인 총 한도는 $100, 초기 운용 한도는 $5다. 한도는 소비 목표가 아니다.
+- 음원: 저장소의 `assets/audio/bgm.mp3`를 Docker 이미지에 포함한다. 임의 디렉터리를 공개하지 않고 `/audio/bgm.mp3`만 제공한다. 외부 음원 계정이나 환경변수는 필요 없다.
+
+현재 테스트 서버는 `.env.qa`와 Compose project `mori-r2-qa`, `http://127.0.0.1:8000`을 사용한다. 기존 DB·OAuth origin을 보존하기 위해 이 환경을 다른 `.env`로 임의 재생성하지 않는다. 병렬 UI 세션은 별도 worktree·포트·DB를 사용한다. `.env*`와 키는 출력하거나 커밋하지 않는다.
+
+OAuth 인증 code가 로그에 남지 않도록 Uvicorn은 `--no-access-log`로 실행한다. `mori.performance` 구조화 로그는 허용된 시간·단계·ID·오류 분류만 기록하며 사진·서명 URL·본문을 기록하지 않는다.
+
+## R2 설정과 검증
+
+비공개 bucket의 로컬 CORS는 [JSON](docs/storage/r2-cors.local.json)을 사용한다. `http://127.0.0.1:8000`과 `localhost`는 다른 origin이다. 배포 주소나 별도 모바일 접속 주소에는 그 origin의 OAuth callback·R2 CORS 설정이 필요하다.
+
+`make verify-storage`는 실제 R2의 고유 `mori-ai-storage-check/<UUID>/` 경로에서 합성 파일·hash·조건부 덮어쓰기 거부·서명·CORS·삭제 등을 검증하고 생성 객체를 정리한다. 실제 저장소 요청은 발생하지만 사용자 사진·AI는 사용하지 않는다. local 객체가 있는 DB를 그대로 R2 모드로 바꾸지 않는다.
+
+## 자동 검증
+
+```sh
+make verify-install       # 의존성·빌드·기본 테스트
+make verify-isolation     # 임시 Compose 환경 격리
+make verify-codecs
+make verify-db            # 전용 임시 PostgreSQL의 통합 검사
+make verify-worker
+make verify-media-load    # 기존 순차 미디어 부하 검사
 ```
 
-실행 버전·image digest·초기 기반 테스트와 격리 검증 근거는 [기반 검증 결과](docs/기반검증-결과.md)에 기록했다. 검증용 isolation 명령은 자신이 만든 임시 프로젝트와 volume만 정리한다.
+현재 검증 이미지는 `mori-ai:ai-tests`다. 이를 사용할 때는 `MORI_VERIFY_TEST_IMAGE=mori-ai:ai-tests`를 지정한다. 이미지가 없으면 먼저 설치 검증으로 검증 이미지를 빌드한다. 전체 backend 검증은 `bash scripts/verify-db.sh backend/tests`를 사용한다. 병렬 메모리·다중 프로세스 재현 명령은 [병렬 안정성 보고서](docs/병렬처리-안정성-검증.md)에 있다. 테스트용 DB는 QA DB와 분리되고 종료 시 자신의 임시 볼륨만 제거한다.
 
-추가 검증 명령: make verify-codecs, make verify-db, make verify-worker, make verify-media-load. 실제 DB 연결 전체 테스트는 bash scripts/verify-db.sh backend/tests로 실행한다. 설치 검증은 DB 테스트를 명시적으로 skip하고 이 명령에서 실제 실행한다. 상세 결과는 [미디어 검증](docs/미디어검증-결과.md)과 [DB/worker 검증](docs/DB-worker검증-결과.md)을 참고한다.
+## 남은 작업
 
-로컬 기반 구현 계획은 [로그인·책장·업로드 연동](docs/superpowers/plans/2026-10-16-local-upload-flow.md)이며 실제 OAuth/R2/AI 계정 없이 개발한다.
+1. 고밀도 40MP 입력의 메모리 처리와 실제 모바일 중단·복귀 검증.
+2. 별도 세션의 UI/UX 개선 통합 및 BGM의 실제 모바일 청취 확인.
+3. 외부 배포 환경·HTTPS·OAuth callback·R2 CORS·DB 백업·비용/오류 점검.
+4. 명세 기준 최소 5명 사용자 테스트와 피드백 반영·제출 자료 정리.
 
-로컬 개발 로그인을 사용하려면 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`를 지정한다. 기본값은 개발 로그인을 비활성화한다. 운영 환경에서는 개발 로그인·insecure cookie 설정을 허용하지 않는다. HDR/10bit 사진은 명시적으로 거부한다.
-
-업로드 합류 검증은 [화면 검증 결과](docs/로컬화면-검증결과.md)에 기록한다. 가짜 흐름 구현 계획은 [AI·수정·뷰어](docs/superpowers/plans/2026-10-16-local-generation-viewer.md)다.
-
-가짜 생성을 시험하려면 위 로컬 설정에 `DEV_AI_ENABLED=true`를 추가한다. 기본값은 false이며 local에서만 켤 수 있다. 이미지는 전체 사진을 담는 3:4 테스트 canvas, 글귀는 고정 문장이고 실제 AI 호출·비용은 없다. [로컬 생성 화면·통합 검증](docs/로컬생성화면-검증결과.md)을 참고한다. 음악은 준비 전이다.
-
-### 실제 연동 준비 상태 (2026-10-16 최신)
-
-2026-10-16 사용자 준비 상태 갱신: 새 서비스용 Google/Kakao OAuth 앱, R2 bucket, OpenAI 계정·키는 준비됨(사용자 보고; 실제 접속 검증 전). 글귀 모델은 `gpt-5.4-mini`를 우선 사용하고 설정으로 교체 가능하게 구성한다. 실제 AI 검증 예산은 이미지·글귀 합산 총 최대 USD 100이며, 최소 호출로 검증한 뒤 필요할 때 단계적으로 확대한다. 이는 예산 상한이며 소비 목표가 아니다. 현재 구현의 local_test_bound/estimated_cost=0은 실제 USD 예산 통제가 아니므로 외부 adapter 연결 전에 별도 누적 사용·사전 비용 예약·불명확한 호출 비용 보수적 반영을 설계한다. 실제 연결·모델 접근·키 배치·비용 통제는 아직 검증하지 않았다. 기존 서비스 자원은 사용하지 않는다.
-
-권장 합류 순서는 OAuth → R2 → 실제 글귀 → 이미지 변환 → 전체 흐름 검증이다. 먼저 모의 응답으로 실패·복구·예산 경계를 검사하고, 실제 호출은 대표 사진의 소량 검증부터 시작한다. 글귀 모델의 이미지 입력·텍스트 출력 지원은 [OpenAI 공식 문서](https://developers.openai.com/api/docs/models/gpt-5.4-mini)에서 확인했다. 해당 계정의 모델 접근 가능 여부와 사진별 비용은 실제 검증 대상이다.
-
-`.env.example`을 `.env`로 복사하고 Google/Kakao client 값, R2 bucket·S3 endpoint·자격증명, OpenAI API 키를 채운다. 각 항목의 주석을 따른다. 기존 `.env`가 있다면 복사로 덮어쓰지 말고 필요한 항목만 추가한다. Google/Kakao OAuth 설정은 Settings/Compose에서 명시적으로 전달한다. R2 항목은 STORAGE_MODE=r2에서 사용한다. OpenAI/AI 예산 항목은 후속 구현 준비값이다. 실제 AI 호출은 비활성으로 두고, 최초 검증은 전체 $100에 포함되는 최대 $5 범위부터 시작한다. 이미지 모델과 선택적 organization/project는 확인 전 비워둘 수 있다. Google의 [웹 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), Kakao의 [REST 로그인](https://developers.kakao.com/docs/ko/kakaologin/rest-api), R2의 [S3 자격증명·endpoint](https://developers.cloudflare.com/r2/get-started/s3/) 문서를 참고한다.
-
-OAuth 실행 중 검증 기록: [구현 계획](docs/superpowers/plans/2026-10-16-real-oauth.md), [저장소](docs/OAuth-저장소-구현결과.md), [제공자 adapter](docs/OAuth-provider-구현결과.md), [화면](docs/OAuth-화면-구현결과.md). 실제 Google/Kakao 왕복 성공은 별도 최종 검증 결과로 판정한다. container의 기본 Uvicorn은 callback query의 인증 code가 로그에 남지 않도록 access log를 끈다. 직접 실행할 때도 `--no-access-log`를 사용한다.
-
-OAuth의 현재 전체 판정과 실제 로그인 확인 범위는 [최종 검증 결과](docs/실제OAuth-검증결과.md)를 따른다.
-
-### R2 검증
-
-`STORAGE_MODE=r2`와 `.env.example`의 R2 설정을 사용한다. 비공개 bucket의 로컬 CORS는 [정확한 JSON](docs/storage/r2-cors.local.json)을 콘솔 Settings → CORS Policy에 넣는다. 허용 origin은 `http://127.0.0.1:8000`이다. `localhost`는 다른 origin이다.
-
-`make verify-storage`는 실제 R2에 작은 합성 PNG/JPEG/HEIF를 업로드하고 hash·조건부 덮어쓰기 거부·서명 GET/HEAD·CORS·만료·삭제·attempt envelope를 확인한다. 고유 `mori-ai-storage-check/<UUID>/` namespace만 사용하고 종료 시 생성 객체를 삭제한다. 원본 사진·기존 namespace·AI는 사용하지 않는다. 저장소 소량 API 요청은 발생한다.
-
-local DB/volume을 그대로 R2 모드로 바꾸면 기존 local 객체를 찾을 수 없다. 새 DB와 namespace에서 테스트하며 기존 local DB/media volume은 보존한다. [실사진 정규화 수정](docs/실사진-정규화-수정결과.md), [R2 adapter](docs/R2-adapter-구현결과.md), [R2 worker](docs/R2-worker-구현결과.md), [업로드 화면](docs/R2-업로드-구현결과.md)을 참조한다.
-
-2026-10-16 [R2 통합 검증](docs/R2-통합검증.md) 완료: 실제 세 형식의 업로드·정규화·읽기·조건부 재전송·CORS·만료·삭제 및 가짜 생성/뷰어를 확인했다. 현재 8000의 별도 R2 QA는 Google/Kakao 로그인과 R2 업로드만 활성화했고, 개발 로그인·가짜 AI·실제 AI 호출은 비활성이다. 이전 local QA DB/media는 보존했다. 최종 검토 Critical0/Important0.
+외부 배포와 운영 변경은 별도 승인 범위다. 공유·결제·TTS·영상 등 제외 기능을 남은 초기 구현으로 추가하지 않는다.

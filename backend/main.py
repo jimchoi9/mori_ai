@@ -44,6 +44,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(oauth_router)
     from backend.albums.routes import router as albums_router
     app.include_router(albums_router)
+    from backend.albums.music import router as music_router
+    app.include_router(music_router)
     from backend.uploads.routes import router as uploads_router
     app.include_router(uploads_router)
     from backend.generation.routes import router as generation_router
@@ -60,7 +62,7 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     @app.get("/{path:path}", include_in_schema=False)
     async def frontend(path: str):
         # Reserved namespaces and file-shaped requests must never become HTML 200.
-        if path.split("/", 1)[0] in {"api", "assets", "health", "media"}:
+        if path.split("/", 1)[0] in {"api", "assets", "health", "media", "audio"}:
             raise HTTPException(status_code=404)
         candidate = (build_dir / path).resolve()
         if not candidate.is_relative_to(build_dir):
