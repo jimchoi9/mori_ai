@@ -84,7 +84,7 @@
 - `.env.qa` / Compose project `mori-r2-qa` / 포트8000은 사용자 QA다. 다른 `.env`로 임의 재생성하거나 사용자 DB·사진을 초기화하지 않는다. 환경 파일·키·사진은 출력/커밋하지 않는다.
 - 현재 QA web 이미지는 `mori-ai:bgm-runtime`이다.
 - BGM 원본은 사용자가 제공한 `assets/audio/bgm.mp3`. 총괄은 music API·`BackgroundMusic.tsx`·`musicPlayback.ts` 및 뷰어 최소 연결을 담당한다. UI 세션은 해당 기능을 보존하며 표시·배치를 수정한다.
-- UI 세션의 별도 checkout은 `/Users/choijimin/orca/workspaces/mori_ai/feat-development-foundation-2`다. 최신 통합 기준 커밋을 전달받은 뒤 기능 변경을 보존해 합류한다. 총괄 checkout·QA 환경·공통 설정을 동시 수정하지 않는다.
+- UI 세션의 별도 checkout은 `/Users/choijimin/orca/workspaces/mori_ai/feat-ui-apple`다. UI 커밋 `a6e601b`는 총괄 브랜치에 fast-forward 통합했다. 원래 UI 브랜치/worktree는 보존하며 모바일 실기기 확인은 배포 완료 후 재개한다. 총괄 checkout·QA 환경·공통 설정을 동시 수정하지 않는다.
 - 생성 슬롯은 DB 전역 이미지2·글귀4·최적화1, 검증은 worker 프로세스당1. R2 SDK 재시도 최초 포함3회, OpenAI 유료 SDK 재시도0이다.
 - 새 글귀는 `openai-memory-v3`, 기존 run은 동결된 v1/v2/v3 설정을 유지한다. 가짜 provider 부하 개선율을 실제 OpenAI 속도로 보고하지 않는다.
 - 병렬 안정성 자동 검사95개와 1GiB 제한 12MP codec 병행은 통과했다. 고밀도40MP 메모리 제한·실제 모바일 중단/복귀·장시간 외부 부하는 남아 있다.
