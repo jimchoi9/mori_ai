@@ -15,7 +15,8 @@ from backend.storage.factory import media_storage
 from backend.storage.r2 import StorageUnavailable
 from backend.storage.snapshot import input_file
 from backend.telemetry import span, emit
-from backend.uploads.service import config, touch
+from backend.uploads.service import touch
+from backend.uploads.preprocessing import preprocessing_hints
 from backend.albums.page_order import sort_date, finish_batch, bump_version
 from backend.worker.jobs import claim_job, finish_job, enqueue_job
 
@@ -109,7 +110,12 @@ class ValidationWorker:
             key=asset.storage_key; expected=asset.sha256; declared=u.declared_bytes
             owner=album.owner_id; album_id=album.id; page_id=page.id
             saved=u.validation_config or {}
-            snapshot=saved.get('media',saved) if saved else config(self.settings)
+            snapshot=saved.get('media',saved)
+            if isinstance(snapshot,dict):
+                # Unversioned reservations must reproduce pre-upgrade bytes at
+                # immutable keys, including a crash after object persistence.
+                # Never replace missing legacy settings with current settings.
+                snapshot={'NORMALIZATION_VERSION':1,'NORMALIZED_WEBP_QUALITY':90,**snapshot}
             config_version=saved.get('version',1)
         emit('validation.claim', job_id=claim.job_id, queue_age_ms=max(0,(now()-job.created_at).total_seconds()*1000), attempt_no=job.attempt_count)
         error=None; normalized=None
@@ -127,6 +133,10 @@ class ValidationWorker:
                 mime=await asyncio.to_thread(source_mime,source_path)
                 with span('media.normalize', job_id=claim.job_id, bytes=size):
                     normalized=await normalize_in_process(source_path,'source',config=snapshot)
+                hints=await asyncio.to_thread(preprocessing_hints,saved,mime,source_path)
+                if (hints and hints.original_width*4==hints.original_height*3
+                    and normalized.width*4!=normalized.height*3):
+                    raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
             if normalized.sha256!=expected:
                 raise MediaValidationError('IMAGE_DECODE_FAILED')
             # Deterministic object names and no-overwrite writes make restart idempotent.
@@ -161,14 +171,17 @@ class ValidationWorker:
                         or derived.sha256!=hashlib.sha256(data).hexdigest()): raise ValueError('derived scope/checksum conflict')
                     setattr(page,role+'_asset_id',identity)
                 asset.mime=mime; asset.bytes=size; asset.sha256=expected; asset.status='ready'
-                page.input_is_3_4=normalized.input_is_3_4
-                page.captured_at_raw=normalized.captured_at_raw; page.captured_timezone=normalized.captured_timezone
-                page.sort_date,page.sort_date_source=sort_date(normalized.captured_at_raw,u.file_last_modified_at,u.created_at)
+                page.input_is_3_4=(hints.original_width*4==hints.original_height*3) if hints else normalized.input_is_3_4
+                page.captured_at_raw=hints.captured_at_raw if hints else normalized.captured_at_raw
+                page.captured_timezone=hints.captured_timezone if hints else normalized.captured_timezone
+                page.sort_date,page.sort_date_source=sort_date(page.captured_at_raw,u.file_last_modified_at,u.created_at)
                 u.status='ready'; u.error_code=None
                 bump_version(s, page)
                 touch(s, album)
                 job.status='succeeded'; job.lease_until=None; job.finished_at=now()
                 await s.flush(); await finish_batch(s,album,u.batch_id)
+                if (u.validation_config or {}).get('source_lifetime')=='temporary':
+                    await enqueue_job(s,'cleanup_asset',asset.id)
         if clean:
             for derived_key in keys.values(): await asyncio.to_thread(self.store.delete,derived_key)
 
@@ -280,15 +293,28 @@ class ValidationWorker:
             task = await session.scalar(select(Task.id).where(Task.output_asset_id == asset.id))
             attempt = await session.scalar(select(Attempt.id).where(Attempt.output_asset_id == asset.id))
             incomplete = False
+            retired = False
             if asset.role == 'source' and not task and not attempt:
                 query = select(Upload).where(Upload.asset_id == asset.id, Upload.album_id == album.id)
                 upload = await session.scalar(query.with_for_update() if lock else query)
+                if (upload and upload.page_id == page.id and upload.status=='ready'
+                    and (upload.validation_config or {}).get('source_lifetime')=='temporary'
+                    and page.source_asset_id==asset.id):
+                    normalized=await session.get(MediaAsset,page.normalized_asset_id) if page.normalized_asset_id else None
+                    validation=await session.scalar(select(Job).where(Job.kind=='validate_upload',Job.target_id==upload.id))
+                    retired=(normalized is not None and normalized.role=='normalized'
+                        and normalized.owner_id==album.owner_id and normalized.album_id==album.id
+                        and normalized.page_id==page.id and normalized.status=='ready'
+                        and normalized.deleted_at is None and normalized.mime=='image/webp'
+                        and normalized.bytes is not None and normalized.bytes>0 and bool(normalized.sha256)
+                        and normalized.storage_key==storage_key(album.owner_id,album.id,page.id,'normalized')
+                        and validation is not None and validation.status=='succeeded')
                 if (upload and upload.page_id == page.id and upload.status in {'expired', 'rejected'}
                     and upload.created_at <= now() - timedelta(hours=24)):
                     query = select(Job).where(Job.kind == 'validate_upload', Job.target_id == upload.id)
                     validation = await session.scalar(query.with_for_update() if lock else query)
                     incomplete = validation is None or validation.status in {'succeeded', 'failed', 'cancelled'}
-            if (linked or task or attempt) and not incomplete:
+            if (linked or task or attempt) and not (incomplete or retired):
                 return ()
         keys = [expected]
         if deleted:

@@ -23,6 +23,9 @@ RUN ./node_modules/.bin/tsc src/features/auth/oauth.ts --target ES2022 --module 
 RUN ./node_modules/.bin/tsc src/features/uploads/putFile.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/r2-upload-check \
     && node tests/r2_upload.test.mjs file:///tmp/r2-upload-check/features/uploads/putFile.js
 
+RUN node tests/upload_preprocess.test.mjs ../src/features/uploads/preprocess.ts \
+    && node tests/upload_preprocess_hook.test.mjs
+
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
 

@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.5",
+  "contract_version": "1.6",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1580,6 +1580,25 @@
           "filename": "IMG_0003.jpg",
           "mime": "image/jpeg",
           "bytes": 1500000
+        }
+      ]
+    },
+    "preprocessed_webp": {
+      "expected_version": 1,
+      "files": [
+        {
+          "client_file_id": "00000000-0000-4000-8000-000000000804",
+          "filename": "photo.webp",
+          "mime": "image/webp",
+          "bytes": 420000,
+          "file_last_modified_at": "2026-10-01T03:00:00Z",
+          "preprocessing": {
+            "version": 1,
+            "original_width": 3000,
+            "original_height": 4000,
+            "captured_at_raw": "2026:10:01 12:00:00",
+            "captured_timezone": "+09:00"
+          }
         }
       ]
     }

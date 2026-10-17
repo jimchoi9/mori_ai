@@ -163,3 +163,8 @@ def test_reported_phone_trc_coefficients_are_supported(monkeypatch):
                      .0521392822265625, .077392578125, .0404510498046875])
     data = heif_with_metadata(monkeypatch, icc)
     assert normalize(data, 'phone.heic').input_is_3_4
+
+
+@pytest.fixture(autouse=True)
+def reference_lossless_encoding(monkeypatch):
+    monkeypatch.setenv('NORMALIZED_WEBP_LOSSLESS', 'true')

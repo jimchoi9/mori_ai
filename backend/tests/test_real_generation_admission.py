@@ -5,7 +5,7 @@ from backend.generation.service import config_snapshot,require_local_ai
 def settings():
     return SimpleNamespace(app_env='local',dev_ai_enabled=False,ai_real_calls_enabled=True,
         openai_caption_model='gpt-5.4-mini',openai_image_model='gpt-image-2',
-        normalized_webp_lossless=True,normalized_max_edge=4096,normalized_max_bytes=20000000,
+        normalized_webp_lossless=True,normalized_webp_quality=90,normalized_max_edge=4096,normalized_max_bytes=20000000,
         result_webp_quality=85,thumbnail_webp_quality=75,thumbnail_max_edge=320)
 
 

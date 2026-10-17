@@ -28,7 +28,7 @@ def touch(session, album):
 
 
 def config(settings):
-    return {key.upper():getattr(settings,key) for key in ('normalized_webp_lossless','normalized_max_edge','normalized_max_bytes','thumbnail_webp_quality','thumbnail_max_edge','result_webp_quality')}
+    return {'NORMALIZATION_VERSION':2, **{key.upper():getattr(settings,key) for key in ('normalized_webp_lossless','normalized_webp_quality','normalized_max_edge','normalized_max_bytes','thumbnail_webp_quality','thumbnail_max_edge','result_webp_quality')}}
 
 
 async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
@@ -55,6 +55,8 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     if len({f.client_file_id for f in body.files})!=len(body.files): raise APIError(422,'VALIDATION_ERROR')
     for f in body.files:
         if PurePath(f.filename).suffix.lower() not in MIMES: raise APIError(422,'UNSUPPORTED_MEDIA')
+        if f.preprocessing is not None and (PurePath(f.filename).suffix.lower()!='.webp' or f.mime not in {None,'image/webp'}):
+            raise APIError(422,'VALIDATION_ERROR')
     batch=uuid4(); expiry=stamp+timedelta(seconds=900); result=[]
     for offset,f in enumerate(body.files,1):
         page=Page(id=uuid4(),album_id=album_id,position=len(pages)+offset,selection_index=parent.next_selection_index)
@@ -64,7 +66,8 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         mime=MIMES[PurePath(f.filename).suffix.lower()]
         asset=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='source',storage_key=storage_key(owner,album_id,page.id,'source'),mime=mime,status='pending')
         session.add(asset); await session.flush(); page.source_asset_id=asset.id
-        u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode},created_at=stamp)
+        u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode,'source_lifetime':'temporary',
+            **({'preprocessing':f.preprocessing.model_dump()} if f.preprocessing is not None else {})},created_at=stamp)
         session.add(u)
         path=f'/api/v1/private/uploads/{u.id}'
         upload_url,required_headers=signer.upload_url(asset.storage_key,path,u.id,int(expiry.timestamp()),mime,f.bytes)
@@ -128,7 +131,8 @@ async def put_metadata(session,owner,upload_id):
     album_id=await repo.upload_album_id(session,upload_id)
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
     repo.draft(parent)
-    if u.status not in {'reserved','validating','ready'}: raise APIError(409,'STATE_CONFLICT')
+    if u.status not in {'reserved','validating','ready'} or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary'):
+        raise APIError(409,'STATE_CONFLICT')
     upload_mime=(u.validation_config or {}).get('upload_mime',asset.mime)
     return album_id,asset.storage_key,upload_mime,u.declared_bytes,u.expires_at
 
@@ -136,6 +140,7 @@ async def put_metadata(session,owner,upload_id):
 async def accept_put(session,owner,album_id,upload_id):
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
     if (u.status not in {'reserved','validating','ready'}
+        or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary')
         or (u.status=='reserved' and (now()>=u.expires_at or parent.status!='draft'))):
         raise APIError(409,'STATE_CONFLICT')
 

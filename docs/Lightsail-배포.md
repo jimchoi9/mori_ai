@@ -73,3 +73,12 @@ DB의 일관된 custom-format dump를 `.local/backups`에 저장하고 목차 �
 - 운영 프로젝트 분리, web/worker/DB 비공개 포트, HTTPS origin, 개발 인증 금지, AI 기본 비활성, 운영 CORS 검사 통과.
 - 배포 wrapper·백업 스크립트 `bash -n` 통과.
 - 실제 Lightsail 실행, Caddy 인증서 발급, 운영 자격증명 연동, 백업·복원과 2GB 부하는 미검증.
+
+
+## 2026-10-18 미디어 v1.6 업데이트 인계
+
+사용자가 기존 배포의 실제 연동과 모바일 접속 성공을 보고했다. 이번 미디어 변경의 배포·실기기 검증은 별도다. 같은 이미지에 frontend/backend를 함께 업데이트해야 새 `preprocessing` 예약 필드를 사용할 수 있다.
+
+기존 `.env.production`의 명시적 `NORMALIZED_WEBP_LOSSLESS=true`는 Compose 기본값보다 우선한다. 새 손실 압축을 적용할 배포에서는 `NORMALIZED_WEBP_LOSSLESS=false`, `NORMALIZED_WEBP_QUALITY=90`, `CONSENT_POLICY_VERSION=media-2026-10-18`을 명시한다. 동의 버전 변경으로 기존 사용자도 새 보관 고지에 동의한 뒤 신규 업로드를 진행한다. 다른 자격증명·예산 설정은 변경하지 않는다. 이미 예약된 업로드와 생성 run은 동결된 기존 설정을 유지한다. 예제와 Compose 파일 갱신은 실행 중 서버 설정을 자동 변경하지 않는다.
+
+새 업로드는 정규화본 확보 후 임시 source를 정리한다. 기존 데이터의 일괄 삭제·migration은 없다. 배포 후 JPEG/PNG/HEIC, 방향·촬영일, 전송 재시도, 생성·뷰어를 확인한다. 클라이언트의 전처리 제한 초과/미지원 파일은 서버 처리로 이어져야 한다. 정책 검증과 측정 결과는 [미디어 전처리 검증](미디어-전처리-검증.md)을 참조한다.

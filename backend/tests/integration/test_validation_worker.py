@@ -256,7 +256,9 @@ async def test_cleanup_only_deleted_owner_and_idempotent(client,db):
     me,a,u,path,data=await pending(client);worker=ValidationWorker(db,config());assert await worker.run_once()
     async with db() as s,s.begin():
         source=await s.get(MediaAsset,UUID(u['asset_id'])); original_key=source.storage_key
-        # A malicious cleanup request for a live linked source does nothing.
+        # Legacy live sources remain protected; new uploads retire explicitly.
+        upload=await s.get(Upload,UUID(u['upload_id']))
+        upload.validation_config={k:v for k,v in upload.validation_config.items() if k!='source_lifetime'}
         await enqueue_job(s,'cleanup_asset',source.id)
     assert await worker.run_once(); assert worker.store.path(original_key).exists()
     assert (await client.delete(f'/api/v1/albums/{a}?expected_version=4',headers=headers(me))).status_code==202
@@ -276,7 +278,9 @@ async def test_independent_heartbeat_and_snapshot_config(client,db,monkeypatch):
     me,a,u,path,data=await pending(client)
     async with db() as s,s.begin():
         upload=await s.get(Upload,UUID(u['upload_id']))
-        assert upload.validation_config['version']==1 and len(upload.validation_config['media'])==6
+        assert upload.validation_config['version']==1
+        assert upload.validation_config['media']['NORMALIZATION_VERSION']==2
+        assert upload.validation_config['media']['NORMALIZED_WEBP_QUALITY']==90
         upload.validation_config={**upload.validation_config,'media':{**upload.validation_config['media'],'NORMALIZED_MAX_EDGE':20}}
     monkeypatch.setenv('NORMALIZED_MAX_EDGE','4096')
     original=validation.normalize_in_process
@@ -426,6 +430,7 @@ async def test_removing_last_unfinished_batch_page_finalizes_order(client, db, l
         assert (await client.post(f'/api/v1/albums/{album}/uploads/{entry["upload_id"]}/complete',
                 json={}, headers=headers(me))).status_code == 202
         assert await worker.run_once()
+        assert await worker.run_once()  # durable temporary source retirement
     if last_status == 'validating':
         entry = entries[2]
         assert (await client.put(entry['upload_url'], content=data,

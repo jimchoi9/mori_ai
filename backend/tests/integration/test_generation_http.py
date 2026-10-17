@@ -93,10 +93,10 @@ async def test_validation_order_consent_ready_caps_version(client, db):
     assert r.status_code == 422 and r.json()['error']['code'] == 'UPLOAD_NOT_READY'
     async with db() as s, s.begin():
         (await s.scalar(select(Upload))).status = 'ready'
-        (await s.scalar(select(MediaAsset).where(MediaAsset.role=='source'))).bytes = 20971521
+        (await s.scalar(select(Upload))).declared_bytes = 20971521
     assert (await generate(client, me, album, version=99)).json()['error']['code'] == 'FILE_TOO_LARGE'
     async with db() as s, s.begin():
-        (await s.scalar(select(MediaAsset).where(MediaAsset.role=='source'))).bytes = 100
+        (await s.scalar(select(Upload))).declared_bytes = 100
     conflict = await generate(client, me, album, version=99)
     assert conflict.json()['error']['details'] == {'resource_type':'album','resource_id':album,'current_version':1}
     async with db() as s:
@@ -202,8 +202,8 @@ async def test_resume_mixed_unknown_replay_version_and_safe_policy(client, db):
 async def test_photo_and_byte_caps_are_atomic(client,db,count,source_bytes,want):
     me,album=await ready_album(client,db,count=count)
     async with db() as s,s.begin():
-        for asset in (await s.scalars(select(MediaAsset).where(MediaAsset.role=='source'))).all():
-            asset.bytes=source_bytes
+        for upload in (await s.scalars(select(Upload))).all():
+            upload.declared_bytes=source_bytes
     r=await generate(client,me,album,version=99)
     assert r.json()['error']['code']==want
     async with db() as s:
@@ -323,3 +323,26 @@ async def test_fake_disabled_config_and_http_gate(db):
             assert r.status_code==503 and r.json()['error']['retryable'] is False
             async with db() as s:
                 assert await s.scalar(select(func.count()).select_from(Run))==0
+
+
+@pytest.mark.asyncio
+async def test_generation_uses_upload_accounting_without_source_bytes(client,db):
+    me,album=await ready_album(client,db)
+    async with db() as session,session.begin():
+        source=await session.scalar(select(MediaAsset).where(MediaAsset.role=='source'))
+        source.bytes=None; source.status='deleted'; source.deleted_at=datetime.now(timezone.utc)
+    response=await generate(client,me,album)
+    assert response.status_code==202, response.text
+    async with db() as session:
+        run=await session.scalar(select(Run))
+        assert run.config_snapshot['normalized_webp_quality']==90
+
+
+@pytest.mark.asyncio
+async def test_generation_rejects_upload_with_mis_scoped_source_metadata(client,db):
+    me,album=await ready_album(client,db)
+    async with db() as session,session.begin():
+        source=await session.scalar(select(MediaAsset).where(MediaAsset.role=='source'))
+        source.role='transform_output'
+    response=await generate(client,me,album)
+    assert response.status_code==422 and response.json()['error']['code']=='UPLOAD_NOT_READY'

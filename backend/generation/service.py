@@ -10,7 +10,7 @@ from backend.auth.repository import get_consent
 from backend.http.errors import APIError
 from backend.http.idempotency import replay
 from backend.http.schemas import CLIENT_CONFIG
-from backend.models import Album, Run, Task, Outbox, Attempt
+from backend.models import Album, Run, Task, Outbox, Attempt, MediaAsset
 from backend.generation.resume_policy import eligible_resume_tasks, resume_locked_tasks
 
 ACTIVE_RUNS = ('queued', 'running', 'action_required')
@@ -52,6 +52,7 @@ def config_snapshot(settings):
         'caption_provider':'local_fake', 'caption_model':'fake-sentence-v1',
         'prompt_version':'local-fake-v1', 'target_ratio':'3:4',
         'normalized_webp_lossless':settings.normalized_webp_lossless,
+        'normalized_webp_quality':settings.normalized_webp_quality,
         'normalized_max_edge':settings.normalized_max_edge, 'normalized_max_bytes':settings.normalized_max_bytes,
         'result_webp_quality':settings.result_webp_quality, 'thumbnail_webp_quality':settings.thumbnail_webp_quality,
         'thumbnail_max_edge':settings.thumbnail_max_edge,
@@ -99,20 +100,24 @@ async def create_generation(session, owner_id, album_id, expected_version, key, 
     pages = await albums.album_pages(session, album_id)
     uploads = {u.page_id:u for u in await albums.page_uploads(session,album_id)}
     assets = {a.id:a for a in await albums.ready_assets(session,album_id)}
+    # Source rows retain provenance after byte retirement; their scope still matters.
+    sources = {a.id:a for a in (await session.scalars(select(MediaAsset).where(
+        MediaAsset.album_id==album_id, MediaAsset.owner_id==owner_id, MediaAsset.role=='source'))).all()}
     not_ready = []
     for p in pages:
-        source, normalized = assets.get(p.source_asset_id), assets.get(p.normalized_asset_id)
-        if (p.id not in uploads or uploads[p.id].status != 'ready'
-                or source is None or source.role != 'source' or source.page_id != p.id
+        upload, normalized = uploads.get(p.id), assets.get(p.normalized_asset_id)
+        source = sources.get(p.source_asset_id)
+        if (upload is None or upload.status != 'ready' or upload.album_id != album_id
+                or upload.asset_id != p.source_asset_id or source is None or source.page_id != p.id
                 or normalized is None or normalized.role != 'normalized' or normalized.page_id != p.id
                 or normalized.mime != 'image/webp' or not normalized.sha256
-                or source.bytes is None or source.bytes <= 0 or p.input_is_3_4 is None):
+                or upload.declared_bytes is None or upload.declared_bytes <= 0 or p.input_is_3_4 is None):
             not_ready.append(str(p.id))
     if not_ready:
         raise APIError(422, 'UPLOAD_NOT_READY', details={'page_ids':not_ready})
     if not CLIENT_CONFIG['album_min_photos'] <= len(pages) <= CLIENT_CONFIG['album_max_photos']:
         raise APIError(422, 'PHOTO_COUNT_EXCEEDED' if len(pages)>CLIENT_CONFIG['album_max_photos'] else 'VALIDATION_ERROR')
-    sizes = [assets[p.source_asset_id].bytes for p in pages]
+    sizes = [uploads[p.id].declared_bytes for p in pages]
     if any(n > CLIENT_CONFIG['upload_max_file_bytes'] for n in sizes):
         raise APIError(413, 'FILE_TOO_LARGE')
     if sum(sizes) > CLIENT_CONFIG['upload_max_album_bytes']:

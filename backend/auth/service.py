@@ -4,10 +4,10 @@ from backend.auth import repository
 from backend.http.errors import APIError
 from backend.http.security import token_hash
 
-NOTICE = ('사진 원본과 정규화본을 비공개 보관하고 AI 이미지 변환 및 글귀 생성에 사용합니다. '
+NOTICE = ('사진은 크기 조정·압축 후 비공개 보관하며 AI 이미지 변환 및 글귀 생성에 사용합니다. 원본 파일의 별도 보관은 보장하지 않습니다. '
           '사진첩 삭제 시 접근을 차단하고 파일은 비동기로 삭제합니다. '
           '처리 중 장애 복구에 필요한 파일과 동의 이력은 정리 정책에 따라 보존될 수 있습니다. '
-          '로컬 개발에서는 실제 외부 AI를 호출하지 않습니다.')
+          '개발용 가짜 생성 모드에서는 실제 외부 AI를 호출하지 않습니다.')
 
 
 async def login(factory, settings, account):

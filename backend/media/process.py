@@ -10,7 +10,7 @@ from .contracts import MediaValidationError, NormalizedImage
 
 CHILD_RSS_LIMIT = 512 * 1024 * 1024
 MEDIA_ENV_KEYS = frozenset({
-    'NORMALIZED_WEBP_LOSSLESS', 'NORMALIZED_MAX_EDGE', 'NORMALIZED_MAX_BYTES',
+    'NORMALIZATION_VERSION', 'NORMALIZED_WEBP_LOSSLESS', 'NORMALIZED_WEBP_QUALITY', 'NORMALIZED_MAX_EDGE', 'NORMALIZED_MAX_BYTES',
     'THUMBNAIL_WEBP_QUALITY', 'THUMBNAIL_MAX_EDGE', 'RESULT_WEBP_QUALITY',
 })
 
@@ -54,7 +54,14 @@ async def normalize_in_process(source_path: Path, filename: str,
         if (not isinstance(config, dict) or set(config) - MEDIA_ENV_KEYS
                 or any(type(value) not in {int, bool} for value in config.values())):
             raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
-        environment = os.environ.copy()
+        version = config.get('NORMALIZATION_VERSION', 1)
+        if type(version) is not int or version not in {1, 2}:
+            raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
+        # A frozen snapshot must not inherit changed deployment defaults, even
+        # for omitted fields. The legacy module owns the original defaults.
+        environment = {key: value for key, value in os.environ.items()
+                       if key not in MEDIA_ENV_KEYS}
+        environment['NORMALIZATION_VERSION'] = str(version)
         environment.update({key: str(value).lower() for key, value in config.items()})
     if source_path.stat().st_size > 20 * 1024 * 1024:
         raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
@@ -71,10 +78,17 @@ async def normalize_in_process(source_path: Path, filename: str,
 
 
 def _main():
-    from .normalize import normalize
     source, filename, destination = sys.argv[1:]
     root = Path(destination)
     try:
+        version = os.environ.get('NORMALIZATION_VERSION', '2')
+        if version == '1':
+            # Frozen verbatim from 68aff30 for deterministic reservation recovery.
+            from .normalize_v1 import normalize
+        elif version == '2':
+            from .normalize import normalize
+        else:
+            raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
         with open(source, 'rb') as stream:
             data = stream.read(20 * 1024 * 1024 + 1)
         result = normalize(data, filename)

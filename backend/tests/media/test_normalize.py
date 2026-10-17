@@ -182,3 +182,8 @@ def test_heif_non_srgb_transfer_not_assumed_srgb():
     data=source(fmt='HEIF',nclx_profile={'color_primaries':1,'transfer_characteristics':1,'matrix_coefficients':1,'full_range_flag':1})
     with pytest.raises(MediaValidationError) as error: normalize(data,'bt709.heic')
     assert error.value.code=='IMAGE_NORMALIZATION_FAILED'
+
+
+@pytest.fixture(autouse=True)
+def reference_lossless_encoding(monkeypatch):
+    monkeypatch.setenv('NORMALIZED_WEBP_LOSSLESS', 'true')

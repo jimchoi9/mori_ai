@@ -157,3 +157,8 @@ def test_linear_ramp_reference_and_alpha():
     expected = (0, 13, 71, 137, 188, 225, 255)
     actual = result(data)
     assert [actual.getpixel((x, 0)) for x in range(7)] == [(v, v, v, 100) for v in expected]
+
+
+@pytest.fixture(autouse=True)
+def reference_lossless_encoding(monkeypatch):
+    monkeypatch.setenv('NORMALIZED_WEBP_LOSSLESS', 'true')

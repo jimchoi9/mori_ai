@@ -11,6 +11,7 @@ from backend.http.errors import APIError, envelope
 from backend.http.idempotency import require_key, request_hash
 from backend.albums.routes import validate_query
 from backend.uploads import service, repository as repo
+from backend.uploads.preprocessing import PreprocessingBody
 
 router=APIRouter(prefix='/api/v1')
 
@@ -21,6 +22,7 @@ class FileBody(StrictBody):
     mime: str|None=Field(default=None,max_length=100)
     bytes: StrictInt=Field(ge=1)
     file_last_modified_at: datetime|None=None
+    preprocessing: PreprocessingBody|None=None
 
     @field_validator('file_last_modified_at')
     @classmethod
@@ -65,8 +67,13 @@ async def private_user(request: Request):
 @router.post('/albums/{album_id}/uploads')
 async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(default=None)):
     require_csrf(request,context); validate_query(request,())
+    identity=body.model_dump(mode='json')
+    # Adding an optional field must not invalidate reservations made by older clients.
+    for entry in identity['files']:
+        if entry['preprocessing'] is None:
+            del entry['preprocessing']
     async with request.app.state.session_factory() as s,s.begin():
-        status,data=await service.reserve(s,context.user_id,album_id,body,require_key(idempotency_key),request_hash(body.model_dump(mode='json')),request.app.state.settings,signer(request),csrf_token(request.cookies[COOKIE_NAME]))
+        status,data=await service.reserve(s,context.user_id,album_id,body,require_key(idempotency_key),request_hash(identity),request.app.state.settings,signer(request),csrf_token(request.cookies[COOKIE_NAME]))
     return JSONResponse(envelope(request,data),status_code=status)
 
 

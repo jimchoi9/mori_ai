@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError, errorText, uploadHeaders } from '../../api/client';
 import { uploadStep } from './putFile';
+import { prepareFiles } from './preprocess';
 import type { Detail, Reservation, UploadView } from '../../api/types';
 interface Intent { key:string; files:{file:File;id:string}[]; body:unknown; reservation?:Reservation; put:Set<string>; complete:Set<string> }
 const drafts = new Map<string,{files:File[];intent:Intent|null}>();
@@ -13,19 +14,21 @@ export function useUploads(albumId:string, userId:string, refresh:()=>Promise<un
  const latestFiles=useRef(files); latestFiles.current=files;
  useEffect(()=>{
   let discard=false;
-  const clear=()=>{discard=true;drafts.clear();intent.current=null;controller.current?.abort();};
+  const clear=()=>{discard=true;drafts.clear();intent.current=null;controller.current?.abort();latestFiles.current=[];setFiles([]);};
   const expire=()=>controller.current?.abort();
-  window.addEventListener('mori:logout',clear);window.addEventListener('mori:session-expired',expire);
-  return()=>{controller.current?.abort();if(!discard)drafts.set(draftKey,{files:latestFiles.current,intent:intent.current});window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:session-expired',expire);};
+  window.addEventListener('mori:logout',clear);window.addEventListener('mori:clear-private-memory',clear);window.addEventListener('mori:session-expired',expire);
+  return()=>{controller.current?.abort();controller.current=null;if(!discard)drafts.set(draftKey,{files:latestFiles.current,intent:intent.current});window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:clear-private-memory',clear);window.removeEventListener('mori:session-expired',expire);};
  },[draftKey]);
  async function send() {
   if(busy || !files.length)return;
   setBusy(true); setError(''); const abort = new AbortController(); controller.current=abort;
   try {
    if (!intent.current) {
-    const selected=files.map(file=>({file,id:crypto.randomUUID()}));
+    const prepared=await prepareFiles(files,abort.signal,name=>setProgress(`${name} · 사진 준비 중`));
+    const selected=prepared.map(item=>({...item,id:crypto.randomUUID()}));
     const latest=await api<Detail>(`/albums/${albumId}`,{signal:abort.signal});
-    intent.current={key:crypto.randomUUID(),files:selected,body:{expected_version:latest.detail.album.version,files:selected.map(({file,id})=>({client_file_id:id,filename:file.name,mime:file.type,bytes:file.size,file_last_modified_at:new Date(file.lastModified).toISOString()}))},put:new Set(),complete:new Set()};
+    abort.signal.throwIfAborted();
+    intent.current={key:crypto.randomUUID(),files:selected,body:{expected_version:latest.detail.album.version,files:selected.map(({file,id,preprocessing})=>({client_file_id:id,filename:file.name,mime:file.type,bytes:file.size,file_last_modified_at:new Date(file.lastModified).toISOString(),...(preprocessing?{preprocessing}:{})}))},put:new Set(),complete:new Set()};
    }
    const current=intent.current;
    setProgress('업로드 공간 예약 중');
@@ -38,7 +41,7 @@ export function useUploads(albumId:string, userId:string, refresh:()=>Promise<un
      body=>{setProgress(`${file.name} · 전송 확인 중 (연결 상태에 따라 최대 3분)`);return api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}/complete`,{method:'POST',body,signal:abort.signal});});
    }
    await refresh(); intent.current=null; setFiles([]); setProgress('전송 완료 · 서버에서 사진을 검증하고 정규화합니다.');
-  }catch(e){if(!abort.signal.aborted){if(e instanceof ApiError && e.status!==401 && e.status<500 && !intent.current?.reservation)intent.current=null;setError(errorText(e)); await refresh().catch(()=>undefined);}}finally{if(!abort.signal.aborted)setBusy(false);}
+  }catch(e){if(!abort.signal.aborted){if(e instanceof ApiError && e.status!==401 && e.status<500 && !intent.current?.reservation)intent.current=null;setError(errorText(e)); await refresh().catch(()=>undefined);}}finally{if(controller.current===abort){controller.current=null;setBusy(false);}}
  }
  function select(next:File[]) { if(intent.current || busy)return; setFiles(next); setError(''); setProgress(''); }
  function discard() { intent.current=null; setFiles([]); setError(''); setProgress(''); }

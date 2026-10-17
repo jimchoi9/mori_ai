@@ -25,7 +25,8 @@ async def upload(session,owner,album_id,upload_id,*,lock=True):
     if (page is None or page.album_id!=album_id or page.removed_at is not None or asset is None
         or page.source_asset_id!=asset.id or asset.page_id!=page.id or asset.role!='source'
         or asset.owner_id!=owner or asset.album_id!=album_id
-        or (asset.deleted_at is not None and row.status not in {'expired','rejected'})):
+        or (asset.deleted_at is not None and row.status not in {'expired','rejected'}
+            and not (row.status=='ready' and (row.validation_config or {}).get('source_lifetime')=='temporary'))):
         raise APIError(404,'RESOURCE_NOT_FOUND')
     return parent,row,page,asset
 

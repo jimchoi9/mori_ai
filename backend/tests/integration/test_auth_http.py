@@ -191,3 +191,25 @@ async def test_production_route_disabled_before_body_validation(db):
             assert response.json()['error']['code'] == 'RESOURCE_NOT_FOUND'
             assert response.headers['cache-control'] == 'no-store'
             assert 'set-cookie' not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_media_policy_requires_new_consent(client, db):
+    """Old agreement cannot silently authorize the changed media-retention notice."""
+    from uuid import UUID
+    from backend.auth.repository import agree
+    me = await login(client)
+    async with db() as session, session.begin():
+        await agree(session, UUID(me['user']['id']), 'local-2026-10-16', 'photo_upload_and_ai_processing')
+    current = (await client.get('/api/v1/me')).json()['data']
+    assert current['consent']['required'] is True
+    assert current['consent']['policy_version'] == 'media-2026-10-18'
+    assert '원본 파일의 별도 보관은 보장하지 않습니다' in current['consent']['notice']
+    headers = {'Origin': ORIGIN, 'X-CSRF-Token': current['csrf_token']}
+    body = {'policy_version':'local-2026-10-16', 'purpose':'photo_upload_and_ai_processing', 'agreed':True}
+    assert (await client.post('/api/v1/consents', json=body, headers=headers)).status_code == 422
+    body['policy_version'] = current['consent']['policy_version']
+    assert (await client.post('/api/v1/consents', json=body, headers=headers)).status_code == 201
+    assert (await client.get('/api/v1/me')).json()['data']['consent']['required'] is False
+    async with db() as session:
+        assert await session.scalar(text('SELECT count(*) FROM consents')) == 2

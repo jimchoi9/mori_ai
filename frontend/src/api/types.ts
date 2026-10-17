@@ -17,3 +17,5 @@ export interface GenerationView { generation_mode:GenerationMode; run_id:string;
 export interface GenerationAccepted { run_id:string; status_url:string; album_version:number }
 export interface ViewerPage { id:string; position:number; image:MediaRef; caption_text:string }
 export interface Viewer { generation_mode:GenerationMode; album_id:string; title:string; version:number; pages:ViewerPage[]; media_access:MediaAccess[]; music:{track_id:string;url:string;title:string}|null }
+
+export interface UploadPreprocessing { version:1; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null }
