@@ -331,10 +331,8 @@ async def prioritize_stage(db,run_id,stage):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('stage,operation,fail_at',[
-    ('caption','get',1),('caption','head',1),
-    ('image_transform','get',1),('image_transform','head',1),
-    ('image_transform','get',3),  # source.path after initial verification
-    ('image_transform','get',4),('image_transform','head',3),  # re-verification
+    ('caption','get',1),('image_transform','get',1),
+    # One authoritative snapshot per stage: duplicate GET/HEAD no longer exist.
 ])
 async def test_pre_result_r2_failure_can_resume(client,db,tmp_path,monkeypatch,stage,operation,fail_at):
     from backend.tests.integration.test_generation_http import resume
@@ -401,3 +399,26 @@ async def test_post_result_r2_failure_preserves_original(client,db,tmp_path,monk
         task=await s.get(Task,task_id)
         assert task.status=='succeeded' and task.attempt_count==1
         assert await s.scalar(select(func.count()).select_from(Attempt).where(Attempt.task_id==task_id))==1
+
+
+@pytest.mark.asyncio
+async def test_validation_downloads_source_once(client,db,tmp_path,monkeypatch):
+    worker,c,me,album,u,path,data,key=await r2_pending(client,db,tmp_path,monkeypatch)
+    c.calls.clear()
+    assert await worker.run_once()
+    assert [op for op,k in c.calls if k=='worker-test/'+key]==['get']
+    async with db() as s:
+        assert (await s.get(Upload,UUID(u['upload_id']))).status=='ready'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('stage',['caption','image_transform'])
+async def test_generation_fetches_each_input_once(client,db,tmp_path,monkeypatch,stage):
+    me,album,rid,store,c,executor,runner=await r2_pipeline(client,db,tmp_path,monkeypatch)
+    tid=await prioritize_stage(db,rid,stage)
+    c.calls.clear()
+    assert await runner.run_once()
+    reads=[key for op,key in c.calls if op=='get' and key.endswith('/normalized')]
+    assert len(reads)==1
+    assert not [op for op,key in c.calls if op=='head' and key.endswith('/normalized')]
+    async with db() as s:assert (await s.get(Task,tid)).status=='succeeded'

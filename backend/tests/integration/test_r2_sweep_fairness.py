@@ -42,7 +42,7 @@ async def test_deleted_page_checks_each_key_once_and_rechecks_next_sweep(client,
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('mode,error', [('r2',StorageUnavailable),('r2',TimeoutError),('r2','slow'),('local',None)])
-async def test_main_processes_jobs_before_bounded_sweep_and_survives_failure(db,monkeypatch,mode,error):
+async def test_main_keeps_jobs_running_with_independent_bounded_sweep(db,monkeypatch,mode,error):
     import backend.worker.__main__ as worker_main
     from backend.tests.integration.test_auth_http import config
     events=[];scans=[];stopped=asyncio.Event()
@@ -76,5 +76,5 @@ async def test_main_processes_jobs_before_bounded_sweep_and_survives_failure(db,
     await asyncio.wait_for(worker_main.main(),timeout=3)
     assert events[0]=='job'
     assert events.count('job')==4
-    assert scans==([10] if mode=='r2' else [100]*4)
+    assert scans==[10]  # Both adapters now have an independent 30-second scan lane.
     if error=='slow':assert events[-1]=='scan_cancelled'

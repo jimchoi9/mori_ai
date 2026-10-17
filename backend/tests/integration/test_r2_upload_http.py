@@ -18,6 +18,10 @@ class StubStorage:
         if self.failure: raise self.failure
         return SimpleNamespace(st_size=len(self.payload))
     def checksum(self, key): return hashlib.sha256(self.payload).hexdigest()
+    def read_bytes(self, key):
+        self.calls += 1
+        if self.failure: raise self.failure
+        return self.payload
 
 class FakeSigner:
     mode = 'r2'
@@ -149,12 +153,12 @@ async def test_remote_io_runs_without_album_lock_and_rechecks_deletion(client,db
     store,_=remote
     me,a,u,path=await reserved(client)
     entered=threading.Event(); release=threading.Event()
-    original=store.stat
-    def slow_stat(key):
+    original=store.read_bytes
+    def slow_read(key):
         entered.set()
         assert release.wait(5)
         return original(key)
-    store.stat=slow_stat
+    store.read_bytes=slow_read
     request=asyncio.create_task(client.post(path,json={'sha256':hashlib.sha256(b'abcd').hexdigest()},headers=headers(me)))
     try:
         assert await asyncio.to_thread(entered.wait,5)
@@ -165,3 +169,13 @@ async def test_remote_io_runs_without_album_lock_and_rechecks_deletion(client,db
     finally: release.set()
     response=await request
     assert response.status_code==404
+
+@pytest.mark.asyncio
+async def test_complete_uses_one_authoritative_snapshot(client,db,remote):
+    store,_=remote
+    me,a,u,path=await reserved(client)
+    def forbidden(*args): raise AssertionError('separate metadata/cache read')
+    store.stat=forbidden; store.checksum=forbidden
+    response=await client.post(path,json={'sha256':hashlib.sha256(b'abcd').hexdigest()},headers=headers(me))
+    assert response.status_code==202
+    assert store.calls==1

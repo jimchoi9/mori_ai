@@ -19,7 +19,10 @@ export async function api<T>(path: string, options: {method?: string; body?: unk
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (method !== 'GET' && csrf) headers['X-CSRF-Token'] = csrf;
   if (options.key) headers['Idempotency-Key'] = options.key;
-  const response = await fetch(path.startsWith('/api/') ? path : `/api/v1${path}`, {method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials:'same-origin', cache:'no-store', signal:options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000)});
+  const url = path.startsWith('/api/') ? path : `/api/v1${path}`;
+  // Completion verifies the immutable remote bytes before acknowledging acceptance.
+  const timeoutMs = method === 'POST' && /^\/api\/v1\/albums\/[^/]+\/uploads\/[^/]+\/complete$/.test(url) ? 180000 : 30000;
+  const response = await fetch(url, {method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials:'same-origin', cache:'no-store', signal:options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs)});
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     const code = payload.error?.code ?? 'HTTP_ERROR';

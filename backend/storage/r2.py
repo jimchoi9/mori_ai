@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import re
 import tempfile
+from time import perf_counter
+from backend.telemetry import emit, span
 from types import SimpleNamespace
 
 from backend.storage.local import KEY, MAX_BYTES, UUID_PART, LocalStorage
@@ -23,12 +25,24 @@ class _ConditionalConflict(Exception):
 def _safe_call(function, *args, **kwargs):
     # Raise outside the handler: even __context__ must not retain signed URLs/keys.
     failure = None
+    started = perf_counter()
+    operation = getattr(function, "__name__", "request")
     try:
-        return function(*args, **kwargs)
+        result = function(*args, **kwargs)
+        if operation not in {"read", "close"}:
+            metadata = result.get('ResponseMetadata', {}) if isinstance(result,dict) else {}
+            emit("storage.request", operation=operation, outcome="succeeded", elapsed_ms=(perf_counter()-started)*1000,
+                 retry_attempts=metadata.get('RetryAttempts') if isinstance(metadata,dict) else None)
+        return result
     except Exception as error:
-        response = getattr(error, 'response', {})
-        code = response.get('Error', {}).get('Code')
-        status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+        response = getattr(error, 'response', None)
+        response = response if isinstance(response, dict) else {}
+        detail = response.get('Error')
+        metadata = response.get('ResponseMetadata')
+        code = detail.get('Code') if isinstance(detail, dict) else None
+        status = metadata.get('HTTPStatusCode') if isinstance(metadata, dict) else None
+        emit('storage.request', operation=operation, outcome='error', error_type=type(error).__name__,
+             http_status=status, elapsed_ms=(perf_counter()-started)*1000)
         if code in ('NoSuchKey', 'NotFound', '404') or status == 404:
             failure = FileNotFoundError('remote object missing')
         elif code in ('PreconditionFailed', 'ConditionalRequestConflict', '412', '409') or status in (409, 412):
@@ -62,7 +76,7 @@ class R2Storage:
                 aws_access_key_id=settings.r2_access_key_id.get_secret_value(),
                 aws_secret_access_key=settings.r2_secret_access_key.get_secret_value(),
                 region_name=settings.r2_region,
-                config=Config(signature_version='s3v4', retries={'total_max_attempts': 1},
+                config=Config(signature_version='s3v4', retries={'mode': 'standard', 'total_max_attempts': 3},
                               connect_timeout=10, read_timeout=30,
                               request_checksum_calculation='when_required',
                               response_checksum_validation='when_required',
@@ -120,6 +134,13 @@ class R2Storage:
         if conflict:
             if hashlib.sha256(self._read(key, limit)).digest() != hashlib.sha256(data).digest():
                 raise ValueError('immutable object conflict')
+
+    def read_bytes(self, key):
+        """Fetch one bounded authoritative snapshot; never reuse a shared cache path."""
+        with span("storage.download", storage_mode="r2") as timing:
+            data = self._read(self._key(key), MAX_BYTES)
+            timing["bytes"] = len(data)
+            return data
 
     def path(self, key):
         key = self._key(key)

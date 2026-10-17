@@ -9,6 +9,8 @@ from backend.generation.fake_adapter import FakeExecutor, FakeExecutionError
 from backend.generation.repository import _locked_task, _active
 from backend.storage.factory import result_store
 from backend.storage.r2 import StorageUnavailable
+from backend.telemetry import span
+from backend.generation.prompt_profiles import SUPPORTED_PROMPT_VERSIONS
 
 
 class RealExecutionError(Exception):
@@ -31,7 +33,7 @@ class RealExecutor(FakeExecutor):
         return (config.get('execution_mode') == 'openai'
             and config.get('caption_provider') == 'openai' and config.get('image_provider') == 'openai'
             and config.get('caption_model') == self.caption_model and config.get('image_model') == self.image_model
-            and config.get('prompt_version') == 'openai-v1'
+            and config.get('prompt_version') in SUPPORTED_PROMPT_VERSIONS
             and config.get('pricing_profile') == 'openai-standard-2026-10-16-v1')
 
     async def _dispatch(self, context):
@@ -62,9 +64,10 @@ class RealExecutor(FakeExecutor):
             raise RealExecutionError('MEDIA_SAVE_FAILED', dispatch_state='not_sent')
         try:
             context = await self._context(attempt_id, stage)
-            await self._verify(context)
-            # Read and verify the actual immutable bytes submitted, not a cached URL.
-            source = await asyncio.to_thread(lambda: self.store.path(context['normalized_key']).read_bytes())
+            with span('generation.input', stage=stage):
+                snapshots = await self._verify(context)
+            # Submit exactly the authoritative snapshot verified in this attempt.
+            source = snapshots[context['normalized_key']]
             if len(source) != context['normalized_bytes'] or hashlib.sha256(source).hexdigest() != context['normalized_sha']:
                 raise FakeExecutionError('MEDIA_SAVE_FAILED')
             def validate_source():
@@ -90,7 +93,8 @@ class RealExecutor(FakeExecutor):
                 raise RealExecutionError('AI_TEMPORARY_FAILURE', safe_to_retry=True, dispatch_state='not_sent')
             raise RealExecutionError('MEDIA_SAVE_FAILED', dispatch_state='not_sent')
         try:
-            response = await (self.provider.caption(source) if stage == 'caption' else self.provider.transform(source))
+            with span('ai.provider', stage=stage):
+                response = await (self.provider.caption(source, prompt_version=context['config']['prompt_version']) if stage == 'caption' else self.provider.transform(source))
         except ProviderFailure as exc:
             if exc.dispatch_state == 'not_sent':
                 await self.ledger.release_unsent(attempt_id)

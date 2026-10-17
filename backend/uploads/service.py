@@ -1,5 +1,6 @@
 """Atomic reservation, immutable completion, and edit policies."""
 import asyncio
+import hashlib
 import re
 from datetime import datetime, timezone, timedelta
 from pathlib import PurePath
@@ -158,8 +159,15 @@ async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha25
         if key not in canonical_asset_keys(owner,album_id,page.id,'source'): raise APIError(404,'RESOURCE_NOT_FOUND')
     # PUT has durably finalized a no-overwrite object. File I/O never holds a DB lock.
     try:
-        size=await asyncio.to_thread(lambda:store.stat(key).st_size)
-        checksum=await asyncio.to_thread(store.checksum,key)
+        from backend.telemetry import span
+        with span('upload.confirm_input', storage_mode=getattr(store,'mode','local')):
+            if getattr(store,'mode','local')=='r2':
+                data=await asyncio.to_thread(store.read_bytes,key)
+                size=len(data); checksum=hashlib.sha256(data).hexdigest()
+                del data
+            else:
+                size=await asyncio.to_thread(lambda:store.stat(key).st_size)
+                checksum=await asyncio.to_thread(store.checksum,key)
     except FileNotFoundError: raise APIError(422,'UPLOAD_NOT_READY') from None
     except ValueError: raise APIError(422,'VALIDATION_ERROR') from None
     except Exception as exc:

@@ -13,6 +13,8 @@ from backend.media.contracts import MediaValidationError
 from backend.storage.local import storage_key, canonical_asset_keys
 from backend.storage.factory import media_storage
 from backend.storage.r2 import StorageUnavailable
+from backend.storage.snapshot import input_file
+from backend.telemetry import span, emit
 from backend.uploads.service import config, touch
 from backend.albums.page_order import sort_date, finish_batch, bump_version
 from backend.worker.jobs import claim_job, finish_job, enqueue_job
@@ -50,7 +52,7 @@ class ValidationWorker:
             claim=await claim_job(s,now(),self.lease_seconds,('validate_upload','cleanup_album','cleanup_asset'))
         if claim is None: return False
         heartbeat=asyncio.create_task(self._heartbeat(claim))
-        work=asyncio.create_task(self.handle(claim))
+        work=asyncio.create_task(self._timed_handle(claim))
         try:
             done,_=await asyncio.wait((work,heartbeat),return_when=asyncio.FIRST_COMPLETED)
             if heartbeat in done:
@@ -72,6 +74,10 @@ class ValidationWorker:
             heartbeat.cancel()
             with suppress(asyncio.CancelledError): await heartbeat
         return True
+
+    async def _timed_handle(self,claim):
+        with span('validation.execute', job_id=claim.job_id, kind=claim.kind):
+            await self.handle(claim)
 
     async def handle(self,claim):
         if claim.kind=='validate_upload': await self.validate_upload(claim)
@@ -105,28 +111,34 @@ class ValidationWorker:
             saved=u.validation_config or {}
             snapshot=saved.get('media',saved) if saved else config(self.settings)
             config_version=saved.get('version',1)
+        emit('validation.claim', job_id=claim.job_id, queue_age_ms=max(0,(now()-job.created_at).total_seconds()*1000), attempt_no=job.attempt_count)
         error=None; normalized=None
         keys={role:storage_key(owner,album_id,page_id,role) for role in ('normalized','thumbnail')}
         try:
             if config_version!=1 or saved.get('storage_mode','local')!=self.store.mode:
                 raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
-            size=await asyncio.to_thread(lambda:self.store.stat(key).st_size)
-            checksum=await asyncio.to_thread(self.store.checksum,key)
+            with span('validation.input', job_id=claim.job_id):
+                source = await asyncio.to_thread(self.store.read_bytes,key)
+                size = len(source)
+                checksum = hashlib.sha256(source).hexdigest()
             if size!=declared or size>20971520: raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
             if expected is None or checksum!=expected: raise MediaValidationError('IMAGE_DECODE_FAILED')
-            source_path=await asyncio.to_thread(self.store.path,key)
-            mime=await asyncio.to_thread(source_mime,source_path)
-            normalized=await normalize_in_process(source_path,'source',config=snapshot)
-            if normalized.sha256!=expected or await asyncio.to_thread(self.store.checksum,key)!=expected:
+            async with input_file(source) as source_path:
+                mime=await asyncio.to_thread(source_mime,source_path)
+                with span('media.normalize', job_id=claim.job_id, bytes=size):
+                    normalized=await normalize_in_process(source_path,'source',config=snapshot)
+            if normalized.sha256!=expected:
                 raise MediaValidationError('IMAGE_DECODE_FAILED')
             # Deterministic object names and no-overwrite writes make restart idempotent.
-            await asyncio.to_thread(self.store.write,keys['normalized'],normalized.webp_bytes)
-            await asyncio.to_thread(self.store.write,keys['thumbnail'],normalized.thumbnail_bytes)
+            with span('validation.persist', job_id=claim.job_id):
+                await asyncio.to_thread(self.store.write,keys['normalized'],normalized.webp_bytes)
+                await asyncio.to_thread(self.store.write,keys['thumbnail'],normalized.thumbnail_bytes)
             with Image.open(BytesIO(normalized.thumbnail_bytes)) as thumb: thumb_size=thumb.size
         except StorageUnavailable: raise
         except MediaValidationError as exc: error=exc.code
         except FileNotFoundError: error='IMAGE_DECODE_FAILED'
         except (OSError,ValueError): error='IMAGE_NORMALIZATION_FAILED'
+        emit('validation.result', job_id=claim.job_id, outcome='error' if error else 'succeeded', error_code=error)
         clean=False
         async with self.sessions() as s,s.begin():
             album,u,page,asset,job,valid,active=await self._rows(s,claim)

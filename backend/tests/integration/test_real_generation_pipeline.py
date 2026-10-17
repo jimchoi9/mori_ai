@@ -30,7 +30,9 @@ class Provider:
         return ProviderResult(caption='빛나는 순간이 남아요.',image=output.getvalue(),
             cost_usd=Decimal('.001'),usage={'input_tokens':10},request_id='req_test')
 
-    async def caption(self,image):return await self.respond('caption',image)
+    async def caption(self,image,*,prompt_version='openai-memory-v2'):
+        self.prompt_version=prompt_version
+        return await self.respond('caption',image)
     async def transform(self,image):return await self.respond('image_transform',image)
 
 
@@ -91,7 +93,7 @@ async def test_real_failures_do_not_resend_or_lose_charge(client,db,tmp_path,mon
     if failure=='storage':
         from backend.storage.r2 import StorageUnavailable
         def broken(*args):raise StorageUnavailable('unavailable')
-        monkeypatch.setattr(store,'checksum',broken)
+        monkeypatch.setattr(store,'read_bytes',broken)
     assert await runner.run_once()
     await runner.recover();await runner.recover()
     async with db() as s:
@@ -188,7 +190,7 @@ async def test_invalid_mock_response_never_publishes_and_keeps_cost(client,db,tm
     from backend.generation.openai_provider import ProviderResult
     _,_,rid,store,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path)
     tid=await only_stage(db,rid,'image_transform' if failure=='image' else 'caption')
-    async def invalid(data):
+    async def invalid(data,**kwargs):
         return ProviderResult(caption='x'*81,image=b'not an image',cost_usd=Decimal('.004'))
     provider.transform=provider.caption=invalid
     await runner.run_once()
@@ -318,3 +320,42 @@ async def test_sibling_unknown_before_dispatch_releases_unsent_and_allows_resume
     async with db() as s:assert tid in await resume_failed_tasks(s,rid)
     assert await runner.run_once()
     assert len(provider.calls)==2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('version',['openai-v1','openai-memory-v2','openai-memory-v3'])
+async def test_caption_dispatch_preserves_frozen_prompt_version(client,db,tmp_path,version):
+    _,_,rid,_,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path,count=1)
+    await only_stage(db,rid,'caption')
+    async with db() as s,s.begin():
+        run=await s.get(Run,rid);run.config_snapshot={**run.config_snapshot,'prompt_version':version}
+    assert await runner.run_once()
+    assert provider.prompt_version==version
+    assert len(provider.calls)==1
+
+
+@pytest.mark.asyncio
+async def test_http_resume_preserves_legacy_prompt_after_default_upgrade(client,db,tmp_path):
+    from backend.main import create_app
+    from backend.tests.integration.test_auth_http import config
+    from backend.tests.integration.test_album_http import headers
+    from backend.generation.openai_provider import ProviderFailure
+    import httpx
+    me,album,rid,store,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path,count=1)
+    tid=await only_stage(db,rid,'caption')
+    async with db() as s,s.begin():
+        run=await s.get(Run,rid);run.config_snapshot={**run.config_snapshot,'prompt_version':'openai-v1'}
+    provider.failure=ProviderFailure('AI_TEMPORARY_FAILURE',safe_to_retry=True,dispatch_state='rejected')
+    await runner.run_once()
+    async with db() as s:version=(await s.get(Album,UUID(album))).version
+    settings=config().model_copy(update={'ai_real_calls_enabled':True,'dev_ai_enabled':False})
+    app=create_app(settings=settings,session_factory=db)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url=client.base_url,cookies=client.cookies) as real_client:
+            response=await real_client.post(f'/api/v1/albums/{album}/generation/resume',
+                json={'run_id':str(rid),'expected_version':version},headers=headers(me,'legacy-resume'))
+    assert response.status_code==202,response.text
+    provider.failure=None
+    assert await runner.run_once(stage='caption')
+    assert provider.prompt_version=='openai-v1'
+    async with db() as s:assert (await s.get(Task,tid)).status=='succeeded'

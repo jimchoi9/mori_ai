@@ -215,6 +215,72 @@ def test_sdk_client_explicit_credentials_and_bounded_configuration(tmp_path,monk
     assert observed['client']['aws_access_key_id']=='explicit-id'
     assert observed['client']['aws_secret_access_key']=='explicit-secret'
     assert observed['client']['endpoint_url']=='https://fixed.example'
-    assert observed['config']=={'signature_version':'s3v4','retries':{'total_max_attempts':1},
+    assert observed['config']=={'signature_version':'s3v4','retries':{'mode':'standard','total_max_attempts':3},
         'connect_timeout':10,'read_timeout':30,'request_checksum_calculation':'when_required',
         'response_checksum_validation':'when_required','s3':{'addressing_style':'path'}}
+
+
+def test_read_bytes_fetches_authority_once_without_shared_cache(storage):
+    s,c=storage
+    s.write(K,b'original')
+    c.calls.clear()
+    assert s.read_bytes(K)==b'original'
+    assert [op for op,_ in c.calls]==['get']
+    c.objects['mori-ai/'+K]=b'changed'
+    assert s.read_bytes(K)==b'changed'
+    assert not (s.root/K).exists()
+
+
+def test_storage_telemetry_keeps_status_but_redacts_sdk_message(storage,caplog):
+    import json,logging
+    s,c=storage; c.error=RemoteError(503,'ServiceUnavailable')
+    caplog.set_level(logging.INFO,logger='mori.performance')
+    with pytest.raises(OSError): s.exists(K)
+    events=[json.loads(r.message) for r in caplog.records if r.name=='mori.performance']
+    assert events[-1]['http_status']==503
+    assert events[-1]['error_type']=='RemoteError'
+    assert events[-1]['operation']=='head_object'
+    assert 'SECRET' not in caplog.text and K not in caplog.text
+
+
+def test_sdk_error_with_none_response_is_sanitized(storage,caplog):
+    import logging
+    from backend.storage.r2 import StorageUnavailable
+    class ConnectionClosedError(Exception):
+        response=None
+    s,c=storage;c.error=ConnectionClosedError('SECRET https://signed.example')
+    caplog.set_level(logging.INFO,logger='mori.performance')
+    with pytest.raises(StorageUnavailable) as caught:s.exists(K)
+    assert caught.value.__context__ is None and caught.value.__cause__ is None
+    assert 'SECRET' not in caplog.text
+
+
+def test_sdk_retries_connection_close_bounded_without_exposing_endpoint(monkeypatch,tmp_path,caplog):
+    import logging
+    from botocore.exceptions import ConnectionClosedError
+    from botocore.awsrequest import AWSResponse
+    from botocore.httpsession import URLLib3Session
+    from pydantic import SecretStr
+    from backend.storage.r2 import R2Storage,StorageUnavailable
+    attempts=[]
+    success=True
+    class Raw:
+        def stream(self,*args,**kwargs):return iter(())
+    def send(self,request):
+        attempts.append(1)
+        if len(attempts)%3 or not success:
+            raise ConnectionClosedError(endpoint_url='https://SECRET.example')
+        return AWSResponse(request.url,200,{'content-length':'3'},Raw())
+    monkeypatch.setattr(URLLib3Session,'send',send)
+    monkeypatch.setattr('botocore.endpoint.time.sleep',lambda _:None)
+    settings=SimpleNamespace(storage_root=tmp_path,r2_bucket_name='test',r2_key_prefix='qa/',
+        r2_endpoint_url='https://SECRET.example',r2_region='auto',
+        r2_access_key_id=SecretStr('key'),r2_secret_access_key=SecretStr('secret'))
+    caplog.set_level(logging.INFO,logger='mori.performance')
+    store=R2Storage(settings)
+    assert store.stat(K).st_size==3 and len(attempts)==3
+    attempts.clear();success=False
+    with pytest.raises(StorageUnavailable) as caught:store.stat(K)
+    assert len(attempts)==3
+    assert caught.value.__context__ is None
+    assert 'SECRET' not in caplog.text

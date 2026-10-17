@@ -34,6 +34,13 @@ class LocalStorage:
             raise ValueError('unsafe storage path')
         return path
 
+    def read_bytes(self,key):
+        with self.path(key).open("rb") as stream:
+            data = stream.read(MAX_BYTES+1)
+        if len(data)>MAX_BYTES:
+            raise ValueError("object too large")
+        return data
+
     def stat(self,key):
         return self.path(key).stat()
 

@@ -98,7 +98,9 @@ async def put(request:Request,upload_id:UUID,expires:int,signature:str,context:A
 @router.post('/albums/{album_id}/uploads/{upload_id}/complete')
 async def complete(request:Request,album_id:UUID,upload_id:UUID,body:CompleteBody,context:AuthContext=Depends(require_user)):
     require_csrf(request,context); validate_query(request,())
-    status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id,expected_sha256=body.sha256)
+    from backend.telemetry import span
+    with span('upload.complete', request_id=getattr(request.state,'request_id',None)):
+        status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id,expected_sha256=body.sha256)
     return JSONResponse(envelope(request,data),status_code=status)
 
 

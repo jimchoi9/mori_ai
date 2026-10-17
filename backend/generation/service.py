@@ -2,6 +2,7 @@
 
 Lock order: User -> Album -> Run -> Task. No executor or file I/O here.
 """
+from backend.generation.prompt_profiles import DEFAULT_PROMPT_VERSION, SUPPORTED_PROMPT_VERSIONS
 from datetime import datetime, timezone
 from sqlalchemy import select
 from backend.albums import repository as albums
@@ -64,7 +65,7 @@ def config_snapshot(settings):
     if getattr(settings, 'ai_real_calls_enabled', False):
         snapshot.update(execution_mode='openai', image_provider='openai', caption_provider='openai',
             image_model=settings.openai_image_model, caption_model=settings.openai_caption_model,
-            prompt_version='openai-v1', pricing_profile='openai-standard-2026-10-16-v1', budget_scope='validation_usd', estimated_cost=None)
+            prompt_version=DEFAULT_PROMPT_VERSION, pricing_profile='openai-standard-2026-10-16-v1', budget_scope='validation_usd', estimated_cost=None)
     return snapshot
 
 
@@ -179,7 +180,8 @@ async def resume_generation(session, owner_id, album_id, run_id, expected_versio
     expected = config_snapshot(settings)
     if any(run.config_snapshot.get(k) != expected[k] for k in ('execution_mode','image_model','caption_model')):
         raise APIError(409,'RESUME_NOT_ALLOWED')
-    if expected['execution_mode']=='openai' and any(run.config_snapshot.get(k)!=expected[k] for k in ('prompt_version','pricing_profile')):
+    if expected['execution_mode']=='openai' and (run.config_snapshot.get('prompt_version') not in SUPPORTED_PROMPT_VERSIONS
+            or run.config_snapshot.get('pricing_profile') != expected['pricing_profile']):
         raise APIError(409,'RESUME_NOT_ALLOWED')
     resumed = resume_locked_tasks(album,run,tasks)
     from backend.worker.jobs import enqueue_job

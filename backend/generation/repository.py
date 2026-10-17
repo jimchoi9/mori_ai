@@ -6,7 +6,7 @@ No adapter or filesystem call belongs inside these transactions.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
-from sqlalchemy import select, exists, and_, or_
+from sqlalchemy import select, exists, and_, or_, func, Integer, cast, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models import Album, Page, Run, Task, MediaAsset
@@ -19,25 +19,62 @@ class TaskClaim:
     lease_until: datetime
 
 
-async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *, execution_mode=None) -> TaskClaim | None:
+STAGE_LIMITS = {'caption': (4, 'caption_concurrency'),
+                'image_transform': (2, 'image_concurrency'), 'optimize': (1, 'media_concurrency')}
+
+
+async def lock_claims(session):
+    """Acquire only before album/run/task locks; release at transaction end."""
+    await session.execute(text('SELECT pg_advisory_xact_lock(724091831)'))
+
+
+async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *, execution_mode=None, stage=None) -> TaskClaim | None:
     if lease_seconds <= 0:
         raise ValueError('lease_seconds must be positive')
+    limits = STAGE_LIMITS
+    if stage is not None and stage not in limits:
+        raise ValueError('invalid stage')
     image = aliased(Task)
+    running = aliased(Task)
     async with session.begin():
+        # Only claims take this mutex, always BEFORE row locks. No I/O occurs
+        # here. Concurrent claims see committed leases under READ COMMITTED.
+        await lock_claims(session)
+        counts = dict((await session.execute(select(Task.stage, func.count()).where(
+            Task.status == 'running', Task.lease_until > now).group_by(Task.stage))).all())
+        available = []
+        for name, (cap, setting) in limits.items():
+            if (stage is None or stage == name) and counts.get(name, 0) < cap:
+                run_count = select(func.count()).where(
+                    running.run_id == Task.run_id, running.stage == name,
+                    running.status == 'running', running.lease_until > now).correlate(Task).scalar_subquery()
+                available.append(and_(Task.stage == name, run_count < func.coalesce(
+                    cast(Run.config_snapshot[setting].astext, Integer), cap)))
+        if not available:
+            return None
         query = (select(Task).join(Run, Task.run_id == Run.id).join(Album, Run.album_id == Album.id)
                  .join(Page, and_(Task.page_id == Page.id, Page.album_id == Album.id))
-                 .where(Task.status.in_(['queued', 'retry_wait']),
+                 .where(or_(*available), Task.status.in_(['queued', 'retry_wait']),
                         or_(Task.next_retry_at.is_(None), Task.next_retry_at <= now),
                         Album.deleted_at.is_(None), Album.status != 'deleted', Page.removed_at.is_(None),
                         Run.status.in_(['queued', 'running', 'action_required']),
                         or_(Run.status != 'action_required', and_(Task.requires_ai_call.is_(False), Task.has_persisted_input.is_(True))),
                         or_(Task.stage != 'optimize', exists(select(image.id).where(image.run_id == Task.run_id, image.page_id == Task.page_id, image.stage == 'image_transform', image.status == 'succeeded'))))
-                 .order_by(Task.id).with_for_update(skip_locked=True).limit(1))
+                 .order_by(Task.id).with_for_update(of=Album, skip_locked=True).limit(1))
         if execution_mode is not None:
             query = query.where(Run.config_snapshot['execution_mode'].astext == execution_mode)
-        # Lock all selected parent rows as well: new dispatch and action_required serialize.
+        # Lock parents explicitly in the same order as settlement/deletion.
         task = await session.scalar(query)
         if task is None:
+            return None
+        run = await session.scalar(select(Run).where(Run.id == task.run_id).with_for_update(skip_locked=True))
+        if run is None:
+            return None
+        task = await session.scalar(select(Task).where(Task.id == task.id).with_for_update(skip_locked=True))
+        if task is None:
+            return None
+        page = await session.scalar(select(Page).where(Page.id == task.page_id).with_for_update(skip_locked=True))
+        if page is None:
             return None
         task.status = 'running'
         task.fence_version += 1

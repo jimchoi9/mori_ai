@@ -10,10 +10,12 @@ from datetime import datetime, timezone, timedelta
 import hashlib
 import json
 import os
+from time import perf_counter
 from pathlib import Path
 from uuid import UUID, uuid4
 from sqlalchemy import select, update, or_, func
 from backend.models import Task, Attempt, Album, Run
+from backend.telemetry import span, emit
 from backend.generation.repository import claim_task, settle_task, _locked_task, _active, mark_action_required, result_fields, fail_invalid_result, reject_invalid_settlement
 from backend.worker.jobs import enqueue_job, dispatch_outbox, recover_jobs
 
@@ -159,13 +161,19 @@ class Runner:
             task.output_caption = attempt.output_caption; task.output_asset_id = attempt.output_asset_id
             return True
 
-    async def run_once(self):
+    async def run_once(self, stage=None):
         if self.adapter is None and self.local_executor is None:
             return False
+        started = perf_counter()
         async with self.sessions() as s:
-            claim = await claim_task(s, utcnow(), self.lease_seconds, execution_mode=getattr(self.adapter,'execution_mode',None))
+            claim = await claim_task(s, utcnow(), self.lease_seconds, execution_mode=getattr(self.adapter,'execution_mode',None), stage=stage)
         if claim is None:
             return False
+        emit('generation.claim', task_id=claim.task_id, stage=stage, elapsed_ms=(perf_counter()-started)*1000)
+        with span('generation.task', task_id=claim.task_id, **({'stage': stage} if stage is not None else {})):
+            return await self._execute_claim(claim)
+
+    async def _execute_claim(self, claim):
         prepared = await self.prepare(claim)
         if prepared is None:
             return False
@@ -179,7 +187,10 @@ class Runner:
         try:
             if needs_ai and not getattr(executor,'manages_dispatch',False) and not await self._mark_sent(claim, attempt_id):
                 return False
-            work = asyncio.create_task(executor.execute(attempt_id, stage))
+            async def execute():
+                with span('generation.execute', stage=stage, task_id=claim.task_id, attempt_id=attempt_id):
+                    return await executor.execute(attempt_id, stage)
+            work = asyncio.create_task(execute())
             done,_ = await asyncio.wait((work,heartbeat),return_when=asyncio.FIRST_COMPLETED)
             if heartbeat in done:
                 work.cancel()
@@ -187,7 +198,8 @@ class Runner:
                 if heartbeat.exception(): raise heartbeat.exception()
                 return True
             result = await work
-            checksum = await self.store.save(str(attempt_id), result)
+            with span('generation.persist', stage=stage, task_id=claim.task_id, attempt_id=attempt_id):
+                checksum = await self.store.save(str(attempt_id), result)
             if await self._received(claim, attempt_id, result, checksum):
                 async with self.sessions() as s:
                     if not await settle_task(s, claim.task_id, claim.fence_version, 'succeeded', utcnow()):
@@ -277,6 +289,8 @@ class Runner:
                         fail_invalid_result(rows, latest, error)
                         continue
                     task.output_caption = latest.output_caption; task.output_asset_id = latest.output_asset_id
+                    # Durable settlement only: this transient lease does not
+                    # execute provider/media work or consume an execution lane.
                     task.fence_version += 1; task.status = 'running'; task.lease_until = now+timedelta(seconds=self.lease_seconds)
                     from backend.generation.repository import TaskClaim
                     recovered_claim = TaskClaim(task.id, task.fence_version, task.lease_until)

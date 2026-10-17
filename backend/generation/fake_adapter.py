@@ -10,6 +10,8 @@ from backend.models import Album,Page,Run,Task,Attempt,MediaAsset
 from backend.storage.local import storage_key
 from backend.storage.factory import result_store
 from backend.storage.r2 import StorageUnavailable
+from backend.storage.snapshot import input_file
+from backend.telemetry import span
 from backend.generation.repository import _locked_task,_active
 from backend.media.fake_transform import fake_transform,optimize_in_process
 
@@ -70,14 +72,18 @@ class FakeExecutor:
                 'key':input_asset.storage_key,'sha':input_asset.sha256,'bytes':input_asset.bytes}
 
     async def _verify(self,context):
+        snapshots = {}
         for key,sha,size in [(context['normalized_key'],context['normalized_sha'],context['normalized_bytes']),
                              (context['key'],context['sha'],context['bytes'])]:
             try:
-                actual=await asyncio.to_thread(self.store.checksum,key)
-                actual_size=await asyncio.to_thread(lambda:self.store.stat(key).st_size)
+                if key not in snapshots:
+                    snapshots[key] = await asyncio.to_thread(self.store.read_bytes,key)
+                data = snapshots[key]
             except StorageUnavailable:raise
             except (OSError,ValueError):raise FakeExecutionError('MEDIA_SAVE_FAILED') from None
-            if actual!=sha or actual_size!=size:raise FakeExecutionError('MEDIA_SAVE_FAILED')
+            if len(data)!=size or hashlib.sha256(data).hexdigest()!=sha:
+                raise FakeExecutionError('MEDIA_SAVE_FAILED')
+        return snapshots
 
     async def _persist(self,context,kind,data,*,recover=False):
         role='thumbnail' if kind=='result_thumbnail' else kind
@@ -131,7 +137,7 @@ class FakeExecutor:
     async def execute(self,attempt_id,stage):
         context=await self._context(attempt_id,stage)
         try:
-            await self._verify(context)
+            snapshots = await self._verify(context)
         except StorageUnavailable:
             # No result or external request exists at this input-only boundary.
             raise FakeExecutionError('MEDIA_SAVE_FAILED',safe_to_retry=True) from None
@@ -139,9 +145,9 @@ class FakeExecutor:
             result={'caption':CAPTION}
         elif stage=='image_transform':
             try:
-                source_path=await asyncio.to_thread(self.store.path,context['key'])
-                data=await fake_transform(source_path,max_edge=min(context['config'].get('normalized_max_edge',4096),4096))
-                await self._verify(context)
+                async with input_file(snapshots[context['key']]) as source_path:
+                    with span('media.fake_transform'):
+                        data=await fake_transform(source_path,max_edge=min(context['config'].get('normalized_max_edge',4096),4096))
             except StorageUnavailable:
                 # Local fake bytes are disposable until persistence starts. Do not
                 # extend this handler over _persist, envelope writes or recovery.
@@ -151,9 +157,9 @@ class FakeExecutor:
             result={'asset_id':str(asset_id)}
         elif stage=='optimize':
             try:
-                source_path=await asyncio.to_thread(self.store.path,context['key'])
-                data,thumb,_=await optimize_in_process(source_path,context['config'])
-                await self._verify(context)
+                async with input_file(snapshots[context['key']]) as source_path:
+                    with span('media.optimize'):
+                        data,thumb,_=await optimize_in_process(source_path,context['config'])
                 asset_id=await self._persist(context,'result',data)
                 thumb_id=await self._persist(context,'result_thumbnail',thumb)
                 if asset_id is None or thumb_id is None:raise FakeExecutionError('MEDIA_SAVE_FAILED')

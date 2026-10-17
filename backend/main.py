@@ -15,6 +15,8 @@ BUILD_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None, media_storage=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        from backend.telemetry import configure_web_logging
+        configure_web_logging()
         from backend.database import session_factory as make_session_factory
         app.state.settings = settings if settings is not None else Settings()
         factory = session_factory if session_factory is not None else make_session_factory(app.state.settings.database_url)

@@ -14,6 +14,6 @@ def test_real_admission_snapshots_provider_models():
     assert cfg['execution_mode']=='openai'
     assert cfg['caption_model']=='gpt-5.4-mini' and cfg['image_model']=='gpt-image-2'
     assert cfg['budget_scope']=='validation_usd'
-    assert cfg['prompt_version']=='openai-v1'
+    assert cfg['prompt_version']=='openai-memory-v3'
     assert cfg['pricing_profile']=='openai-standard-2026-10-16-v1'
     require_local_ai(settings())

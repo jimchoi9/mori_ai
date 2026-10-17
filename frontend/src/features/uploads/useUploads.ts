@@ -35,7 +35,7 @@ export function useUploads(albumId:string, userId:string, refresh:()=>Promise<un
     setProgress(`${file.name} · 업로드 중`);
     await uploadStep(upload,file,current,abort.signal,uploadHeaders(upload.upload_url,upload.required_headers),
      ()=>api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}`,{signal:abort.signal}),
-     body=>api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}/complete`,{method:'POST',body,signal:abort.signal}));
+     body=>{setProgress(`${file.name} · 전송 확인 중 (연결 상태에 따라 최대 3분)`);return api<UploadView>(`/albums/${albumId}/uploads/${upload.upload_id}/complete`,{method:'POST',body,signal:abort.signal});});
    }
    await refresh(); intent.current=null; setFiles([]); setProgress('전송 완료 · 서버에서 사진을 검증하고 정규화합니다.');
   }catch(e){if(!abort.signal.aborted){if(e instanceof ApiError && e.status!==401 && e.status<500 && !intent.current?.reservation)intent.current=null;setError(errorText(e)); await refresh().catch(()=>undefined);}}finally{if(!abort.signal.aborted)setBusy(false);}
