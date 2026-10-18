@@ -71,6 +71,14 @@ async def test_main_keeps_jobs_running_with_independent_bounded_sweep(db,monkeyp
     monkeypatch.setattr(worker_main,'session_factory',lambda _:db)
     monkeypatch.setattr(worker_main,'ValidationWorker',Validation)
     monkeypatch.setattr(worker_main,'Runner',Runner)
+    # This scheduler-isolation test replaces asyncio.Event globally. Stub the
+    # newly added goods DB lane too: real asyncpg Events must not alias stopped.
+    import backend.goods_design.worker as goods_module
+    class Goods:
+        provider=None
+        def __init__(self,*args):pass
+        async def maintenance(self):pass
+    monkeypatch.setattr(goods_module,'GoodsWorker',Goods)
     import backend.storage.factory as factory
     monkeypatch.setattr(factory,'result_store',lambda _:None)
     await asyncio.wait_for(worker_main.main(),timeout=3)

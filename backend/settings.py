@@ -23,8 +23,20 @@ class Settings(BaseSettings):
     openai_project_id: str = ""
     openai_caption_model: str = "gpt-5.4-mini"
     openai_image_model: str = "gpt-image-2"
+    goods_image_model: str = "gpt-image-2.5-sunburst"
+    goods_generation_limit: int | None = Field(default=None, ge=1)
     ai_validation_budget_usd: Decimal = Field(default=Decimal('100'), gt=0, le=100, allow_inf_nan=False)
     ai_validation_initial_budget_usd: Decimal = Field(default=Decimal('5'), gt=0, le=100, allow_inf_nan=False)
+
+    @field_validator('goods_image_model', mode='before')
+    @classmethod
+    def default_goods_model(cls, value):
+        return value or 'gpt-image-2.5-sunburst'
+
+    @field_validator('goods_generation_limit', mode='before')
+    @classmethod
+    def optional_goods_limit(cls, value):
+        return None if value == '' else value
 
     @property
     def generation_enabled(self) -> bool:

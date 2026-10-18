@@ -31,6 +31,13 @@ RUN node tests/upload_preprocess.test.mjs ../src/features/uploads/preprocess.ts 
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
 
+RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
+    && node tests/goods_mockup.test.mjs \
+    && node tests/goods_catalog.test.mjs \
+    && node tests/goods_components.test.mjs \
+    && ./node_modules/.bin/esbuild src/features/goods/mockup/renderer.ts --bundle --platform=node --format=esm --outfile=/tmp/goods-renderer.mjs \
+    && node tests/goods_renderer.test.mjs file:///tmp/goods-renderer.mjs
+
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app

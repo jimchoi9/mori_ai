@@ -50,6 +50,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(uploads_router)
     from backend.generation.routes import router as generation_router
     app.include_router(generation_router)
+    from backend.goods_design.routes import router as goods_router
+    app.include_router(goods_router)
     build_dir = (static_dir if static_dir is not None else BUILD_DIR).resolve()
 
     @app.get("/health")

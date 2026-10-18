@@ -5,10 +5,11 @@ export function oauthProviders(value: unknown): AuthProvider[] {
   return [...new Set(value.filter((provider): provider is AuthProvider => provider === 'google' || provider === 'kakao'))];
 }
 
-export function oauthLoginUrl(provider: AuthProvider, returnTo = '/albums'): string {
+export function oauthLoginUrl(provider: AuthProvider, returnTo = '/goods'): string {
   if (provider !== 'google' && provider !== 'kakao') throw new Error('Unsupported login provider');
   const albumPath = /^\/albums\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(edit|progress|review|view)$/i;
-  const destination = returnTo === '/albums' || albumPath.test(returnTo) ? returnTo : '/albums';
+  const designPath = /^\/designs\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const destination = ['/goods','/designs','/albums'].includes(returnTo) || albumPath.test(returnTo) || designPath.test(returnTo) ? returnTo : '/goods';
   return `/api/v1/auth/${provider}/start?return_to=${encodeURIComponent(destination)}`;
 }
 

@@ -27,6 +27,8 @@ async def main() -> None:
         executor = FakeExecutor(sessions, validation.store)
     from backend.storage.factory import result_store
     runner = Runner(sessions, result_store(validation.store), executor, local_executor=executor)
+    from backend.goods_design.worker import GoodsWorker
+    goods = GoodsWorker(sessions, validation.store, settings)
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -42,12 +44,14 @@ async def main() -> None:
         await run_worker(validation, runner, stopped,
                          poll_seconds=settings.worker_poll_seconds,
                          generation_enabled=executor is not None,
-                         oauth_cleanup=oauth_cleanup)
+                         oauth_cleanup=oauth_cleanup, goods_operation=goods.run_once if executor else goods.maintenance)
     finally:
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.remove_signal_handler(sig)
         if settings.ai_real_calls_enabled and executor is not None:
             await executor.provider.aclose()
+        if goods.provider is not None:
+            await goods.provider.aclose()
         await sessions.kw['bind'].dispose()
         logging.info('Worker stopped safely')
 

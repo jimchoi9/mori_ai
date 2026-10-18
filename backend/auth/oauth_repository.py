@@ -12,8 +12,8 @@ from backend.models import AuthIdentity, OAuthLoginRequest, User
 
 _HASH = re.compile(r'[0-9a-f]{64}')
 _RETURN_TO = re.compile(
-    r'/albums(?:/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-    r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/(?:edit|progress|review|view))?')
+    r'(?:/goods|/designs(?:/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?|/albums(?:/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+    r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/(?:edit|progress|review|view))?)')
 
 
 async def begin_login(session, provider: str, state_hash: str, binding_hash: str,

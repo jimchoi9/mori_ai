@@ -42,6 +42,9 @@ async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *
         await lock_claims(session)
         counts = dict((await session.execute(select(Task.stage, func.count()).where(
             Task.status == 'running', Task.lease_until > now).group_by(Task.stage))).all())
+        from backend.models import GoodsRevision
+        goods_count=await session.scalar(select(func.count()).select_from(GoodsRevision).where(GoodsRevision.status=='running',GoodsRevision.lease_until>now))
+        counts['image_transform']=counts.get('image_transform',0)+goods_count
         available = []
         for name, (cap, setting) in limits.items():
             if (stage is None or stage == name) and counts.get(name, 0) < cap:

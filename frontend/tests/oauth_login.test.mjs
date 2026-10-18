@@ -4,14 +4,14 @@ const oauth = await import(process.argv[2]);
 const id = '12345678-1234-1234-1234-123456789abc';
 test('OAuth navigates through same-origin start with only allowed return paths', () => {
   for (const provider of ['google', 'kakao']) {
-    for (const path of ['/albums', ...['edit','progress','review','view'].map(view => `/albums/${id}/${view}`)]) {
+    for (const path of ['/goods', '/designs', `/designs/${id}`, '/albums', ...['edit','progress','review','view'].map(view => `/albums/${id}/${view}`)]) {
       assert.equal(oauth.oauthLoginUrl(provider, path), `/api/v1/auth/${provider}/start?return_to=${encodeURIComponent(path)}`);
     }
   }
 });
-test('untrusted return locations fall back to the bookshelf', () => {
+test('untrusted return locations fall back to goods', () => {
   for (const path of ['https://evil.test','//evil.test','/albums?token=secret','/albums#secret',`/albums/${id}/edit?x=1`, '/albums/not-a-uuid/view', '/login', '/albums/new', '/albums/../login', '/albums/', `/albums/${id}/view\n`]) {
-    assert.equal(oauth.oauthLoginUrl('google', path), '/api/v1/auth/google/start?return_to=%2Falbums');
+    assert.equal(oauth.oauthLoginUrl('google', path), '/api/v1/auth/google/start?return_to=%2Fgoods');
   }
   assert.throws(() => oauth.oauthLoginUrl('unknown', '/albums'));
 });

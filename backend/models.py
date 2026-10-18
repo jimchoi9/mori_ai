@@ -238,3 +238,38 @@ class AIBudgetEntry(Created, Base):
         CheckConstraint('actual_usd IS NULL OR actual_usd >= 0'),
         CheckConstraint("status IN ('reserved','unknown','settled','released')"),
     )
+
+
+class GoodsWork(Identity, Created, Base):
+    __tablename__='goods_work'
+    owner_id: Mapped[UUID]=mapped_column(ForeignKey('users.id'),index=True)
+    status: Mapped[str]=mapped_column(String(20),default='active')
+    source_key: Mapped[str|None]=mapped_column(Text)
+    source_hash: Mapped[str|None]=mapped_column(String(64))
+    expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),index=True)
+
+class GoodsRevision(Identity, Created, Base):
+    __tablename__='goods_revisions'
+    work_id: Mapped[UUID]=mapped_column(ForeignKey('goods_work.id'),index=True)
+    parent_id: Mapped[UUID|None]=mapped_column(ForeignKey('goods_revisions.id'))
+    request_key: Mapped[str]=mapped_column(Text)
+    request_hash: Mapped[str]=mapped_column(String(64))
+    style: Mapped[str]=mapped_column(String(30))
+    message: Mapped[str]=mapped_column(Text)
+    prompt: Mapped[str]=mapped_column(Text)
+    config: Mapped[dict]=mapped_column(JSONB,default=dict)
+    status: Mapped[str]=mapped_column(String(20),default='queued')
+    result_key: Mapped[str|None]=mapped_column(Text)
+    error_code: Mapped[str|None]=mapped_column(String(50))
+    lease_until: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
+    __table_args__=(UniqueConstraint('work_id','request_key'),)
+
+class GoodsDesign(Identity, Created, Base):
+    __tablename__='goods_designs'
+    owner_id: Mapped[UUID]=mapped_column(ForeignKey('users.id'),index=True)
+    work_id: Mapped[UUID]=mapped_column(ForeignKey('goods_work.id'),unique=True)
+    revision_id: Mapped[UUID]=mapped_column(ForeignKey('goods_revisions.id'))
+    placement: Mapped[dict]=mapped_column(JSONB)
+    album_id: Mapped[UUID|None]=mapped_column(ForeignKey('albums.id'))
+    version: Mapped[int]=mapped_column(Integer,default=1)
+    production_started_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))

@@ -56,7 +56,7 @@ async def start(request: Request, provider: str):
     except ValueError:
         raise APIError(422, 'VALIDATION_ERROR') from None
     url, _, binding = await service.start_login(request.app.state.session_factory, settings,
-                                               provider, query.get('return_to', '/albums'))
+                                               provider, query.get('return_to', '/goods'))
     response = RedirectResponse(url, status_code=302, headers={
         'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer'})
     response.set_cookie(BINDING_COOKIE, binding, max_age=service.LOGIN_TTL_SECONDS, path='/',
