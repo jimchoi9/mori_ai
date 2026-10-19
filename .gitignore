@@ -10,3 +10,11 @@ frontend/dist/
 .superpowers/
 .local/
 .DS_Store
+
+# Local-only assignment and submission materials
+/Final_Project_*.pdf
+/final_project_*.pdf
+/final_submission/
+
+# Local generated artifacts
+/output/

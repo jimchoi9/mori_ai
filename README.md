@@ -1,6 +1,6 @@
 # Mori AI — 사진을 추억의 책으로
 
-[프로젝트 기획서 (PDF)](01_AI_MORI_프로젝트_기획서.pdf) · [기능요구명세서 (PDF)](02_AI_MORI_기능요구명세서.pdf) · [발표자료 (PDF)](03_AI_MORI_발표자료.pdf)
+[프로젝트 기획서 (PDF)](01_AI_MORI_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B8%B0%ED%9A%8D%EC%84%9C.pdf) · [기능요구명세서 (PDF)](02_AI_MORI_%EA%B8%B0%EB%8A%A5%EC%9A%94%EA%B5%AC%EB%AA%85%EC%84%B8%EC%84%9C.pdf) · [발표자료 (PDF)](03_AI_MORI_%EB%B0%9C%ED%91%9C%EC%9E%90%EB%A3%8C.pdf)
 
 Mori AI는 사진에 AI가 만든 한 문장 글귀를 더해 모바일 사진첩으로 감상하는 서비스입니다. 사용자가 고른 사진의 순서를 유지하고, 사진마다 한 페이지를 구성합니다. 생성된 글귀를 직접 다듬어 나만의 사진첩을 완성할 수 있습니다.
 
@@ -188,7 +188,7 @@ MORI_VERIFY_TEST_IMAGE=mori-ai:verify-tests bash scripts/verify-db.sh backend/te
 
 | 문서 | 내용 |
 |---|---|
-| [기능요구명세서](기능요구명세서.md) | 제품 목적·기능·제외 범위·사용자 테스트와 제출 조건 |
+| [기능요구명세서](docs/기능요구명세서.md) | 제품 목적·기능·제외 범위·사용자 테스트와 제출 조건 |
 | [공통계약 v1.11](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류·미디어 정책 |
 | [굿즈 계약](docs/굿즈-공통계약-v1.md) | 굿즈 생성·수정·저장과 앨범 연결 |
 | [설계](docs/설계.md) | 화면·시스템 구조·worker·복구 설계 |
