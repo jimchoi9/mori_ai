@@ -37,12 +37,13 @@ async def test_goods_source_rejections_are_specific(data, code, status):
 
 
 @pytest.mark.asyncio
-async def test_goods_animation_rejected():
+@pytest.mark.parametrize('fmt', ['WEBP', 'PNG'])
+async def test_goods_animation_rejected(fmt):
     from backend.goods_design.media import normalize_goods_source
     out = BytesIO()
     first = Image.new('RGB', (32, 32), 'red')
     second = Image.new('RGB', (32, 32), 'blue')
-    first.save(out, format='WEBP', save_all=True, append_images=[second], duration=100, loop=0)
+    first.save(out, format=fmt, save_all=True, append_images=[second], duration=100, loop=0)
     with pytest.raises(APIError) as err:
         await normalize_goods_source(out.getvalue())
     assert err.value.code == 'UNSUPPORTED_MEDIA'
@@ -166,3 +167,32 @@ async def test_goods_exact_40mp_jpeg_boundary_and_48mp_rejection():
     with pytest.raises(APIError) as err:
         await normalize_goods_source(picture('JPEG', (8000, 6000)))
     assert (err.value.code, err.value.status) == ('IMAGE_PIXEL_LIMIT_EXCEEDED', 422)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('hdr', [False, True], ids=['sdr-primary', 'hdr-rejected'])
+async def test_goods_mpo_primary_orientation_and_hdr_limit(hdr):
+    from backend.goods_design.media import normalize_goods_upload
+    exif = Image.Exif(); exif[274] = 6
+    out = BytesIO()
+    with Image.new('RGB', (80, 40), 'red') as primary, Image.new('RGB', (80, 40), 'blue') as auxiliary:
+        primary.save(out, format='MPO', save_all=True, append_images=[auxiliary], exif=exif,
+                     **({'xmp': b'<hdrgm:GainMap/>'} if hdr else {}))
+    data = out.getvalue()
+    with Image.open(BytesIO(data)) as source:
+        assert source.format == 'MPO' and source.n_frames == 2
+    async def stream():
+        for offset in range(0, len(data), 1024):
+            yield data[offset:offset + 1024]
+    if hdr:
+        with pytest.raises(APIError) as err:
+            await normalize_goods_upload(stream())
+        assert (err.value.code, err.value.status) == ('IMAGE_NORMALIZATION_FAILED', 422)
+    else:
+        result = await normalize_goods_upload(stream())
+        with Image.open(BytesIO(result)) as image:
+            assert image.format == 'WEBP' and image.size == (40, 80)
+            assert getattr(image, 'n_frames', 1) == 1
+            red, green, blue = image.convert('RGB').getpixel((20, 40))
+            assert red > 240 and green < 15 and blue < 15
+            assert not image.getexif() and not image.info.get('xmp')

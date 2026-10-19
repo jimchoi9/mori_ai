@@ -114,11 +114,14 @@ def _inspect(source):
     pillow_heif.register_heif_opener(thumbnails=False)
     try:
         with Image.open(source) as image:
-            if image.format not in {'JPEG', 'PNG', 'WEBP', 'HEIF'}:
+            if image.format not in {'JPEG', 'MPO', 'PNG', 'WEBP', 'HEIF'}:
                 return {'error': 'UNSUPPORTED_MEDIA'}
             if image.width * image.height > 40_000_000:
                 return {'error': 'IMAGE_PIXEL_LIMIT_EXCEEDED'}
-            if image.format != 'HEIF' and getattr(image, 'n_frames', 1) != 1:
+            # MPO/HEIF containers use only their primary image in the shared
+            # codec; secondary images are not animations or decoded here.
+            # The codec still enforces the primary image's HDR restrictions.
+            if image.format not in {'HEIF', 'MPO'} and getattr(image, 'n_frames', 1) != 1:
                 return {'error': 'UNSUPPORTED_MEDIA'}
         return {}
     except Image.DecompressionBombError:
