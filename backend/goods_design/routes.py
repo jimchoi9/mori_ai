@@ -10,7 +10,7 @@ from fastapi.responses import Response,JSONResponse
 from pydantic import Field,StrictStr
 from sqlalchemy import select
 from backend.http.schemas import StrictBody,EmptyBody
-from backend.http.security import AuthContext,require_user,require_csrf
+from backend.http.security import AuthContext,require_user,require_csrf,require_approved_user
 from backend.http.errors import APIError,envelope
 from backend.http.idempotency import require_key
 from backend.goods_design import service
@@ -51,7 +51,7 @@ async def get_catalog(request:Request,context:AuthContext=Depends(require_user))
     return envelope(request,{'styles':catalog()})
 
 @router.post('/work')
-async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(None)):
+async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(require_approved_user),idempotency_key:str|None=Header(None)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():
         await require_consent(s,context.user_id,request.app.state.settings)
@@ -59,7 +59,7 @@ async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(requ
     return JSONResponse(envelope(request,data),status_code=201)
 
 @router.put('/work/{id}/source')
-async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_approved_user)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():
         await service.work(s,context.user_id,id)

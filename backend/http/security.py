@@ -45,3 +45,11 @@ def require_csrf(request: Request, context: AuthContext) -> None:
     supplied = request.headers.get('x-csrf-token', '')
     if not supplied or not secrets.compare_digest(supplied.encode(), csrf_token(raw).encode()):
         raise APIError(403, 'CSRF_INVALID')
+
+
+async def require_approved_user(request: Request) -> AuthContext:
+    from backend.access.service import require_access
+    context = await require_user(request)
+    async with request.app.state.session_factory() as session:
+        await require_access(session, request.app.state.settings, context.user_id)
+    return context

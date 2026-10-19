@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import Field, StrictInt, field_validator
 from backend.http.schemas import StrictBody
-from backend.http.security import AuthContext, require_user, require_csrf, csrf_token, COOKIE_NAME
+from backend.http.security import AuthContext, require_user, require_csrf, csrf_token, COOKIE_NAME, require_approved_user
 from backend.http.errors import APIError, envelope
 from backend.http.idempotency import require_key, request_hash
 from backend.albums.routes import validate_query
@@ -79,6 +79,7 @@ async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:Aut
 
 @router.put('/private/uploads/{upload_id}',status_code=204)
 async def put(request:Request,upload_id:UUID,expires:int,signature:str,context:AuthContext=Depends(private_user)):
+    await require_approved_user(request)
     validate_query(request,('expires','signature'))
     sessions=request.app.state.session_factory
     async with sessions() as s,s.begin():
@@ -103,7 +104,7 @@ async def put(request:Request,upload_id:UUID,expires:int,signature:str,context:A
 
 
 @router.post('/albums/{album_id}/uploads/{upload_id}/complete')
-async def complete(request:Request,album_id:UUID,upload_id:UUID,body:CompleteBody,context:AuthContext=Depends(require_user)):
+async def complete(request:Request,album_id:UUID,upload_id:UUID,body:CompleteBody,context:AuthContext=Depends(require_approved_user)):
     require_csrf(request,context); validate_query(request,())
     from backend.telemetry import span
     with span('upload.complete', request_id=getattr(request.state,'request_id',None)):

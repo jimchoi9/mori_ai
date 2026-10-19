@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.6",
+  "contract_version": "1.7",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1721,5 +1721,25 @@
       "generation_mode": "openai"
     },
     "request_id": "req-example"
+  },
+  "account_access_examples": {
+    "approved_only_pending": {
+      "mode": "approved_only",
+      "allowed": false
+    },
+    "approved_only_approved": {
+      "mode": "approved_only",
+      "allowed": true
+    },
+    "all_authenticated": {
+      "mode": "all_authenticated",
+      "allowed": true
+    },
+    "error": {
+      "code": "ACCESS_APPROVAL_REQUIRED",
+      "message": "비공개 테스트 중입니다. 관리자 승인 후 이용할 수 있습니다.",
+      "retryable": false,
+      "details": {}
+    }
   }
 }

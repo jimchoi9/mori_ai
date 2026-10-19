@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 from PIL import Image
 from backend.models import Attempt
+from backend.access.service import allowed
 from backend.generation.fake_adapter import FakeExecutor, FakeExecutionError
 from backend.generation.repository import _locked_task, _active
 from backend.storage.factory import result_store
@@ -26,6 +27,7 @@ class RealExecutor(FakeExecutor):
 
     def __init__(self, sessions, store, provider, ledger, settings):
         super().__init__(sessions, store)
+        self.settings = settings
         self.provider, self.ledger = provider, ledger
         self.caption_model, self.image_model = settings.openai_caption_model, settings.openai_image_model
 
@@ -43,6 +45,8 @@ class RealExecutor(FakeExecutor):
                 or not self.accepts_config(rows[1].config_snapshot)
                 or rows[2].attempt_count != context['attempt_no']):
                 return False
+            if not await allowed(session, self.settings, rows[0].owner_id):
+                raise RealExecutionError('ACCESS_APPROVAL_REQUIRED', safe_to_retry=True, dispatch_state='not_sent')
             # A sibling unknown may pause new AI after this task was prepared.
             # None distinguishes an unsent, explicitly resumable pause from stale work.
             if rows[1].status == 'action_required':
@@ -86,7 +90,11 @@ class RealExecutor(FakeExecutor):
         if not first:
             # A previous process may have dispatched; duplicate reserve is never a send permit.
             raise RealExecutionError('AI_RESULT_UNKNOWN')
-        dispatched = await self._dispatch(context)
+        try:
+            dispatched = await self._dispatch(context)
+        except RealExecutionError:
+            await self.ledger.release_unsent(attempt_id)
+            raise
         if not dispatched:
             await self.ledger.release_unsent(attempt_id)
             if dispatched is None:

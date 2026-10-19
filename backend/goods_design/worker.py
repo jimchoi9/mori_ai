@@ -9,6 +9,7 @@ from PIL import Image,ImageOps
 from backend.goods_design.models import GoodsWork,GoodsRevision,GoodsDesign
 from backend.goods_design.service import now
 from backend.models import Task
+from backend.access.service import require_access
 from backend.generation.repository import lock_claims
 from backend.generation.budget import BudgetLedger,BudgetExceeded
 from backend.generation.openai_provider import ProviderFailure,IMAGE_RESERVATION_USD
@@ -52,6 +53,7 @@ class GoodsWorker:
                 # Discard before dispatch must not cause a paid call.
                 async with self.sessions() as s,s.begin():
                     w=await s.scalar(select(GoodsWork).where(GoodsWork.id==wid).with_for_update())
+                    await require_access(s,self.settings,w.owner_id)
                     if w.status!='active' or w.expires_at<=now():
                         await self.ledger.release_unsent(rid)
                         r=await s.get(GoodsRevision,rid);r.status='cancelled';return True
@@ -88,7 +90,7 @@ class GoodsWorker:
                 w=await s.scalar(select(GoodsWork).where(GoodsWork.id==wid).with_for_update())
                 r=await s.get(GoodsRevision,rid)
                 r.status='unknown' if unknown else 'failed';r.lease_until=None
-                r.error_code='AI_BUDGET_EXCEEDED' if isinstance(exc,BudgetExceeded) else 'AI_RESULT_UNKNOWN' if unknown else 'AI_TEMPORARY_FAILURE'
+                r.error_code='ACCESS_APPROVAL_REQUIRED' if getattr(exc,'code',None)=='ACCESS_APPROVAL_REQUIRED' else 'AI_BUDGET_EXCEEDED' if isinstance(exc,BudgetExceeded) else 'AI_RESULT_UNKNOWN' if unknown else 'AI_TEMPORARY_FAILURE'
         return True
 
     async def maintenance(self):

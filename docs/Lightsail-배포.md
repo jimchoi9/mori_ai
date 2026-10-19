@@ -117,3 +117,33 @@ sudo bash scripts/lightsail-deploy.sh <전체40자리커밋SHA>
 ### 자동화 검증
 
 `python3 tests/deploy/test_lightsail_deploy.py`: 5개 테스트, 하위 경우 포함. 정상 순서·digest 저장·정책 보존, dirty/merge/pull/revision/backup 실패 시 무중단, migration 실패 시 시작 금지, startup/HTTPS 실패 시 이미지 설정 보존, 잘못된 SHA의 부작용 없음 검증. Git·Docker·curl은 가짜 명령이며 실제 서버를 건드리지 않는다. `bash -n` 및 diff 공백 검사 통과. 실제 GitHub Actions 최초 빌드/GHCR 권한·서버 pull·운영 배포는 아직 미실행이다.
+
+## 테스트 계정 승인·취소 (2026-10-18)
+
+이 변경은 migration `0006_test_access`를 포함한다. 새 이미지를 배포하면 기존 사용자도 자동 승인되지 않는다. 운영 `.env.production`에 다음을 명시하고 web·worker를 함께 재생성한다.
+
+```dotenv
+ACCESS_MODE=approved_only
+```
+
+로그인한 테스터에게 승인 대기 화면의 계정 ID(UUID)를 전달받는다. 동일인이 Google/Kakao로 별도 가입하면 각각의 ID를 승인해야 할 수 있다. 기존 로그인 세션도 승인 상태 재확인 버튼/새로고침으로 반영된다. 서버에서 다음 명령을 사용한다(`사용자UUID`는 실제 UUID로 대체).
+
+```bash
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access list
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access approve 사용자UUID
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access revoke 사용자UUID
+```
+
+승인·취소는 DB 변경이므로 재배포/재시작이 필요 없다. 승인 취소로 차단된 사진첩의 미전송 AI 작업은 재승인 후 화면에서 재개할 수 있다. 목록은 최근 200명이며 이름이 같은 경우 계정 ID로 구분한다. 승인하지 않은 계정은 업로드와 사진첩·굿즈 AI 생성이 서버에서 차단된다. 기존 DB·R2 사진과 AI 비용 원장은 삭제하지 않는다. 이미 발급된 R2 URL·전송된 AI 호출에는 계약의 제한이 적용된다.
+
+전체 공개 시에는 `.env.production`의 값만 아래로 바꾸고 적용한다.
+
+```dotenv
+ACCESS_MODE=all_authenticated
+```
+
+```bash
+sudo bash scripts/lightsail.sh up -d --no-build --force-recreate web worker
+```
+
+공개 모드는 로그인을 없애지 않는다. 다시 `approved_only`로 되돌리면 기존 승인 목록이 적용된다. `AI_REAL_CALLS_ENABLED`, 초기/총 예산과 미확인 비용 예약 정책은 자동으로 변경되지 않는다. 실제 AI 활성화 전 QA/운영의 합산 예산을 확인한다.

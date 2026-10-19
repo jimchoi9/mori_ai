@@ -27,7 +27,21 @@ test('provider configuration defaults closed and accepts only known unique provi
 if (process.argv[3]) {
   const {createElement} = await import('react');
   const {renderToStaticMarkup} = await import('react-dom/server');
-  const {OAuthLoginOptions} = await import(process.argv[3]);
+  const {OAuthLoginOptions, ApprovalPending} = await import(process.argv[3]);
+  test('pending account exposes ID, refresh and logout without upload controls', () => {
+    const html = renderToStaticMarkup(createElement(ApprovalPending, {userId:id, busy:false, refresh:()=>{}, logout:()=>{}, error:''}));
+    assert.match(html, /관리자 승인을 기다리고/);
+    assert.match(html, new RegExp(id));
+    assert.match(html, /승인 상태 다시 확인/);
+    assert.match(html, /로그아웃/);
+    assert.doesNotMatch(html, /type="file"/);
+  });
+  test('pending approval disables actions during refresh and escapes account text', () => {
+    const html = renderToStaticMarkup(createElement(ApprovalPending, {userId:'<script>x</script>', busy:true, refresh:()=>{}, logout:()=>{}, error:'확인 실패'}));
+    assert.equal((html.match(/disabled=""/g) || []).length, 2);
+    assert.doesNotMatch(html, /<script>/);
+    assert.match(html, /role="alert"/);
+  });
   const render = props => renderToStaticMarkup(createElement(OAuthLoginOptions, {providers:[], pending:false, failed:false, retry:()=>{}, returnTo:'/albums', ...props}));
   test('login screen exposes only configured provider navigation', () => {
     assert.doesNotMatch(render({}), /href=/);

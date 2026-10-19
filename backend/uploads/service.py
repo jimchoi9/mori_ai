@@ -1,4 +1,5 @@
 """Atomic reservation, immutable completion, and edit policies."""
+from backend.access.service import require_access
 import asyncio
 import hashlib
 import re
@@ -32,6 +33,7 @@ def config(settings):
 
 
 async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
+    await require_access(session, settings, owner)
     parent=await repo.album(session,owner,album_id)
     operation=f'POST /api/v1/albums/{album_id}/uploads'
     record=await albums.find_record(session,owner,operation,key)

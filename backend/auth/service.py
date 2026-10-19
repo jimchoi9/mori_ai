@@ -1,6 +1,7 @@
 import secrets
 from datetime import datetime, timezone, timedelta
 from backend.auth import repository
+from backend.access.service import allowed
 from backend.http.errors import APIError
 from backend.http.security import token_hash
 
@@ -25,7 +26,7 @@ async def me(factory, settings, context):
     async with factory() as session:
         user = await repository.user_by_id(session, context.user_id)
         consent = await repository.get_consent(session, context.user_id, settings.consent_policy_version)
-        return {'user': {'id': str(user.id), 'display_name': user.display_name},
+        return {'access': {'mode': settings.access_mode, 'allowed': await allowed(session, settings, context.user_id)}, 'user': {'id': str(user.id), 'display_name': user.display_name},
             'consent': {'required': consent is None, 'policy_version': settings.consent_policy_version, 'notice': NOTICE}}
 
 

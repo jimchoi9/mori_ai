@@ -21,6 +21,8 @@ class Created:
 
 class User(Identity, Created, Base):
     __tablename__ = 'users'
+    test_access_approved: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
+    test_access_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dev_account: Mapped[str | None] = mapped_column(String(20), unique=True)
     display_name: Mapped[str] = mapped_column(String(100), default='test')
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -15,6 +15,14 @@ class Settings(BaseSettings):
 
     database_url: str = Field(repr=False)
     app_env: Literal["local", "test", "production"] = "production"
+    access_mode: Literal["approved_only", "all_authenticated"] = "approved_only"
+
+    @model_validator(mode="after")
+    def local_access_default(self):
+        if self.app_env != "production" and "access_mode" not in self.model_fields_set:
+            self.access_mode = "all_authenticated"
+        return self
+
     dev_auth_enabled: bool = False
     dev_ai_enabled: bool = False
     ai_real_calls_enabled: bool = False

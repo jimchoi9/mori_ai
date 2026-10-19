@@ -1,3 +1,4 @@
+from backend.access.service import require_access
 from datetime import datetime,timezone,timedelta
 from uuid import uuid4
 from sqlalchemy import select
@@ -34,6 +35,7 @@ async def detail(s,owner,id):
     return {'id':str(w.id),'revisions':[revision_view(r) for r in rows]}
 
 async def generate(s,owner,id,body,key,settings):
+    await require_access(s, settings, owner)
     w=await work(s,owner,id)
     hashed=request_hash(body)
     existing=await s.scalar(select(GoodsRevision).where(GoodsRevision.work_id==id,GoodsRevision.request_key==key))

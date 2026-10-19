@@ -2,6 +2,7 @@
 
 Lock order: User -> Album -> Run -> Task. No executor or file I/O here.
 """
+from backend.access.service import require_access
 from backend.generation.prompt_profiles import DEFAULT_PROMPT_VERSION, SUPPORTED_PROMPT_VERSIONS
 from datetime import datetime, timezone
 from sqlalchemy import select
@@ -91,6 +92,7 @@ async def check_concurrency(session, owner_id, exclude_run=None):
 
 
 async def create_generation(session, owner_id, album_id, expected_version, key, request_hash, settings):
+    await require_access(session, settings, owner_id)
     album = await owned_album(session, owner_id, album_id)
     operation = f'POST /api/v1/albums/{album_id}/generation'
     record = await albums.find_record(session, owner_id, operation, key)
@@ -164,6 +166,7 @@ def acceptance(album,run):
 
 
 async def resume_generation(session, owner_id, album_id, run_id, expected_version, key, request_hash, settings):
+    await require_access(session, settings, owner_id)
     album = await owned_album(session,owner_id,album_id)
     operation = f'POST /api/v1/albums/{album_id}/generation/resume'
     record = await albums.find_record(session,owner_id,operation,key)
