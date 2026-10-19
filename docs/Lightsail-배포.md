@@ -147,3 +147,22 @@ sudo bash scripts/lightsail.sh up -d --no-build --force-recreate web worker
 ```
 
 공개 모드는 로그인을 없애지 않는다. 다시 `approved_only`로 되돌리면 기존 승인 목록이 적용된다. `AI_REAL_CALLS_ENABLED`, 초기/총 예산과 미확인 비용 예약 정책은 자동으로 변경되지 않는다. 실제 AI 활성화 전 QA/운영의 합산 예산을 확인한다.
+
+
+## 2026-10-19 WebP 재사용·굿즈 업로드 통합 인계
+
+현재 배포 후보는 공통계약v1.12의 **전역/신규 이미지2·글귀4**다. 이미지4 실험 설정이나 진단용강제GC/trim은 운영에 적용하지 않는다. 실제 서버 배포는 사용자가 직접 수행한다. [통합 검증 기록](미디어-배포브랜치-통합.md)에 해당커밋·검사상태를 기록한다.
+
+성공한 Actions SHA로 기존 배포 스크립트를 실행하기 전, 운영 `.env.production`의 아래 미디어값을 확인한다. 기존에 명시한90/4096/20MiB는 새Compose기본값보다 우선하므로 값이 남아있으면 새 정책과 다르게 처리될 수 있다. 다른 비밀값·DB·승인·예산·AI 활성화 설정은 보존한다.
+
+```dotenv
+NORMALIZATION_VERSION=3
+NORMALIZED_WEBP_LOSSLESS=false
+NORMALIZED_WEBP_QUALITY=85
+NORMALIZED_MAX_EDGE=2048
+NORMALIZED_MAX_BYTES=1000000
+```
+
+이미지/글귀동시성은 공통코드2/4이며 별도 환경변수 변경은 필요없다. 기존예약/진행run의동결설정은환경변경으로backfill하지않는다. 신규nullable migration `0007_upload_pairs`를포함하므로 기존스크립트의백업→정지→migration→재시작을따른다. 진행중외부AI호출의강제중단은응답불명확상태를만들수있으므로 기존안내대로진행작업이끝난점검시간에배포한다. 이것은기존데이터삭제나실행작업취소지시가아니다.
+
+배포후health는프로세스확인만의미한다. 사용자로그인·새업로드·굿즈교체실패시보존·세로/가로표시를별도확인한다. 메모리개선·이미지4재판정·실제모바일/실사진검증은후속이다.

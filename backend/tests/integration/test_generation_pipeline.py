@@ -23,24 +23,35 @@ async def client(db,tmp_path):
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url=ORIGIN) as c:yield c
 
 
-async def pipeline(client,db,tmp_path,count=2,*,production_schedule=False):
+async def pipeline(client,db,tmp_path,count=2,*,production_schedule=False, legacy=True, first_size=None):
     from backend.storage.local import LocalStorage,storage_key
     from backend.generation.fake_adapter import FakeExecutor
     from backend.worker.runner import Runner,ResultStore
     me,album=await ready_album(client,db,count=count)
     store=LocalStorage(tmp_path/'private')
     async with db() as s,s.begin():
-        pages=(await s.scalars(select(Page).order_by(Page.position))).all()
+        pages=(await s.scalars(select(Page).where(Page.album_id==UUID(album)).order_by(Page.position))).all()
         for page in pages:
-            for role in ['source','normalized']:
+            size=first_size if first_size and page.position==1 else ((30,40) if page.input_is_3_4 else (60,20))
+            page.input_is_3_4=size[0]*4==size[1]*3
+            for role in ['source','normalized','thumbnail']:
                 asset=await s.get(MediaAsset,getattr(page,role+'_asset_id'))
-                out=BytesIO();Image.new('RGB',(30,40) if page.input_is_3_4 else (60,20),'red').save(out,format='WEBP',lossless=True)
+                out=BytesIO();Image.new('RGB',size,'red').save(out,format='WEBP',lossless=True)
                 data=out.getvalue();asset.storage_key=storage_key(asset.owner_id,asset.album_id,page.id,role)
                 asset.mime='image/webp';asset.bytes=len(data);asset.sha256=hashlib.sha256(data).hexdigest()
-                asset.width,asset.height=(30,40) if page.input_is_3_4 else (60,20)
+                asset.width,asset.height=size
                 store.write(asset.storage_key,data)
     admitted=await generate(client,me,album);assert admitted.status_code==202
     run_id=UUID(admitted.json()['data']['run_id'])
+    if legacy:
+        # Existing recovery regressions intentionally exercise pre-policy frozen runs.
+        async with db() as s,s.begin():
+            run=await s.get(Run,run_id)
+            run.config_snapshot={**{k:v for k,v in run.config_snapshot.items() if k not in {'image_policy','result_policy'}}, 'image_concurrency':2}
+            run.input_snapshot=[{k:v for k,v in x.items() if k in {'page_id','position','normalized_asset_id','sha256','input_is_3_4'}} for x in run.input_snapshot]
+            for task in (await s.scalars(select(Task).where(Task.run_id==run_id,Task.stage=='optimize'))).all():
+                task.status='queued';task.completion_kind=None;task.output_asset_id=None
+                (await s.get(Page,task.page_id)).result_asset_id=None
     executor=FakeExecutor(db,store)
     schedule={} if production_schedule else {'lease_seconds':2,'heartbeat_seconds':.1}
     runner=Runner(db,ResultStore(store.root),executor,local_executor=executor,**schedule)
@@ -481,14 +492,6 @@ async def test_result_thumbnails_private_and_deleted_sweep_cleans_both(client,db
     from backend.storage.local import storage_key
     from backend.uploads.validation import ValidationWorker
     me,album,run_id,store,executor,runner=await pipeline(client,db,tmp_path)
-    async with db() as s,s.begin():
-        for page in (await s.scalars(select(Page))).all():
-            a=await s.get(Album,page.album_id)
-            key=storage_key(a.owner_id,a.id,page.id,'thumbnail')
-            out=BytesIO();Image.new('RGB',(15,20),'blue').save(out,format='WEBP',lossless=True);data=out.getvalue()
-            from uuid import uuid5,NAMESPACE_URL
-            asset=MediaAsset(id=uuid5(NAMESPACE_URL,key),owner_id=a.owner_id,album_id=a.id,page_id=page.id,role='thumbnail',storage_key=key,mime='image/webp',bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),width=15,height=20,status='ready')
-            s.add(asset);await s.flush();page.thumbnail_asset_id=asset.id;store.write(key,data)
     drafts={p: p.read_bytes() for p in store.root.rglob('thumbnail')}
     await drain(runner)
     async with db() as s:

@@ -8,7 +8,7 @@ from uuid import uuid5, NAMESPACE_URL
 from PIL import Image
 from sqlalchemy import select, update, or_
 from backend.models import Album, Page, MediaAsset, Upload, Job, Task, Attempt
-from backend.media.process import normalize_in_process
+from backend.media.process import normalize_in_process, validate_prepared_in_process
 from backend.media.contracts import MediaValidationError
 from backend.storage.local import storage_key, canonical_asset_keys
 from backend.storage.factory import media_storage
@@ -109,6 +109,9 @@ class ValidationWorker:
                 job.status='cancelled'; job.lease_until=None; job.finished_at=now(); return
             key=asset.storage_key; expected=asset.sha256; declared=u.declared_bytes
             owner=album.owner_id; album_id=album.id; page_id=page.id
+            from backend.uploads.pairs import paired_asset
+            paired=await paired_asset(s,album,u,page)
+            thumb_input=(paired.storage_key,paired.sha256,u.thumbnail_declared_bytes) if paired else None
             saved=u.validation_config or {}
             snapshot=saved.get('media',saved)
             if isinstance(snapshot,dict):
@@ -123,6 +126,18 @@ class ValidationWorker:
         try:
             if config_version!=1 or saved.get('storage_mode','local')!=self.store.mode:
                 raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
+            thumbnail_data=None
+            prepared_version=isinstance(snapshot,dict) and snapshot.get("NORMALIZATION_VERSION")==3
+            if thumb_input:
+                thumb_key,thumb_hash,thumb_bytes=thumb_input
+                thumbnail_data=await asyncio.to_thread(self.store.read_bytes,thumb_key)
+                if len(thumbnail_data)!=thumb_bytes or hashlib.sha256(thumbnail_data).hexdigest()!=thumb_hash:
+                    raise MediaValidationError('IMAGE_DECODE_FAILED')
+                if not prepared_version:
+                    from backend.media.validate_thumbnail import validate_thumbnail
+                    async with input_file(thumbnail_data) as thumbnail_path:
+                        await validate_thumbnail(thumbnail_path)
+                    thumbnail_data=None
             with span('validation.input', job_id=claim.job_id):
                 source = await asyncio.to_thread(self.store.read_bytes,key)
                 size = len(source)
@@ -132,8 +147,16 @@ class ValidationWorker:
             async with input_file(source) as source_path:
                 mime=await asyncio.to_thread(source_mime,source_path)
                 with span('media.normalize', job_id=claim.job_id, bytes=size):
-                    normalized=await normalize_in_process(source_path,'source',config=snapshot)
-                hints=await asyncio.to_thread(preprocessing_hints,saved,mime,source_path)
+                    if prepared_version:
+                        if thumbnail_data is not None:
+                            async with input_file(thumbnail_data) as thumbnail_path:
+                                normalized=await validate_prepared_in_process(source_path,thumbnail_path,config=snapshot)
+                        else:
+                            normalized=await validate_prepared_in_process(source_path,config=snapshot)
+                    else:
+                        normalized=await normalize_in_process(source_path,'source',config=snapshot)
+                dimensions=(normalized.original_width,normalized.original_height) if prepared_version else None
+                hints=await asyncio.to_thread(preprocessing_hints,saved,mime,source_path,dimensions=dimensions)
                 if (hints and hints.original_width*4==hints.original_height*3
                     and normalized.width*4!=normalized.height*3):
                     raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
@@ -148,7 +171,8 @@ class ValidationWorker:
         except MediaValidationError as exc: error=exc.code
         except FileNotFoundError: error='IMAGE_DECODE_FAILED'
         except (OSError,ValueError): error='IMAGE_NORMALIZATION_FAILED'
-        emit('validation.result', job_id=claim.job_id, outcome='error' if error else 'succeeded', error_code=error)
+        emit('validation.result', job_id=claim.job_id, outcome='error' if error else 'succeeded', error_code=error,
+             body_action=getattr(normalized,'body_action',None), thumbnail_action=getattr(normalized,'thumbnail_action',None))
         clean=False
         async with self.sessions() as s,s.begin():
             album,u,page,asset,job,valid,active=await self._rows(s,claim)
@@ -171,6 +195,9 @@ class ValidationWorker:
                         or derived.sha256!=hashlib.sha256(data).hexdigest()): raise ValueError('derived scope/checksum conflict')
                     setattr(page,role+'_asset_id',identity)
                 asset.mime=mime; asset.bytes=size; asset.sha256=expected; asset.status='ready'
+                if prepared_version:
+                    page.input_width=hints.original_width if hints else normalized.original_width
+                    page.input_height=hints.original_height if hints else normalized.original_height
                 page.input_is_3_4=(hints.original_width*4==hints.original_height*3) if hints else normalized.input_is_3_4
                 page.captured_at_raw=hints.captured_at_raw if hints else normalized.captured_at_raw
                 page.captured_timezone=hints.captured_timezone if hints else normalized.captured_timezone
@@ -182,6 +209,10 @@ class ValidationWorker:
                 await s.flush(); await finish_batch(s,album,u.batch_id)
                 if (u.validation_config or {}).get('source_lifetime')=='temporary':
                     await enqueue_job(s,'cleanup_asset',asset.id)
+                    if u.thumbnail_asset_id:
+                        paired=await s.get(MediaAsset,u.thumbnail_asset_id)
+                        paired.status='ready'
+                        await enqueue_job(s,'cleanup_asset',paired.id)
         if clean:
             for derived_key in keys.values(): await asyncio.to_thread(self.store.delete,derived_key)
 
@@ -214,6 +245,8 @@ class ValidationWorker:
                     touch(s, album)
                     await s.flush();await finish_batch(s,album,upload.batch_id)
                 await enqueue_job(s,'cleanup_asset',asset.id);count+=1
+                if upload.thumbnail_asset_id:
+                    await enqueue_job(s,'cleanup_asset',upload.thumbnail_asset_id)
         return count
 
     async def _scan_deleted_assets(self, limit):
@@ -227,7 +260,7 @@ class ValidationWorker:
             .join(Album, Album.id == MediaAsset.album_id)
             .join(Page, Page.id == MediaAsset.page_id)
             .where(MediaAsset.owner_id == Album.owner_id, Page.album_id == Album.id,
-                MediaAsset.role.in_(['source', 'normalized', 'thumbnail', 'result', 'transform_output']),
+                MediaAsset.role.in_(['source', 'normalized', 'thumbnail', 'result', 'transform_output', 'upload_thumbnail']),
                 or_(MediaAsset.deleted_at.is_not(None), Album.deleted_at.is_not(None), Page.removed_at.is_not(None)))
             .order_by(MediaAsset.id).limit(limit))
         async with self.sessions() as session:
@@ -281,12 +314,18 @@ class ValidationWorker:
         """Same scoped eligibility for the sweep and the fenced deletion handler."""
         if (album is None or asset is None or page is None or asset.owner_id != album.owner_id
             or asset.album_id != album.id or page.album_id != album.id
-            or asset.role not in {'source', 'normalized', 'thumbnail', 'result', 'transform_output'}):
+            or asset.role not in {'source', 'normalized', 'thumbnail', 'result', 'transform_output', 'upload_thumbnail'}):
             return ()
         expected = asset.storage_key
         if expected not in canonical_asset_keys(album.owner_id, album.id, page.id, asset.role):
             return ()
         deleted = album.deleted_at is not None or page.removed_at is not None
+        if not deleted and asset.role=='upload_thumbnail':
+            upload=await session.scalar(select(Upload).where(Upload.thumbnail_asset_id==asset.id,Upload.page_id==page.id,Upload.album_id==album.id))
+            validation=await session.scalar(select(Job).where(Job.kind=='validate_upload',Job.target_id==upload.id)) if upload else None
+            ready=upload is not None and upload.status=='ready' and validation is not None and validation.status=='succeeded'
+            retired=upload is not None and upload.status in {'expired','rejected'} and upload.created_at<=now()-timedelta(hours=24) and (validation is None or validation.status in {'succeeded','failed','cancelled'})
+            if not (ready or retired): return ()
         if not deleted:
             linked = await session.scalar(select(Page.id).where(or_(Page.source_asset_id == asset.id,
                 Page.normalized_asset_id == asset.id, Page.thumbnail_asset_id == asset.id, Page.result_asset_id == asset.id)))
@@ -319,7 +358,7 @@ class ValidationWorker:
         keys = [expected]
         if deleted:
             # Covers unlinked files written by an interrupted validation worker.
-            keys.extend(storage_key(album.owner_id, album.id, page.id, role) for role in ('normalized', 'thumbnail', 'transform_output', 'result', 'result_thumbnail'))
+            keys.extend(storage_key(album.owner_id, album.id, page.id, role) for role in ('normalized', 'thumbnail', 'transform_output', 'result', 'result_thumbnail','upload_thumbnail'))
         return tuple(dict.fromkeys(keys))
 
     async def cleanup_album(self,claim):

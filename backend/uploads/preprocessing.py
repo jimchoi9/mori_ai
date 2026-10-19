@@ -6,7 +6,7 @@ from backend.media.contracts import MediaValidationError
 
 
 class PreprocessingBody(StrictBody):
-    version: StrictInt=Field(ge=1,le=1)
+    version: StrictInt=Field(ge=1,le=2)
     original_width: StrictInt=Field(ge=1,le=40_000_000)
     original_height: StrictInt=Field(ge=1,le=40_000_000)
     captured_at_raw: StrictStr|None=Field(default=None,max_length=256)
@@ -19,7 +19,7 @@ class PreprocessingBody(StrictBody):
         return self
 
 
-def preprocessing_hints(saved, mime, source_path):
+def preprocessing_hints(saved, mime, source_path=None, *, dimensions=None):
     """Check browser claims only after successful authoritative codec validation.
 
     A common scale must explain both dimensions within half-pixel rounding.
@@ -32,10 +32,13 @@ def preprocessing_hints(saved, mime, source_path):
         hint = PreprocessingBody.model_validate(hint)
         if mime != 'image/webp':
             raise ValueError('preprocessed source must be WebP')
-        with Image.open(source_path) as image:
-            width, height = image.size
-            if image.getexif().get(274) in {5, 6, 7, 8}:
-                width, height = height, width
+        if dimensions is not None:
+            width, height = dimensions
+        else:
+            with Image.open(source_path) as image:
+                width, height = image.size
+                if image.getexif().get(274) in {5, 6, 7, 8}:
+                    width, height = height, width
         original_width, original_height = hint.original_width, hint.original_height
         if original_width*4==original_height*3 and width*4!=height*3:
             raise ValueError('exact portrait claim requires exact portrait pixels')

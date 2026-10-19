@@ -1,0 +1,114 @@
+[
+  {
+    "browser": "chromium",
+    "preprocess": [
+      {
+        "file": "normal.jpg",
+        "type": "image/jpeg",
+        "processed": true,
+        "bytes": 1474,
+        "size": [
+          800,
+          640
+        ]
+      },
+      {
+        "file": "plain.png",
+        "type": "image/png",
+        "processed": true,
+        "bytes": 1474,
+        "size": [
+          800,
+          640
+        ]
+      },
+      {
+        "file": "plain.webp",
+        "type": "image/webp",
+        "processed": false,
+        "bytes": 1032,
+        "size": null
+      },
+      {
+        "file": "highres20mp.jpg",
+        "type": "image/jpeg",
+        "processed": true,
+        "bytes": 6564,
+        "size": [
+          1638,
+          2048
+        ]
+      },
+      {
+        "file": "highres20mp.png",
+        "type": "image/png",
+        "processed": false,
+        "bytes": 67307,
+        "size": null
+      },
+      {
+        "file": "boundary40mp.jpg",
+        "type": "image/jpeg",
+        "processed": true,
+        "bytes": 5224,
+        "size": [
+          2048,
+          1280
+        ]
+      },
+      {
+        "file": "over48mp.jpg",
+        "type": "image/jpeg",
+        "processed": false,
+        "bytes": 750653,
+        "size": null
+      },
+      {
+        "file": "iphone.heic",
+        "type": "image/heic",
+        "processed": false,
+        "bytes": 879,
+        "size": null
+      },
+      {
+        "file": "iphone.heic",
+        "type": "",
+        "processed": false,
+        "bytes": 879,
+        "size": null
+      }
+    ],
+    "replacements": [
+      {
+        "mode": 422,
+        "preserved": true
+      },
+      {
+        "mode": 401,
+        "preserved": true
+      },
+      {
+        "mode": 403,
+        "preserved": true
+      },
+      {
+        "mode": 500,
+        "preserved": true
+      },
+      {
+        "mode": 503,
+        "preserved": true
+      },
+      {
+        "mode": "network",
+        "preserved": true
+      },
+      {
+        "mode": "preprocess",
+        "preserved": true
+      }
+    ],
+    "unmountDiscard": true,
+    "status": "passed"
+  }
+]

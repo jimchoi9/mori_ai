@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from functools import partial
 
-STAGE_LIMITS = {'caption': 4, 'image_transform': 2, 'optimize': 1}
+from backend.generation.concurrency import GLOBAL_STAGE_LIMITS
 
 
 async def _poll(operation, stopped, interval, name):
@@ -34,7 +34,7 @@ async def run_worker(validation, runner, stopped, *, poll_seconds,
     if goods_operation is not None:
         operations.append(_poll(goods_operation, stopped, poll_seconds, 'goods'))
     if generation_enabled:
-        for stage, count in STAGE_LIMITS.items():
+        for stage, count in GLOBAL_STAGE_LIMITS.items():
             for _ in range(count):
                 operations.append(_poll(partial(runner.run_once, stage=stage), stopped, poll_seconds, stage))
     owned = [asyncio.create_task(op) for op in operations]

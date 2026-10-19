@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import select, func, text
 
+from backend.storage.local import storage_key
 from backend.main import create_app
 from backend.models import Album, Page, MediaAsset, Upload, Run, Task, Outbox, Consent
 from backend.tests.integration.test_auth_http import config, login, ORIGIN
@@ -34,8 +35,10 @@ async def ready_album(client, db, *, count=1, agreed=True):
             page = Page(album_id=album_id, position=n+1, selection_index=n+1, input_is_3_4=n%2 == 0)
             s.add(page); await s.flush()
             source = MediaAsset(owner_id=album.owner_id, album_id=album_id, page_id=page.id, role='source', storage_key=str(uuid4()), mime='image/png', bytes=100, status='ready', sha256='a'*64, width=30, height=40)
-            normalized = MediaAsset(owner_id=album.owner_id, album_id=album_id, page_id=page.id, role='normalized', storage_key=str(uuid4()), mime='image/webp', bytes=80, status='ready', sha256='b'*64, width=30, height=40)
+            normalized = MediaAsset(owner_id=album.owner_id, album_id=album_id, page_id=page.id, role='normalized', storage_key=storage_key(album.owner_id,album_id,page.id,'normalized'), mime='image/webp', bytes=80, status='ready', sha256='b'*64, width=30 if n%2==0 else 60, height=40 if n%2==0 else 20)
             s.add_all([source, normalized]); await s.flush()
+            thumb=MediaAsset(owner_id=album.owner_id,album_id=album_id,page_id=page.id,role='thumbnail',storage_key=storage_key(album.owner_id,album_id,page.id,'thumbnail'),mime='image/webp',bytes=80,status='ready',sha256='b'*64,width=normalized.width,height=normalized.height)
+            s.add(thumb);await s.flush();page.thumbnail_asset_id=thumb.id
             page.source_asset_id = source.id; page.normalized_asset_id = normalized.id
             s.add(Upload(album_id=album_id, page_id=page.id, asset_id=source.id, batch_id=uuid4(), client_file_id=uuid4(), declared_bytes=100, status='ready', expires_at=datetime.now(timezone.utc)+timedelta(seconds=900)))
     return me, str(album_id)
@@ -66,7 +69,7 @@ async def test_admission_atomic_snapshot_passthrough_replay(client, db):
         a = await s.get(Album, UUID(album))
         assert a.active_run_id == run.id and a.status == 'processing' and run.input_version == 1
         assert len(run.input_snapshot) == 2 and run.input_snapshot[0]['sha256'] == 'b'*64
-        assert set(run.input_snapshot[0]) == {'page_id','position','normalized_asset_id','sha256','input_is_3_4'}
+        assert set(run.input_snapshot[0]) == {'page_id','position','normalized_asset_id','sha256','input_is_3_4','input_width','input_height','input_is_landscape','orientation_source','thumbnail_asset_id','thumbnail_sha256'}
         assert [x['position'] for x in run.input_snapshot] == [1,2]
         assert run.config_snapshot['image_provider'] == run.config_snapshot['caption_provider'] == 'local_fake'
         assert run.config_snapshot['image_model'].startswith('fake-')
@@ -75,7 +78,7 @@ async def test_admission_atomic_snapshot_passthrough_replay(client, db):
         portrait = next(t for t in tasks if str(t.page_id) == run.input_snapshot[0]['page_id'] and t.stage == 'image_transform')
         assert (portrait.status,portrait.completion_kind,portrait.requires_ai_call) == ('succeeded','passthrough',False)
         assert str(portrait.output_asset_id) == run.input_snapshot[0]['normalized_asset_id']
-        assert await s.scalar(select(func.count()).select_from(Outbox).where(Outbox.event_type == 'task_ready')) == 5
+        assert await s.scalar(select(func.count()).select_from(Outbox).where(Outbox.event_type == 'task_ready')) == 4
     view = (await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
     assert (view['total_pages'], view['completed_pages'], view['pending_pages'], view['progress_percent']) == (2,0,2,0)
     assert view['poll_after_ms'] == 3000 and not view['can_resume']
@@ -299,9 +302,7 @@ async def test_completed_counts_require_committed_assets_and_caption_and_reject_
             elif t.page_id==pages[1].id:t.status='unknown' if t.stage=='caption' else 'failed'
             elif t.page_id==pages[2].id:t.status='failed'
         page=pages[0]; page.ai_caption='함께한 순간이 오래도록 마음에 남아요.';page.caption_text=''
-        for role in ['result','thumbnail']:
-            asset=MediaAsset(owner_id=a.owner_id,album_id=a.id,page_id=page.id,role=role,storage_key=str(uuid4()),mime='image/webp',bytes=10,status='ready',sha256='d'*64,width=30,height=40)
-            s.add(asset);await s.flush();setattr(page,role+'_asset_id',asset.id)
+        # The admitted portrait already references its frozen normalized/thumbnail.
     view=(await client.get(f'/api/v1/albums/{album}/generation')).json()['data']
     assert (view['total_pages'],view['completed_pages'],view['unknown_pages'],view['failed_pages'],view['pending_pages'],view['progress_percent'])==(4,1,1,1,1,25)
     async with db() as s,s.begin():
@@ -335,7 +336,7 @@ async def test_generation_uses_upload_accounting_without_source_bytes(client,db)
     assert response.status_code==202, response.text
     async with db() as session:
         run=await session.scalar(select(Run))
-        assert run.config_snapshot['normalized_webp_quality']==90
+        assert run.config_snapshot['normalized_webp_quality']==85
 
 
 @pytest.mark.asyncio

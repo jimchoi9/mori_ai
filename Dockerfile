@@ -32,6 +32,7 @@ RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
 
 RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
+    && node tests/goods_upload.test.mjs && node tests/goods_workspace.test.mjs \
     && node tests/goods_mockup.test.mjs \
     && node tests/goods_catalog.test.mjs \
     && node tests/goods_components.test.mjs \

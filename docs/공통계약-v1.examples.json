@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.7",
+  "contract_version": "1.12",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1741,5 +1741,91 @@
       "retryable": false,
       "details": {}
     }
+  },
+  "paired_upload_transport": {
+    "stage": "transport_only_server_thumbnail_still_used",
+    "reservation_file": {
+      "client_file_id": "00000000-0000-4000-8000-000000000001",
+      "filename": "body.webp",
+      "bytes": 500000,
+      "mime": "image/webp",
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 4000
+      },
+      "thumbnail": {
+        "bytes": 15000,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mime": "image/webp"
+      }
+    },
+    "thumbnail_upload": {
+      "asset_id": "00000000-0000-4000-8000-000000000002",
+      "method": "PUT",
+      "url": "/api/v1/private/uploads/00000000-0000-4000-8000-000000000003/thumbnail?expires=1792400000&signature=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "required_headers": {
+        "Content-Type": "image/webp"
+      },
+      "expires_at": "2026-10-19T08:53:20Z"
+    },
+    "complete": {
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "thumbnail_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "frozen_settings": {
+      "version": 1,
+      "upload_protocol_version": 2,
+      "media": {
+        "NORMALIZATION_VERSION": 2
+      }
+    }
+  },
+  "prepared_media_policy": {
+    "stage": "historical_local_batch1",
+    "new_reservation_media": {
+      "NORMALIZATION_VERSION": 3,
+      "WEBP_REUSE_VERSION": 1,
+      "NORMALIZED_WEBP_LOSSLESS": false,
+      "NORMALIZED_WEBP_QUALITY": 85,
+      "NORMALIZED_MAX_EDGE": 2048,
+      "NORMALIZED_MAX_BYTES": 1000000,
+      "THUMBNAIL_MAX_EDGE": 480,
+      "THUMBNAIL_WEBP_QUALITY": 80
+    },
+    "legacy": "Existing v1/v2 snapshots and bytes remain unchanged",
+    "image_policy": "exact_3_4_skip_until_Task5",
+    "image_concurrency": 2
+  },
+  "generation_policy_snapshot_examples": {
+    "new_run_config": {
+      "image_policy": "landscape_only_v1",
+      "result_policy": "reuse_normalized_v1",
+      "result_webp_quality": 85,
+      "image_concurrency": 2,
+      "caption_concurrency": 4
+    },
+    "new_nonlandscape_input": {
+      "input_width": 1200,
+      "input_height": 1600,
+      "input_is_landscape": false,
+      "orientation_source": "original_dimensions",
+      "normalized_asset_id": "00000000-0000-0000-0000-000000000001",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "thumbnail_asset_id": "00000000-0000-0000-0000-000000000002",
+      "thumbnail_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "legacy_behavior": "image_policy/result_policy absent: frozen exact3:4 and optimize behavior",
+    "legacy_run_concurrency": {
+      "image_concurrency": 2,
+      "caption_concurrency": 4,
+      "missing_image_concurrency_default": 2
+    },
+    "global_stage_limits": {
+      "caption": 4,
+      "image_transform": 2,
+      "optimize": 1
+    },
+    "existing_four_snapshot_behavior": "Preserve image_concurrency=4; global admission cap=2; do not cancel existing running leases"
   }
 }

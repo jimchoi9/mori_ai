@@ -22,20 +22,20 @@ function browser() {
 function photo(){return new File([new Uint8Array([255,216,255,192,0,17,8,0,100,0,100,3,1,17,0,2,17,0,3,17,0,255,218,0,2,...new Array(200).fill(0)])],'original.jpg',{type:'image/jpeg',lastModified:1234});}
 const response=data=>new Response(JSON.stringify({data}),{status:200,headers:{'Content-Type':'application/json'}});
 test('reservation retry retains body/key and PUT retries retain identical prepared File and digest',async()=>{
- const decoded=browser(),h=harness();let hook=h.render();const original=photo();hook.select([original]);hook=h.render();
+ const decoded=browser();let h=harness();let hook=h.render();const original=photo();hook.select([original]);hook=h.render();
  const reserve=[],puts=[],completes=[];let failReservation=true,failComplete=true;
  globalThis.fetch=async(url,options)=>{
   if(url==='/api/v1/albums/a')return response({detail:{album:{version:7}}});
-  if(url==='/api/v1/albums/a/uploads') {reserve.push(options);if(failReservation){failReservation=false;throw new TypeError('lost reply');}return response({uploads:[{client_file_id:JSON.parse(options.body).files[0].client_file_id,upload_id:'up',upload_url:'http://localhost/put',required_headers:{'If-None-Match':'*'}}]});}
-  if(url==='http://localhost/put'){puts.push(options.body);return new Response(null,{status:200});}
+  if(url==='/api/v1/albums/a/uploads') {reserve.push(options);if(failReservation){failReservation=false;throw new TypeError('lost reply');}return response({uploads:[{client_file_id:JSON.parse(options.body).files[0].client_file_id,upload_id:'up',upload_url:'http://localhost/put',required_headers:{'If-None-Match':'*'},thumbnail_upload:{url:'http://localhost/thumb',required_headers:{'If-None-Match':'*'}}}]});}
+  if(url==='http://localhost/put' || url==='http://localhost/thumb'){puts.push(options.body);return new Response(null,{status:200});}
   if(url.endsWith('/complete')){completes.push(options.body);if(failComplete){failComplete=false;throw new TypeError('lost completion');}return response({status:'ready'});}
   return response({status:'reserved'});
  };
  await hook.send();hook=h.render();assert.equal(hook.files[0],original);assert.equal(hook.locked,true);
- await hook.send();hook=h.render();await hook.send();
+ await hook.send();hook=h.render();h.cleanup();h=harness();hook=h.render();await hook.send();
  assert.equal(decoded(),1);assert.equal(reserve[0].body,reserve[1].body);assert.equal(reserve[0].headers['Idempotency-Key'],reserve[1].headers['Idempotency-Key']);
  assert.equal(JSON.parse(reserve[0].body).files[0].preprocessing.original_width,100);
- assert.equal(puts.length,2);assert.equal(puts[0],puts[1]);assert.equal(puts[0].type,'image/webp');assert.equal(completes[0],completes[1]);h.cleanup();
+ assert.equal(puts.length,4);assert.equal(puts[0],puts[2]);assert.equal(puts[1],puts[3]);assert.equal(JSON.parse(reserve[0].body).files[0].thumbnail.sha256,JSON.parse(completes[0]).thumbnail_sha256);assert.equal(puts[0].type,'image/webp');assert.equal(completes[0],completes[1]);h.cleanup();
 });
 test('private-memory reset aborts preparation before reservation and discards draft',async()=>{
  window.dispatchEvent(new Event('mori:logout'));

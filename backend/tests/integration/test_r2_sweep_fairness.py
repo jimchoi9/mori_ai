@@ -25,7 +25,8 @@ async def test_deleted_page_checks_each_key_once_and_rechecks_next_sweep(client,
     c.objects.clear();c.calls.clear()
     assert await worker._scan_deleted_assets(10)==0
     counts=Counter(key for op,key in c.calls if op=='head')
-    assert len(counts)==6 and max(counts.values())==1
+    assert len(counts)==7 and max(counts.values())==1
+    assert 'worker-test/'+storage_key(row.owner_id,row.id,page.id,'upload_thumbnail') in counts
     # A source 404 cannot hide a late result, and absence is not cached across scans.
     c.objects['worker-test/'+late]=b'late'
     c.calls.clear()

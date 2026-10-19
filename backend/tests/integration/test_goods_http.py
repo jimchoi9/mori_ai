@@ -148,8 +148,10 @@ async def test_goods_and_album_share_global_image_slots(db,seeded,tmp_path):
     async with db() as s,s.begin():
         album=await s.get(Album,seeded['album'])
         task=await s.get(Task,seeded['task']);task.stage='image_transform';task.status='running';task.lease_until=now+timedelta(minutes=5)
-        page=Page(album_id=album.id,position=2,selection_index=2);s.add(page);await s.flush()
-        s.add(Task(run_id=seeded['run'],page_id=page.id,stage='image_transform',status='running',lease_until=now+timedelta(minutes=5)))
+        # Pre-change four running claims block goods without cancelling existing work.
+        for position in range(2,5):
+            page=Page(album_id=album.id,position=position,selection_index=position);s.add(page);await s.flush()
+            s.add(Task(run_id=seeded['run'],page_id=page.id,stage='image_transform',status='running',lease_until=now+timedelta(minutes=5)))
         w=GoodsWork(owner_id=album.owner_id,source_key='unused',expires_at=now+timedelta(hours=1));s.add(w);await s.flush()
         r=GoodsRevision(work_id=w.id,request_key='g',request_hash='g',style='book',message='x',prompt='x',config={'mode':'fake','model':'fake'});s.add(r);await s.flush();rid=r.id
     assert not await GoodsWorker(db,LocalStorage(tmp_path),config(dev_ai_enabled=True)).run_once()
@@ -159,4 +161,66 @@ async def test_goods_and_album_share_global_image_slots(db,seeded,tmp_path):
         for t in tasks:t.status='queued';t.lease_until=None
         r=await s.get(GoodsRevision,rid);r.status='running';r.lease_until=now+timedelta(minutes=5)
     async with db() as s:assert await claim_task(s,now,90,stage='image_transform') is not None
+    # One goods + one legacy album task fills the reduced global cap.
     async with db() as s:assert await claim_task(s,now,90,stage='image_transform') is None
+
+@pytest.mark.asyncio
+async def test_goods_source_preview_private_owner_active_and_immutable(db, tmp_path):
+    from datetime import timedelta
+    from backend.goods_design.models import GoodsWork
+    from backend.goods_design.service import now
+    app = create_app(settings=config(dev_ai_enabled=True), session_factory=db, media_storage=LocalStorage(tmp_path))
+    async with app.router.lifespan_context(app), httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as c:
+        me = await login(c); await consent(c, me)
+        work = (await c.post('/api/v1/goods/work', json={}, headers=headers(me, 'preview'))).json()['data']['id']
+        url = f'/api/v1/goods/work/{work}/source'
+        assert (await c.get(url)).status_code == 404
+        out = BytesIO(); Image.new('RGB', (40, 30), 'red').save(out, format='PNG')
+        # Declared MIME does not override actual bytes.
+        assert (await c.put(url, content=out.getvalue(), headers={**headers(me), 'Content-Type':'image/heic'})).status_code == 200
+        preview = await c.get(url)
+        assert preview.status_code == 200
+        assert preview.headers['cache-control'] == 'private, no-store'
+        assert preview.headers['x-content-type-options'] == 'nosniff'
+        assert preview.headers['content-type'] == 'image/webp'
+        bad = await c.put(url, content=b'broken', headers=headers(me))
+        assert bad.status_code == 422
+        assert bad.json()['error']['code'] == 'IMAGE_DECODE_FAILED'
+        assert bad.json()['request_id']
+        out = BytesIO(); Image.new('RGB', (40, 30), 'blue').save(out, format='PNG')
+        assert (await c.put(url, content=out.getvalue(), headers=headers(me))).status_code == 409
+        assert (await c.get(url)).content == preview.content
+        other = await login(c, 'beta'); await consent(c, other)
+        assert (await c.get(url)).status_code == 404
+        await login(c)
+        async with db() as s, s.begin():
+            w = await s.get(GoodsWork, UUID(work)); w.expires_at = now() - timedelta(seconds=1)
+        assert (await c.get(url)).status_code == 404
+        async with db() as s, s.begin():
+            w = await s.get(GoodsWork, UUID(work)); w.expires_at = now() + timedelta(hours=1); w.status = 'discarded'
+        assert (await c.get(url)).status_code == 404
+
+@pytest.mark.asyncio
+async def test_goods_upload_rechecks_discard_after_normalizing(db, tmp_path, monkeypatch):
+    import asyncio
+    from backend.goods_design import routes
+    app = create_app(settings=config(dev_ai_enabled=True), session_factory=db, media_storage=LocalStorage(tmp_path))
+    async with app.router.lifespan_context(app), httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as c:
+        me = await login(c); await consent(c, me)
+        work = (await c.post('/api/v1/goods/work', json={}, headers=headers(me, 'race'))).json()['data']['id']
+        url = f'/api/v1/goods/work/{work}/source'
+        started, release = asyncio.Event(), asyncio.Event()
+        original = routes.normalize_goods_upload
+        async def delayed(stream):
+            result = await original(stream)
+            started.set(); await release.wait()
+            return result
+        monkeypatch.setattr(routes, 'normalize_goods_upload', delayed)
+        out = BytesIO(); Image.new('RGB', (40, 30), 'red').save(out, format='PNG')
+        upload = asyncio.create_task(c.put(url, content=out.getvalue(), headers=headers(me)))
+        await asyncio.wait_for(started.wait(), 10)
+        assert (await c.delete(f'/api/v1/goods/work/{work}', headers=headers(me))).status_code == 204
+        release.set()
+        assert (await upload).status_code == 404
+        assert (await c.get(url)).status_code == 404
+        assert not app.state.media_storage.exists(f'{me["user"]["id"]}/{work}/{work}/source')

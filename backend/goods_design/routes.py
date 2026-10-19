@@ -1,10 +1,7 @@
 """Goods API: owner checks, CSRF, bounded uploads, no inline paid requests."""
 import asyncio
 import hashlib
-from io import BytesIO
 from uuid import UUID
-import warnings
-from PIL import Image,ImageOps
 from fastapi import APIRouter,Depends,Header,Request,Query
 from fastapi.responses import Response,JSONResponse
 from pydantic import Field,StrictStr
@@ -14,6 +11,7 @@ from backend.http.security import AuthContext,require_user,require_csrf,require_
 from backend.http.errors import APIError,envelope
 from backend.http.idempotency import require_key
 from backend.goods_design import service
+from backend.goods_design.media import normalize_goods_upload
 from backend.goods_design.models import GoodsWork,GoodsRevision,GoodsDesign
 from backend.generation.service import require_consent
 from backend.goods_design.prompt_profiles import catalog
@@ -35,17 +33,6 @@ class LinkAlbum(StrictBody):
     album_id:UUID
     expected_version:int=Field(ge=1,strict=True)
 
-def normalized(data):
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('error',Image.DecompressionBombWarning)
-            with Image.open(BytesIO(data)) as im:
-                if im.format not in ('PNG','JPEG','WEBP') or im.width*im.height>16_000_000 or getattr(im,'n_frames',1)!=1:raise ValueError()
-                im.load();im=ImageOps.exif_transpose(im).convert('RGB');im.thumbnail((2048,2048))
-                out=BytesIO();im.save(out,format='WEBP',quality=90)
-                return out.getvalue()
-    except Exception:raise APIError(422,'VALIDATION_ERROR') from None
-
 @router.get('/catalog')
 async def get_catalog(request:Request,context:AuthContext=Depends(require_user)):
     return envelope(request,{'styles':catalog()})
@@ -64,18 +51,28 @@ async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_app
     async with request.app.state.session_factory() as s,s.begin():
         await service.work(s,context.user_id,id)
         await require_consent(s,context.user_id,request.app.state.settings)
-    data=bytearray()
-    async for chunk in request.stream():
-        data.extend(chunk)
-        if len(data)>20*1024*1024:raise APIError(413,'VALIDATION_ERROR')
-    clean=await asyncio.to_thread(normalized,bytes(data));digest=hashlib.sha256(clean).hexdigest()
+    clean=await normalize_goods_upload(request.stream());digest=hashlib.sha256(clean).hexdigest()
     async with request.app.state.session_factory() as s,s.begin():
         w=await service.work(s,context.user_id,id)
         if w.source_hash and w.source_hash!=digest:raise APIError(409,'VERSION_CONFLICT')
         key=f'{context.user_id}/{id}/{id}/source'
-        await asyncio.to_thread(request.app.state.media_storage.write,key,clean)
+        try:await asyncio.to_thread(request.app.state.media_storage.write,key,clean)
+        except Exception:raise APIError(503,'STORAGE_UNAVAILABLE',retryable=True) from None
         w.source_key=key;w.source_hash=digest
     return envelope(request,{'ready':True})
+
+@router.get('/work/{id}/source')
+async def source_preview(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+    async with request.app.state.session_factory() as s:
+        w=await s.scalar(select(GoodsWork).where(GoodsWork.id==id,GoodsWork.owner_id==context.user_id))
+        if w is None or w.status!='active' or w.expires_at<=service.now() or not w.source_key:
+            raise APIError(404,'RESOURCE_NOT_FOUND')
+        key=w.source_key
+    try:data=await asyncio.to_thread(request.app.state.media_storage.read_bytes,key)
+    except FileNotFoundError:raise APIError(404,'RESOURCE_NOT_FOUND') from None
+    except Exception:raise APIError(503,'STORAGE_UNAVAILABLE',retryable=True) from None
+    return Response(data,media_type='image/webp',headers={
+        'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'})
 
 @router.get('/work/{id}')
 async def work_detail(request:Request,id:UUID,context:AuthContext=Depends(require_user)):

@@ -243,13 +243,13 @@ async def test_deleted_during_normalize_cleans_late_objects_then_sweep(client,db
     import backend.uploads.validation as validation
     from backend.worker.jobs import enqueue_job
     worker,c,me,album,u,path,data,key=await r2_pending(client,db,tmp_path,monkeypatch)
-    original=validation.normalize_in_process
+    original=validation.validate_prepared_in_process
     async def removed(*args,**kwargs):
         result=await original(*args,**kwargs)
         async with db() as s,s.begin():
             a=await s.get(Album,UUID(album));a.status='deleted';a.deleted_at=utcnow()
         return result
-    monkeypatch.setattr(validation,'normalize_in_process',removed)
+    monkeypatch.setattr(validation,'validate_prepared_in_process',removed)
     assert await worker.run_once()
     assert 'worker-test/'+key.rsplit('/',1)[0]+'/normalized' not in c.objects
     # Cleanup all original objects; a late PUT then arrives under another role.

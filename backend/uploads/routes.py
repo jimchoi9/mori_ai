@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import Field, StrictInt, field_validator
+from typing import Literal
 from backend.http.schemas import StrictBody
 from backend.http.security import AuthContext, require_user, require_csrf, csrf_token, COOKIE_NAME, require_approved_user
 from backend.http.errors import APIError, envelope
@@ -16,6 +17,12 @@ from backend.uploads.preprocessing import PreprocessingBody
 router=APIRouter(prefix='/api/v1')
 
 
+class ThumbnailBody(StrictBody):
+    bytes: StrictInt=Field(ge=1,le=200000)
+    sha256: str=Field(pattern=r'^[0-9a-f]{64}$')
+    mime: Literal['image/webp']
+
+
 class FileBody(StrictBody):
     client_file_id: UUID
     filename: str=Field(min_length=1,max_length=1024)
@@ -23,6 +30,7 @@ class FileBody(StrictBody):
     bytes: StrictInt=Field(ge=1)
     file_last_modified_at: datetime|None=None
     preprocessing: PreprocessingBody|None=None
+    thumbnail: ThumbnailBody|None=None
 
     @field_validator('file_last_modified_at')
     @classmethod
@@ -42,6 +50,7 @@ class OrderBody(StrictBody):
 
 
 class CompleteBody(StrictBody):
+    thumbnail_sha256: str|None=Field(default=None,pattern=r'^[0-9a-f]{64}$')
     sha256: str|None=Field(default=None,pattern=r'^[0-9a-f]{64}$')
 
 
@@ -70,20 +79,23 @@ async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:Aut
     identity=body.model_dump(mode='json')
     # Adding an optional field must not invalidate reservations made by older clients.
     for entry in identity['files']:
-        if entry['preprocessing'] is None:
-            del entry['preprocessing']
+        for optional in ('preprocessing','thumbnail'):
+            if entry[optional] is None:
+                del entry[optional]
     async with request.app.state.session_factory() as s,s.begin():
         status,data=await service.reserve(s,context.user_id,album_id,body,require_key(idempotency_key),request_hash(identity),request.app.state.settings,signer(request),csrf_token(request.cookies[COOKIE_NAME]))
     return JSONResponse(envelope(request,data),status_code=status)
 
 
 @router.put('/private/uploads/{upload_id}',status_code=204)
+@router.put('/private/uploads/{upload_id}/thumbnail',status_code=204)
 async def put(request:Request,upload_id:UUID,expires:int,signature:str,context:AuthContext=Depends(private_user)):
     await require_approved_user(request)
     validate_query(request,('expires','signature'))
+    thumbnail=request.url.path.endswith('/thumbnail')
     sessions=request.app.state.session_factory
     async with sessions() as s,s.begin():
-        album_id,key,mime,declared,deadline=await service.put_metadata(s,context.user_id,upload_id)
+        album_id,key,mime,declared,deadline=await service.put_metadata(s,context.user_id,upload_id,thumbnail=thumbnail)
         if (not signer(request).verify('PUT',request.url.path,upload_id,expires,mime,signature,service.now().timestamp())
             or expires!=int(deadline.timestamp())): raise APIError(404,'RESOURCE_NOT_FOUND')
         require_csrf(request,context)
@@ -108,7 +120,7 @@ async def complete(request:Request,album_id:UUID,upload_id:UUID,body:CompleteBod
     require_csrf(request,context); validate_query(request,())
     from backend.telemetry import span
     with span('upload.complete', request_id=getattr(request.state,'request_id',None)):
-        status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id,expected_sha256=body.sha256)
+        status,data=await service.complete_upload(request.app.state.session_factory,storage(request),context.user_id,album_id,upload_id,expected_sha256=body.sha256,thumbnail_sha256=body.thumbnail_sha256)
     return JSONResponse(envelope(request,data),status_code=status)
 
 

@@ -32,18 +32,23 @@ export async function putFile(url:string,file:File,headers:Record<string,string>
  return 'uploaded';
 }
 
-interface UploadTarget { upload_id:string; upload_url:string; required_headers:Record<string,string> }
+interface UploadTarget { upload_id:string; upload_url:string; required_headers:Record<string,string>; thumbnail_upload?:{url:string;required_headers:Record<string,string>} }
+interface PairTransfer { file:File; headers:Record<string,string>; sha256:string; thumbnail_sha256:string }
+interface CompletionBody {sha256?:string;thumbnail_sha256?:string}
 interface UploadProgress { put:Set<string>; complete:Set<string> }
 // The hook and tests share the actual transfer/completion transition, including retry markers.
 export async function uploadStep(
  upload:UploadTarget,file:File,progress:UploadProgress,signal:AbortSignal,putHeaders:Record<string,string>,
- status:()=>Promise<{status:string}>,complete:(body:{sha256?:string})=>Promise<unknown>,
+ status:()=>Promise<{status:string}>,complete:(body:CompletionBody)=>Promise<unknown>,pair?:PairTransfer,
 ):Promise<void> {
  signal.throwIfAborted();
  if(progress.complete.has(upload.upload_id))return;
  const remote=conditional(upload.required_headers);
+ const thumbnail=upload.thumbnail_upload;
+ if(Boolean(thumbnail)!==Boolean(pair))throw new Error('썸네일 예약과 파일이 일치하지 않습니다.');
+ const thumbnailKey=`${upload.upload_id}:thumbnail`;
  try {
-  const body=await completionBody(file,upload.required_headers);
+  const body:CompletionBody=pair?{sha256:pair.sha256,thumbnail_sha256:pair.thumbnail_sha256}:await completionBody(file,upload.required_headers);
   signal.throwIfAborted();
   if(!progress.put.has(upload.upload_id)) {
    const state=await status();
@@ -51,14 +56,21 @@ export async function uploadStep(
    if(state.status==='reserved')await putFile(upload.upload_url,file,putHeaders,signal);
    if(!remote)progress.put.add(upload.upload_id);
   }
+  if(thumbnail && pair && !progress.put.has(thumbnailKey)) {
+   const state=await status();signal.throwIfAborted();
+   if(state.status==='reserved')await putFile(thumbnail.url,pair.file,pair.headers,signal);
+   if(!conditional(thumbnail.required_headers))progress.put.add(thumbnailKey);
+  }
   signal.throwIfAborted();
   await complete(body);
   signal.throwIfAborted();
   progress.put.add(upload.upload_id);
+  if(thumbnail)progress.put.add(thumbnailKey);
   progress.complete.add(upload.upload_id);
  } catch(error) {
   // No R2 marker survives an inconclusive completion; the same reservation may need PUT again.
   if(remote)progress.put.delete(upload.upload_id);
+  if(thumbnail && conditional(thumbnail.required_headers))progress.put.delete(thumbnailKey);
   throw error;
  }
 }

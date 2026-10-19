@@ -19,8 +19,7 @@ class TaskClaim:
     lease_until: datetime
 
 
-STAGE_LIMITS = {'caption': (4, 'caption_concurrency'),
-                'image_transform': (2, 'image_concurrency'), 'optimize': (1, 'media_concurrency')}
+from backend.generation.concurrency import GLOBAL_STAGE_LIMITS, LEGACY_STAGE_LIMITS, STAGE_SETTINGS
 
 
 async def lock_claims(session):
@@ -31,7 +30,7 @@ async def lock_claims(session):
 async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *, execution_mode=None, stage=None) -> TaskClaim | None:
     if lease_seconds <= 0:
         raise ValueError('lease_seconds must be positive')
-    limits = STAGE_LIMITS
+    limits = GLOBAL_STAGE_LIMITS
     if stage is not None and stage not in limits:
         raise ValueError('invalid stage')
     image = aliased(Task)
@@ -46,13 +45,14 @@ async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *
         goods_count=await session.scalar(select(func.count()).select_from(GoodsRevision).where(GoodsRevision.status=='running',GoodsRevision.lease_until>now))
         counts['image_transform']=counts.get('image_transform',0)+goods_count
         available = []
-        for name, (cap, setting) in limits.items():
+        for name, cap in limits.items():
+            setting = STAGE_SETTINGS[name]
             if (stage is None or stage == name) and counts.get(name, 0) < cap:
                 run_count = select(func.count()).where(
                     running.run_id == Task.run_id, running.stage == name,
                     running.status == 'running', running.lease_until > now).correlate(Task).scalar_subquery()
                 available.append(and_(Task.stage == name, run_count < func.coalesce(
-                    cast(Run.config_snapshot[setting].astext, Integer), cap)))
+                    cast(Run.config_snapshot[setting].astext, Integer), LEGACY_STAGE_LIMITS[name])))
         if not available:
             return None
         query = (select(Task).join(Run, Task.run_id == Run.id).join(Album, Run.album_id == Album.id)
@@ -149,10 +149,10 @@ async def result_fields(session, rows, result):
                 error='MEDIA_SAVE_FAILED'
             if task.stage=='optimize' and error is None:
                 from uuid import uuid5,NAMESPACE_URL
-                from backend.generation.completion import ready_output
+                from backend.generation.output_policy import valid_output_pair
                 key=storage_key(album.owner_id,album.id,page.id,'result_thumbnail')
                 thumb=await session.get(MediaAsset,uuid5(NAMESPACE_URL,key))
-                if not ready_output(thumb,album,page,'thumbnail') or thumb.storage_key!=key:
+                if not valid_output_pair(album,page,run,asset,thumb) or thumb.storage_key!=key:
                     error='MEDIA_SAVE_FAILED'
     return caption if isinstance(caption, str) else None, asset_id, error
 

@@ -14,6 +14,7 @@ def test_media_environment_is_validated_and_loaded(monkeypatch):
 
 
 @pytest.mark.parametrize('name,value', [
+    ('NORMALIZATION_VERSION', '0'), ('NORMALIZATION_VERSION', '4'),
     ('NORMALIZED_MAX_EDGE', '3'), ('NORMALIZED_MAX_EDGE', '16384'),
     ('NORMALIZED_MAX_BYTES', '0'), ('NORMALIZED_WEBP_QUALITY', '0'),
     ('NORMALIZED_WEBP_QUALITY', '101'),
@@ -29,5 +30,9 @@ def test_invalid_media_environment_fails_startup(monkeypatch, name, value):
 def test_normalization_defaults_and_legacy_override():
     settings = Settings(database_url='postgresql+asyncpg://localhost/test')
     assert settings.normalized_webp_lossless is False
-    assert settings.normalized_webp_quality == 90
+    assert settings.normalization_version == 3
+    assert settings.normalized_webp_quality == 85
+    assert settings.normalized_max_edge == 2048
+    assert settings.normalized_max_bytes == 1_000_000
+    assert Settings(database_url='postgresql+asyncpg://localhost/test', normalization_version=2).normalization_version == 2
     assert Settings(database_url='postgresql+asyncpg://localhost/test', normalized_webp_lossless=True).normalized_webp_lossless is True

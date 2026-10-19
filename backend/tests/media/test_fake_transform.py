@@ -43,3 +43,24 @@ async def test_tiny_input_is_never_enlarged(tmp_path):
     data=await fake_transform(path)
     with Image.open(BytesIO(data)) as image:
         assert sum(pixel==(255,0,0) for pixel in image.get_flattened_data())==1
+
+@pytest.mark.asyncio
+async def test_new_policy_reuses_eligible_webp_bytes(tmp_path):
+    from backend.media.fake_transform import optimize_in_process
+    path=tmp_path/'eligible.webp';Image.new('RGB',(300,400),'red').save(path,format='WEBP',lossless=True)
+    original=path.read_bytes()
+    result,thumb,meta=await optimize_in_process(path,{'result_policy':'reuse_normalized_v1','normalized_max_edge':2048,'normalized_max_bytes':1000000})
+    assert result==original and thumb
+
+@pytest.mark.asyncio
+async def test_new_policy_bounds_bytes_without_changing_old_run(tmp_path):
+    from backend.media.fake_transform import optimize_in_process
+    import random
+    path=tmp_path/'noise.webp'
+    Image.frombytes('RGB',(900,1200),random.Random(7).randbytes(900*1200*3)).save(path,format='WEBP',lossless=True)
+    assert len(path.read_bytes())>1000000
+    config={'result_policy':'reuse_normalized_v1','normalized_max_edge':2048,'normalized_max_bytes':1000000,'result_webp_quality':85}
+    result,_,_=await optimize_in_process(path,config)
+    assert len(result)<=1000000
+    old,_,_=await optimize_in_process(path,{})
+    assert old==path.read_bytes()

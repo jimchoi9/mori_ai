@@ -59,7 +59,8 @@ class FakeExecutor:
             if stage=='optimize':
                 image=await s.scalar(select(Task).where(Task.run_id==run.id,Task.page_id==page.id,Task.stage=='image_transform'))
                 input_asset=await s.get(MediaAsset,image.output_asset_id) if image and image.status=='succeeded' and image.output_asset_id else None
-                expected_role='normalized' if snapshot['input_is_3_4'] else 'transform_output'
+                from backend.generation.output_policy import requires_image_ai
+                expected_role='transform_output' if requires_image_ai(snapshot,run.config_snapshot) else 'normalized'
                 if (input_asset is None or input_asset.role!=expected_role or input_asset.owner_id!=album.owner_id
                     or input_asset.album_id!=album.id or input_asset.page_id!=page.id or input_asset.status!='ready'
                     or input_asset.deleted_at is not None or input_asset.mime!='image/webp'

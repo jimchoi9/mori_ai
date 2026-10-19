@@ -62,7 +62,21 @@ def _main():
     else:
         if image.width*4!=image.height*3:raise ValueError('result ratio invalid')
         edge=min(config.get('normalized_max_edge',4096),4096)
-        if max(image.size)>edge:
+        new_policy=config.get('result_policy')=='reuse_normalized_v1'
+        if new_policy:
+            edge=min(edge,2048)
+            original=image
+            current_k=min(image.height//4,edge//4)
+            floor_k=min(original.height//4,1024//4)
+            cap=min(config.get('normalized_max_bytes',1000000),1000000)
+            raw=Path(source).read_bytes()
+            while True:
+                image=original if current_k==original.height//4 else original.resize((3*current_k,4*current_k),Image.Resampling.LANCZOS)
+                result=raw if image is original and len(raw)<=cap else encode(image,quality=config.get('result_webp_quality',85))
+                if len(result)<=cap:break
+                if current_k<=floor_k:raise ValueError('result size limit exceeded')
+                current_k=max(floor_k,int(current_k*.8))
+        elif max(image.size)>edge:
             k=max(1,edge//4);image=image.resize((3*k,4*k),Image.Resampling.LANCZOS)
             result=encode(image,quality=config.get('result_webp_quality',90))
         else:

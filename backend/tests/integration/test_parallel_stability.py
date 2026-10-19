@@ -14,7 +14,7 @@ from backend.tests.integration.test_worker_concurrency import add_tasks
 @pytest.mark.asyncio
 @pytest.mark.parametrize('stage,cap', [('caption',4),('image_transform',2)])
 async def test_processes_share_stage_slots(db,seeded,stage,cap):
-    await add_tasks(db,seeded,stage,24)
+    await add_tasks(db,seeded,stage,24,{'image_concurrency':4})
     script='''
 import asyncio,json,sys
 from backend.database import session_factory
@@ -46,12 +46,16 @@ asyncio.run(main())
 
 
 @pytest.mark.asyncio
-async def test_fifty_pages_two_schedulers_and_new_uploads(client,db,tmp_path):
+@pytest.mark.parametrize('image_cap', [2,4])
+async def test_fifty_pages_two_schedulers_and_new_uploads(client,db,tmp_path,image_cap):
     from backend.worker.scheduler import run_worker
     from backend.uploads.validation import ValidationWorker
     from backend.tests.integration.test_validation_worker import image_bytes
     from backend.tests.integration.test_upload_http import setup, consent, reserve, file, headers
     _,_,rid,_,_,runner,provider,ledger=await real_pipeline(client,db,tmp_path,count=50)
+    async with db() as s, s.begin():
+        run=await s.get(Run,rid)
+        run.config_snapshot={**run.config_snapshot,'image_concurrency':image_cap}
     uploads=[]
     me,album=await setup(client);await consent(client,me)
     samples=[('photo.png',image_bytes('PNG')),('photo.jpg',image_bytes('JPEG')),('photo.heic',image_bytes('HEIF'))]
@@ -91,6 +95,6 @@ async def test_fifty_pages_two_schedulers_and_new_uploads(client,db,tmp_path):
         assert max(Counter(a.task_id for a in attempts).values())==1
     counts=Counter(stage for stage,_ in provider.calls)
     assert counts=={'caption':50,'image_transform':25}
-    assert 1<peaks['caption']<=4 and 1<peaks['image_transform']<=2
+    assert 1<peaks['caption']<=4 and 1<peaks['image_transform']<=min(image_cap,2)
     assert sum(active.values())==0
     print('PARALLEL_STABILITY '+json.dumps({'pages':50,'schedulers':2,'new_uploads_ready':3,'tasks_succeeded':150,'provider_calls':counts,'provider_peaks':peaks}))

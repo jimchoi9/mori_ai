@@ -1,0 +1,538 @@
+{
+  "scope": "Task3 real Chromium preprocessing + Task4 server reuse; synthetic fixtures only",
+  "browser": [
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "exif-gps.jpg",
+      "processed": true,
+      "bytes": 486162,
+      "thumbnail_bytes": 86568,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "thumbnail_dimensions": [
+        480,
+        360
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 1024,
+        "original_height": 768,
+        "captured_at_raw": "2026:10:19 12:34:56",
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "exif-gps.png",
+      "processed": true,
+      "bytes": 486082,
+      "thumbnail_bytes": 86592,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "thumbnail_dimensions": [
+        480,
+        360
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 1024,
+        "original_height": 768,
+        "captured_at_raw": "2026:10:19 12:34:56",
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "plain.png",
+      "processed": true,
+      "bytes": 485978,
+      "thumbnail_bytes": 86586,
+      "dimensions": [
+        768,
+        1024
+      ],
+      "thumbnail_dimensions": [
+        360,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 768,
+        "original_height": 1024,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "text.png",
+      "processed": false,
+      "bytes": 2002357,
+      "thumbnail_bytes": 0,
+      "dimensions": null,
+      "thumbnail_dimensions": null,
+      "preprocessing": null
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "icc.jpg",
+      "processed": false,
+      "bytes": 1205200,
+      "thumbnail_bytes": 0,
+      "dimensions": null,
+      "thumbnail_dimensions": null,
+      "preprocessing": null
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "xmp.jpg",
+      "processed": false,
+      "bytes": 1204883,
+      "thumbnail_bytes": 0,
+      "dimensions": null,
+      "thumbnail_dimensions": null,
+      "preprocessing": null
+    }
+  ],
+  "orientation": [
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-1.jpg",
+      "processed": true,
+      "bytes": 6426,
+      "thumbnail_bytes": 1006,
+      "dimensions": [
+        2048,
+        1365
+      ],
+      "thumbnail_dimensions": [
+        480,
+        320
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 2000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-2.jpg",
+      "processed": true,
+      "bytes": 6332,
+      "thumbnail_bytes": 1046,
+      "dimensions": [
+        2048,
+        1365
+      ],
+      "thumbnail_dimensions": [
+        480,
+        320
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 2000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-3.jpg",
+      "processed": true,
+      "bytes": 6300,
+      "thumbnail_bytes": 992,
+      "dimensions": [
+        2048,
+        1365
+      ],
+      "thumbnail_dimensions": [
+        480,
+        320
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 2000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-4.jpg",
+      "processed": true,
+      "bytes": 6240,
+      "thumbnail_bytes": 1032,
+      "dimensions": [
+        2048,
+        1365
+      ],
+      "thumbnail_dimensions": [
+        480,
+        320
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 2000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-5.jpg",
+      "processed": true,
+      "bytes": 6258,
+      "thumbnail_bytes": 1002,
+      "dimensions": [
+        1365,
+        2048
+      ],
+      "thumbnail_dimensions": [
+        320,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 2000,
+        "original_height": 3000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-6.jpg",
+      "processed": true,
+      "bytes": 6206,
+      "thumbnail_bytes": 998,
+      "dimensions": [
+        1365,
+        2048
+      ],
+      "thumbnail_dimensions": [
+        320,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 2000,
+        "original_height": 3000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-7.jpg",
+      "processed": true,
+      "bytes": 6510,
+      "thumbnail_bytes": 992,
+      "dimensions": [
+        1365,
+        2048
+      ],
+      "thumbnail_dimensions": [
+        320,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 2000,
+        "original_height": 3000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "orientation-8.jpg",
+      "processed": true,
+      "bytes": 6194,
+      "thumbnail_bytes": 1014,
+      "dimensions": [
+        1365,
+        2048
+      ],
+      "thumbnail_dimensions": [
+        320,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 2000,
+        "original_height": 3000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "alpha.png",
+      "processed": false,
+      "bytes": 3056,
+      "thumbnail_bytes": 0,
+      "dimensions": null,
+      "thumbnail_dimensions": null,
+      "preprocessing": null
+    }
+  ],
+  "alpha": [
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "alpha-noise.png",
+      "processed": true,
+      "bytes": 346556,
+      "thumbnail_bytes": 80378,
+      "dimensions": [
+        900,
+        600
+      ],
+      "thumbnail_dimensions": [
+        480,
+        320
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 900,
+        "original_height": 600,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    }
+  ],
+  "server_pixels": [
+    {
+      "file": "chromium-orientation-5.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "file": "chromium-orientation-2.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        2048,
+        1365
+      ]
+    },
+    {
+      "file": "chromium-orientation-3.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        2048,
+        1365
+      ]
+    },
+    {
+      "file": "chromium-orientation-4.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        2048,
+        1365
+      ]
+    },
+    {
+      "file": "chromium-orientation-6.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "file": "chromium-orientation-1.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        2048,
+        1365
+      ]
+    },
+    {
+      "file": "chromium-orientation-8.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "file": "chromium-orientation-7.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "file": "chromium-alpha-noise.png.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        0,
+        255
+      ],
+      "size": [
+        900,
+        600
+      ]
+    },
+    {
+      "file": "chromium-exif-gps.png.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1024,
+        768
+      ]
+    },
+    {
+      "file": "chromium-exif-gps.jpg.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        1024,
+        768
+      ]
+    },
+    {
+      "file": "chromium-plain.png.out",
+      "body_action": "sanitize_then_reuse",
+      "thumbnail_action": "sanitize_then_reuse",
+      "pixels_equal": true,
+      "alpha": [
+        255,
+        255
+      ],
+      "size": [
+        768,
+        1024
+      ]
+    }
+  ],
+  "limitations": [
+    "WebKit local process stalled; interrupted, not verified",
+    "Actual iPhone not tested",
+    "Not full 2GB load or real-photo visual quality validation"
+  ],
+  "exact_retry": [
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "exact-retry.jpg",
+      "processed": true,
+      "bytes": 739336,
+      "thumbnail_bytes": 89958,
+      "dimensions": [
+        981,
+        1308
+      ],
+      "thumbnail_dimensions": [
+        360,
+        480
+      ],
+      "preprocessing": {
+        "version": 2,
+        "original_width": 3000,
+        "original_height": 4000,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      }
+    }
+  ],
+  "exact_retry_server": {
+    "size": [
+      981,
+      1308
+    ],
+    "body_action": "sanitize_then_reuse",
+    "thumbnail_action": "sanitize_then_reuse",
+    "hint_valid": true
+  }
+}

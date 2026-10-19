@@ -25,12 +25,12 @@ async def test_preprocessing_snapshot_and_quality(client, db):
     async with db() as session:
         upload = await session.scalar(select(Upload))
         assert upload.validation_config['preprocessing'] == hint()
-        assert upload.validation_config['media']['NORMALIZED_WEBP_QUALITY'] == 90
-        assert upload.validation_config['media']['NORMALIZATION_VERSION'] == 2
+        assert upload.validation_config['media']['NORMALIZED_WEBP_QUALITY'] == 85
+        assert upload.validation_config['media']['NORMALIZATION_VERSION'] == 3
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('patch', [dict(version=True), dict(version=2), dict(original_width='300'),
+@pytest.mark.parametrize('patch', [dict(version=True), dict(version=3), dict(original_width='300'),
     dict(original_width=True), dict(original_height=0), dict(original_width=8000, original_height=5001),
     dict(captured_at_raw=123), dict(captured_at_raw='x'*257), dict(captured_timezone='x'*65), dict(extra=True)])
 async def test_invalid_preprocessing_is_atomic(client, db, patch):
@@ -84,7 +84,7 @@ async def test_legacy_media_snapshot_missing_quality_uses_frozen_default(client,
     async with db() as session,session.begin():
         upload=await session.get(Upload,UUID(entry['upload_id']))
         saved=dict(upload.validation_config)
-        saved['media']={k:v for k,v in saved['media'].items() if k not in {'NORMALIZED_WEBP_QUALITY','NORMALIZATION_VERSION'}}
+        saved['media']={k:v for k,v in saved['media'].items() if k not in {'NORMALIZED_WEBP_QUALITY','NORMALIZATION_VERSION','WEBP_REUSE_VERSION'}}
         saved['media']['NORMALIZED_WEBP_LOSSLESS']=True
         upload.validation_config=saved
     real=validation.normalize_in_process

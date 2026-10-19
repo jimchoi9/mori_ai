@@ -13,7 +13,7 @@
 .mori-bottom-action>.mori-button{width:100%;}
 .mori-photo{overflow:hidden;border-radius:var(--mori-radius);background:#eeede8;display:grid;place-items:center;}
 .mori-photo--portrait{aspect-ratio:3/4;}.mori-photo--square{aspect-ratio:1;}
-.mori-photo>img{height:100%;width:100%;min-height:0;object-fit:contain;}.mori-photo--cover>img{object-fit:cover;}
+.mori-photo>img{height:100%;width:100%;min-height:0;object-fit:contain;}.mori-photo--cover>img{object-fit:cover;object-position:center;}
 .mori-thumbnail{width:64px;min-width:64px;height:72px;padding:3px;border:2px solid transparent;border-radius:12px;background:transparent;box-shadow:none;}
 .mori-thumbnail[aria-pressed=true]{border-color:#302826;}.mori-thumbnail>img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
 .mori-login{max-width:426px;margin:0 auto;color:var(--mori-ink);padding:22px var(--mori-space) calc(28px + env(safe-area-inset-bottom));}

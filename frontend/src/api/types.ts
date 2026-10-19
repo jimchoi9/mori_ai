@@ -9,7 +9,7 @@ export interface Me { access?: { mode: 'approved_only'|'all_authenticated'; allo
 export type AuthProvider = 'google'|'kakao';
 export interface Config { auth_providers: AuthProvider[]; upload_allowed_extensions: string[]; upload_allowed_mimes: string[]; upload_max_file_bytes: number; upload_max_album_bytes: number; album_max_photos: number }
 export interface DevConfig { dev_auth_enabled:boolean; dev_ai_enabled:boolean; generation_enabled:boolean; generation_mode:GenerationMode }
-export interface Reservation { batch_id: string; album_version: number; uploads: { client_file_id: string; upload_id: string; page_id: string; asset_id: string; method: 'PUT'; upload_url: string; required_headers: Record<string,string>; expires_at: string }[] }
+export interface Reservation { batch_id: string; album_version: number; uploads: { client_file_id: string; upload_id: string; page_id: string; asset_id: string; method: 'PUT'; upload_url: string; required_headers: Record<string,string>; expires_at: string; thumbnail_upload?: { asset_id:string; method:'PUT'; url:string; required_headers:Record<string,string>; expires_at:string } }[] }
 export interface UploadView { upload_id: string; page_id: string; status: Page['upload_status']; error_code: string|null; album_version: number }
 export type TaskStatus = 'queued'|'running'|'retry_wait'|'succeeded'|'failed'|'unknown'|'cancelled';
 export interface TaskView { stage:'caption'|'image_transform'|'optimize'; status:TaskStatus; completion_kind:'provider'|'passthrough'|'local'|null; error_code:string|null; retryable:boolean }
@@ -18,4 +18,4 @@ export interface GenerationAccepted { run_id:string; status_url:string; album_ve
 export interface ViewerPage { id:string; position:number; image:MediaRef; caption_text:string }
 export interface Viewer { generation_mode:GenerationMode; album_id:string; title:string; version:number; pages:ViewerPage[]; media_access:MediaAccess[]; music:{track_id:string;url:string;title:string}|null }
 
-export interface UploadPreprocessing { version:1; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null }
+export interface UploadPreprocessing { version:1|2; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null }

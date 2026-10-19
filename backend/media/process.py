@@ -6,11 +6,11 @@ from pathlib import Path
 import sys
 import tempfile
 from dataclasses import asdict
-from .contracts import MediaValidationError, NormalizedImage
+from .contracts import MediaValidationError, NormalizedImage, PreparedMediaResult
 
 CHILD_RSS_LIMIT = 512 * 1024 * 1024
 MEDIA_ENV_KEYS = frozenset({
-    'NORMALIZATION_VERSION', 'NORMALIZED_WEBP_LOSSLESS', 'NORMALIZED_WEBP_QUALITY', 'NORMALIZED_MAX_EDGE', 'NORMALIZED_MAX_BYTES',
+    'NORMALIZATION_VERSION', 'WEBP_REUSE_VERSION', 'NORMALIZED_WEBP_LOSSLESS', 'NORMALIZED_WEBP_QUALITY', 'NORMALIZED_MAX_EDGE', 'NORMALIZED_MAX_BYTES',
     'THUMBNAIL_WEBP_QUALITY', 'THUMBNAIL_MAX_EDGE', 'RESULT_WEBP_QUALITY',
 })
 
@@ -55,7 +55,9 @@ async def normalize_in_process(source_path: Path, filename: str,
                 or any(type(value) not in {int, bool} for value in config.values())):
             raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
         version = config.get('NORMALIZATION_VERSION', 1)
-        if type(version) is not int or version not in {1, 2}:
+        if (type(version) is not int or version not in {1, 2, 3}
+                or (version == 3 and (type(config.get('WEBP_REUSE_VERSION')) is not int
+                                     or config.get('WEBP_REUSE_VERSION') != 1))):
             raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
         # A frozen snapshot must not inherit changed deployment defaults, even
         # for omitted fields. The legacy module owns the original defaults.
@@ -73,12 +75,39 @@ async def normalize_in_process(source_path: Path, filename: str,
         metadata = json.loads((root / 'result.json').read_text())
         if 'error' in metadata:
             raise MediaValidationError(metadata['error'])
-        return NormalizedImage(webp_bytes=(root / 'normalized.webp').read_bytes(),
+        result_type = PreparedMediaResult if 'body_action' in metadata else NormalizedImage
+        return result_type(webp_bytes=(root / 'normalized.webp').read_bytes(),
             thumbnail_bytes=(root / 'thumbnail.webp').read_bytes(), **metadata)
 
 
+async def validate_prepared_in_process(body_path: Path, thumbnail_path: Path | None = None,
+                                      *, config: dict, timeout_seconds: int = 120) -> PreparedMediaResult:
+    if (not isinstance(config, dict) or set(config)-MEDIA_ENV_KEYS
+        or any(type(value) not in {int,bool} for value in config.values())
+        or type(config.get('NORMALIZATION_VERSION')) is not int or config.get('NORMALIZATION_VERSION') != 3
+        or type(config.get('WEBP_REUSE_VERSION')) is not int or config.get('WEBP_REUSE_VERSION') != 1):
+        raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
+    if body_path.stat().st_size>20*1024*1024:
+        raise MediaValidationError('IMAGE_SIZE_LIMIT_EXCEEDED')
+    # Oversized thumbnail is a quality fallback; missing or hash-mismatched
+    # transport is rejected by the owning validation worker before this call.
+    if thumbnail_path is not None and thumbnail_path.stat().st_size>200000:
+        thumbnail_path=None
+    env={key:value for key,value in os.environ.items() if key not in MEDIA_ENV_KEYS}
+    env.update({key:str(value).lower() for key,value in config.items()})
+    with tempfile.TemporaryDirectory(prefix='mori-prepared-') as directory:
+        command=[sys.executable,'-m','backend.media.process',str(body_path.resolve()),'source',directory]
+        if thumbnail_path is not None:command.append(str(thumbnail_path.resolve()))
+        await _run_child(command,timeout_seconds,env=env)
+        root=Path(directory);metadata=json.loads((root/'result.json').read_text())
+        if 'error' in metadata:raise MediaValidationError(metadata['error'])
+        return PreparedMediaResult(webp_bytes=(root/'normalized.webp').read_bytes(),
+            thumbnail_bytes=(root/'thumbnail.webp').read_bytes(),**metadata)
+
+
 def _main():
-    source, filename, destination = sys.argv[1:]
+    source, filename, destination = sys.argv[1:4]
+    thumbnail_path = sys.argv[4] if len(sys.argv)>4 else None
     root = Path(destination)
     try:
         version = os.environ.get('NORMALIZATION_VERSION', '2')
@@ -86,7 +115,12 @@ def _main():
             # Frozen verbatim from 68aff30 for deterministic reservation recovery.
             from .normalize_v1 import normalize
         elif version == '2':
-            from .normalize import normalize
+            from .normalize_v2 import normalize
+        elif version == '3':
+            from .prepared import validate_prepared
+            def normalize(data, filename):
+                thumbnail = Path(thumbnail_path).read_bytes() if thumbnail_path else None
+                return validate_prepared(data, thumbnail)
         else:
             raise MediaValidationError('IMAGE_NORMALIZATION_FAILED')
         with open(source, 'rb') as stream:

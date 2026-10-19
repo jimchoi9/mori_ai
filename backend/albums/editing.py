@@ -38,7 +38,9 @@ async def save_caption(session,owner_id,album_id,page_id,expected_version,captio
         album.version+=1;album.updated_at=stamp
     assets={a.id:a for a in await repo.ready_assets(session,album_id)}
     uploads={u.page_id:u for u in await repo.page_uploads(session,album_id)}
-    return {'page':page_dto(page,album,assets,uploads.get(page.id)),'album_version':album.version}
+    from backend.generation.output_policy import output_run
+    run=await output_run(session,album)
+    return {'page':page_dto(page,album,assets,uploads.get(page.id),run),'album_version':album.version}
 
 
 async def publish_album(session,owner_id,album_id,expected_version):

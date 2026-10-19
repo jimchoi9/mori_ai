@@ -148,10 +148,11 @@ class Settings(BaseSettings):
             raise ValueError("R2 prefix must contain safe segments and end with a slash")
         return self
     worker_poll_seconds: float = Field(default=1, gt=0, le=60, allow_inf_nan=False)
+    normalization_version: int = Field(default=3, ge=1, le=3)
     normalized_webp_lossless: bool = False
-    normalized_webp_quality: int = Field(default=90, ge=1, le=100)
-    normalized_max_edge: int = Field(default=4096, ge=4, le=16383)
-    normalized_max_bytes: int = Field(default=20971520, ge=1)
+    normalized_webp_quality: int = Field(default=85, ge=1, le=100)
+    normalized_max_edge: int = Field(default=2048, ge=4, le=16383)
+    normalized_max_bytes: int = Field(default=1000000, ge=1)
     result_webp_quality: int = Field(default=90, ge=1, le=100)
     thumbnail_webp_quality: int = Field(default=80, ge=1, le=100)
     thumbnail_max_edge: int = Field(default=480, ge=4, le=480)

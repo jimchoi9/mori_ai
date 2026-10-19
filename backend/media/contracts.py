@@ -17,3 +17,14 @@ class NormalizedImage:
     captured_at_raw: str | None
     captured_timezone: str | None
     sha256: str
+
+
+@dataclass(frozen=True)
+class PreparedMediaResult(NormalizedImage):
+    original_width: int
+    original_height: int
+    output_sha256: str
+    body_action: str
+    thumbnail_action: str
+    thumbnail_width: int
+    thumbnail_height: int

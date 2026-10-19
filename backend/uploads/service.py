@@ -29,7 +29,7 @@ def touch(session, album):
 
 
 def config(settings):
-    return {'NORMALIZATION_VERSION':2, **{key.upper():getattr(settings,key) for key in ('normalized_webp_lossless','normalized_webp_quality','normalized_max_edge','normalized_max_bytes','thumbnail_webp_quality','thumbnail_max_edge','result_webp_quality')}}
+    return {'NORMALIZATION_VERSION':settings.normalization_version, **({'WEBP_REUSE_VERSION':1} if settings.normalization_version==3 else {}), **{key.upper():getattr(settings,key) for key in ('normalized_webp_lossless','normalized_webp_quality','normalized_max_edge','normalized_max_bytes','thumbnail_webp_quality','thumbnail_max_edge','result_webp_quality')}}
 
 
 async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
@@ -51,9 +51,9 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     await session.flush()
     for batch in {u.batch_id for u in uploads if u.status=='expired'}:
         await finish_batch(session,parent,batch)
-    occupied=sum(u.declared_bytes for u in uploads if u.status in {'reserved','validating','ready'})
+    occupied=sum(u.declared_bytes+(u.thumbnail_declared_bytes or 0) for u in uploads if u.status in {'reserved','validating','ready'})
     if any(f.bytes>20971520 for f in body.files): raise APIError(413,'FILE_TOO_LARGE')
-    if occupied+sum(f.bytes for f in body.files)>314572800: raise APIError(413,'ALBUM_BYTES_EXCEEDED')
+    if occupied+sum(f.bytes+(f.thumbnail.bytes if f.thumbnail else 0) for f in body.files)>314572800: raise APIError(413,'ALBUM_BYTES_EXCEEDED')
     if len({f.client_file_id for f in body.files})!=len(body.files): raise APIError(422,'VALIDATION_ERROR')
     for f in body.files:
         if PurePath(f.filename).suffix.lower() not in MIMES: raise APIError(422,'UNSUPPORTED_MEDIA')
@@ -70,11 +70,20 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         session.add(asset); await session.flush(); page.source_asset_id=asset.id
         u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode,'source_lifetime':'temporary',
             **({'preprocessing':f.preprocessing.model_dump()} if f.preprocessing is not None else {})},created_at=stamp)
+        if f.thumbnail is not None:
+            if mime != 'image/webp': raise APIError(422,'VALIDATION_ERROR')
+            thumb=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='upload_thumbnail',storage_key=storage_key(owner,album_id,page.id,'upload_thumbnail'),mime='image/webp',status='pending',sha256=f.thumbnail.sha256)
+            session.add(thumb); await session.flush()
+            u.thumbnail_asset_id=thumb.id; u.thumbnail_declared_bytes=f.thumbnail.bytes
+            u.validation_config={**u.validation_config,'upload_protocol_version':2}
         session.add(u)
         path=f'/api/v1/private/uploads/{u.id}'
         upload_url,required_headers=signer.upload_url(asset.storage_key,path,u.id,int(expiry.timestamp()),mime,f.bytes)
         result.append({'client_file_id':str(f.client_file_id),'upload_id':str(u.id),'page_id':str(page.id),'asset_id':str(asset.id),'status':'reserved','method':'PUT',
                        'upload_url':upload_url,'required_headers':required_headers,'expires_at':utc(expiry)})
+        if f.thumbnail is not None:
+            url,thumb_headers=signer.upload_url(thumb.storage_key,path+'/thumbnail',u.id,int(expiry.timestamp()),'image/webp',f.thumbnail.bytes)
+            result[-1]['thumbnail_upload']={'asset_id':str(thumb.id),'method':'PUT','url':url,'required_headers':thumb_headers,'expires_at':utc(expiry)}
     if not pages: parent.cover_page_id=page.id if len(body.files)==1 else None
     # Cover always follows current first page, including reserved/failed pages.
     await session.flush()
@@ -129,12 +138,17 @@ async def order(session,owner,album_id,body):
     return await get_album_detail(session,owner,album_id)
 
 
-async def put_metadata(session,owner,upload_id):
+async def put_metadata(session,owner,upload_id,*,thumbnail=False):
     album_id=await repo.upload_album_id(session,upload_id)
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
     repo.draft(parent)
     if u.status not in {'reserved','validating','ready'} or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary'):
         raise APIError(409,'STATE_CONFLICT')
+    if thumbnail:
+        from backend.uploads.pairs import paired_asset
+        thumb=await paired_asset(session,parent,u,page)
+        if thumb is None: raise APIError(404,'RESOURCE_NOT_FOUND')
+        return album_id,thumb.storage_key,'image/webp',u.thumbnail_declared_bytes,u.expires_at
     upload_mime=(u.validation_config or {}).get('upload_mime',asset.mime)
     return album_id,asset.storage_key,upload_mime,u.declared_bytes,u.expires_at
 
@@ -155,15 +169,19 @@ def check_complete_hash(store,asset,expected_sha256):
         raise APIError(409,'STATE_CONFLICT')
 
 
-async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha256=None):
+async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha256=None,thumbnail_sha256=None):
     async with sessions() as s,s.begin():
         parent,u,page,asset=await repo.upload(s,owner,album_id,upload_id)
         await expire(s,parent,u)
         if u.status=='expired': return 200,view(parent,u)
         check_complete_hash(store,asset,expected_sha256)
+        from backend.uploads.pairs import paired_asset, check_pair_hashes, measure_pair
+        thumb=await paired_asset(s,parent,u,page,allow_deleted=u.status in {'ready','rejected'})
+        check_pair_hashes(u,asset,thumb,expected_sha256,thumbnail_sha256)
         if u.status!='reserved': return (202 if u.status=='validating' else 200),view(parent,u)
         repo.draft(parent); key=asset.storage_key
         if key not in canonical_asset_keys(owner,album_id,page.id,'source'): raise APIError(404,'RESOURCE_NOT_FOUND')
+    pair_measure=await measure_pair(store,thumb) if thumb else None
     # PUT has durably finalized a no-overwrite object. File I/O never holds a DB lock.
     try:
         from backend.telemetry import span
@@ -187,10 +205,19 @@ async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha25
         await expire(s,parent,u)
         if u.status=='expired': return 200,view(parent,u)
         check_complete_hash(store,asset,expected_sha256)
+        from backend.uploads.pairs import paired_asset, check_pair_hashes, measure_pair
+        thumb=await paired_asset(s,parent,u,page,allow_deleted=u.status in {'ready','rejected'})
+        check_pair_hashes(u,asset,thumb,expected_sha256,thumbnail_sha256)
         if u.status=='reserved':
             repo.draft(parent)
             if size!=u.declared_bytes or size>20971520: raise APIError(422,'VALIDATION_ERROR')
             if getattr(store,'mode','local')=='r2' and checksum!=expected_sha256: raise APIError(409,'STATE_CONFLICT')
+            if thumb:
+                if checksum!=expected_sha256: raise APIError(409,'STATE_CONFLICT')
+                thumb_size,thumb_hash=pair_measure
+                if thumb_size!=u.thumbnail_declared_bytes: raise APIError(422,'VALIDATION_ERROR')
+                if thumb_hash!=thumbnail_sha256: raise APIError(409,'STATE_CONFLICT')
+                thumb.bytes=thumb_size
             asset.bytes=size; asset.sha256=checksum
             u.status='validating'; await enqueue_job(s,'validate_upload',u.id)
             bump_version(s, page)

@@ -11,6 +11,7 @@ from backend.goods_design.service import now
 from backend.models import Task
 from backend.access.service import require_access
 from backend.generation.repository import lock_claims
+from backend.generation.concurrency import GLOBAL_STAGE_LIMITS
 from backend.generation.budget import BudgetLedger,BudgetExceeded
 from backend.generation.openai_provider import ProviderFailure,IMAGE_RESERVATION_USD
 
@@ -30,7 +31,7 @@ class GoodsWorker:
             await lock_claims(s)
             count=await s.scalar(select(func.count()).select_from(Task).where(Task.stage=='image_transform',Task.status=='running',Task.lease_until>now()))
             count+=await s.scalar(select(func.count()).select_from(GoodsRevision).where(GoodsRevision.status=='running',GoodsRevision.lease_until>now()))
-            if count>=2:return False
+            if count>=GLOBAL_STAGE_LIMITS['image_transform']:return False
             # Lock the parent before revision, same order as admission/discard.
             w=await s.scalar(select(GoodsWork).where(GoodsWork.status=='active',GoodsWork.expires_at>now(),GoodsWork.id.in_(select(GoodsRevision.work_id).where(GoodsRevision.status=='queued',GoodsRevision.config['mode'].astext==('real' if self.settings.ai_real_calls_enabled else 'fake')))).order_by(GoodsWork.created_at).with_for_update(skip_locked=True).limit(1))
             if w is None:return False

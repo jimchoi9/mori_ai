@@ -116,3 +116,23 @@ test('validating retry skips PUT but still confirms the original hash',async()=>
   assert.equal(checks,1);assert.equal(s.state.complete.size,1);
  }finally{globalThis.fetch=original;}
 });
+
+test('paired local retry preserves successful body PUT, sends missing thumbnail and both hashes',async()=>{
+ const file=new File(['body'],'b.webp'),thumbnail=new File(['thumb'],'t.webp');
+ const upload={upload_id:'pair',upload_url:'/body',required_headers:{},thumbnail_upload:{url:'/thumb',required_headers:{}}};
+ const progress={put:new Set(),complete:new Set()},puts=[];let fail=true;let body;
+ globalThis.fetch=async(url,init)=>{puts.push([url,init.body]);if(url==='/thumb' && fail){fail=false;throw new TypeError('lost');}return new Response(null,{status:200});};
+ const pair={file:thumbnail,headers:{},sha256:'bodyhash',thumbnail_sha256:'thumbhash'};
+ const run=()=>uploadStep(upload,file,progress,new AbortController().signal,{},async()=>({status:'reserved'}),async b=>{body=b;},pair);
+ await assert.rejects(run(),/lost/);assert.equal(progress.complete.size,0);
+ await run();assert.deepEqual(puts.map(x=>x[0]),['/body','/thumb','/thumb']);assert.equal(puts[1][1],puts[2][1]);
+ assert.deepEqual(body,{sha256:'bodyhash',thumbnail_sha256:'thumbhash'});
+});
+test('paired conditional ambiguity retries both exact files when completion is inconclusive',async()=>{
+ const file=new File(['body'],'b.webp'),thumbnail=new File(['thumb'],'t.webp');
+ const upload={upload_id:'pair',upload_url:'/body',required_headers:headers,thumbnail_upload:{url:'/thumb',required_headers:headers}};
+ const progress={put:new Set(),complete:new Set()},puts=[];let fail=true;
+ globalThis.fetch=async(url,init)=>{puts.push([url,init.body]);throw new TypeError('response lost');};
+ const run=()=>uploadStep(upload,file,progress,new AbortController().signal,headers,async()=>({status:'reserved'}),async()=>{if(fail){fail=false;throw Error('not ready');}},{file:thumbnail,headers,sha256:'b',thumbnail_sha256:'t'});
+ await assert.rejects(run(),/not ready/);await run();assert.deepEqual(puts.map(x=>x[0]),['/body','/thumb','/body','/thumb']);assert.equal(puts[1][1],puts[3][1]);
+});

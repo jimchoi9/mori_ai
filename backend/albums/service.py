@@ -26,8 +26,11 @@ def media_ref(asset):
     return {'asset_id': str(asset.id), 'mime': asset.mime, 'width': asset.width, 'height': asset.height}
 
 
-def scoped_asset(assets,page,role,album):
+def scoped_asset(assets,page,role,album,run=None):
     asset=assets.get(getattr(page,role+'_asset_id'))
+    if role=='result' and asset is not None and asset.role=='normalized':
+        from backend.generation.output_policy import valid_output_pair
+        return asset if valid_output_pair(album,page,run,asset,assets.get(page.thumbnail_asset_id)) else None
     if (asset is None or asset.role!=role or asset.owner_id!=album.owner_id or asset.album_id!=album.id
         or asset.page_id!=page.id or page.removed_at is not None
         or (role=='normalized' and album.status not in {'draft','processing','action_required'})):
@@ -110,12 +113,12 @@ async def get_albums(session, user_id, cursor, limit):
             'media_access': await access_entries(session,refs,user_id)}
 
 
-def page_dto(page,album,assets,upload=None):
+def page_dto(page,album,assets,upload=None,run=None):
     """The same public Page in detail and PATCH responses; no internal AI text."""
     return {'id':str(page.id),'position':page.position,'version':page.version,
         'upload_status':upload.status if upload else 'reserved',
         'source':media_ref(scoped_asset(assets,page,'normalized',album)),
-        'result':media_ref(scoped_asset(assets,page,'result',album)),
+        'result':media_ref(scoped_asset(assets,page,'result',album,run)),
         'thumbnail':media_ref(scoped_asset(assets,page,'thumbnail',album)),
         'caption_text':page.caption_text,'sort_date':page.sort_date,'sort_date_source':page.sort_date_source}
 
@@ -135,10 +138,12 @@ async def get_album_detail(session, user_id, album_id):
         not_found()
     assets = {a.id: a for a in await repo.ready_assets(session, album_id)}
     uploads = {u.page_id: u for u in await repo.page_uploads(session, album_id)}
+    from backend.generation.output_policy import output_run
+    run=await output_run(session,album)
     pages = []
     for p in await repo.album_pages(session, album_id):
         upload = uploads.get(p.id)
-        pages.append(page_dto(p,album,assets,upload))
+        pages.append(page_dto(p,album,assets,upload,run))
     refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
         'pages': pages, 'generation_mode': await generation_mode(session, album_id), 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs,user_id)}

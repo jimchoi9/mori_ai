@@ -36,17 +36,20 @@ class Provider:
     async def transform(self,image):return await self.respond('image_transform',image)
 
 
-async def real_pipeline(client,db,tmp_path,count=2,limit=Decimal('5')):
+async def real_pipeline(client,db,tmp_path,count=2,limit=Decimal('5'),*,legacy=True):
     from backend.generation.real_adapter import RealExecutor
     from backend.generation.budget import BudgetLedger
     from backend.tests.integration.test_auth_http import config
-    me,album,run_id,store,_,_=await pipeline(client,db,tmp_path,count=count)
+    me,album,run_id,store,_,_=await pipeline(client,db,tmp_path,count=count,legacy=legacy)
     settings=config().model_copy(update={'ai_real_calls_enabled':True,
         'openai_caption_model':'gpt-5.4-mini','openai_image_model':'gpt-image-2'})
     async with db() as s,s.begin():
         # Financial rows intentionally do not cascade with user fixtures.
         await s.execute(text('TRUNCATE ai_budget_entries, ai_budget_accounts'))
-        run=await s.get(Run,run_id);run.config_snapshot=config_snapshot(settings)
+        run=await s.get(Run,run_id)
+        snapshot=config_snapshot(settings)
+        if legacy:snapshot={**{k:v for k,v in snapshot.items() if k not in {'image_policy','result_policy'}}, 'image_concurrency':2}
+        run.config_snapshot=snapshot
     ledger=BudgetLedger(db,limit,Decimal('100'));provider=Provider()
     executor=RealExecutor(db,store,provider,ledger,settings)
     from backend.storage.factory import result_store
@@ -64,8 +67,9 @@ async def only_stage(db,run_id,stage):
 
 
 @pytest.mark.asyncio
-async def test_real_complete_uses_original_caption_and_skips_exact_ratio(client,db,tmp_path):
-    _,album,rid,store,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path)
+@pytest.mark.parametrize('legacy',[True,False])
+async def test_real_complete_uses_original_caption_and_skips_exact_ratio(client,db,tmp_path,legacy):
+    _,album,rid,store,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path,legacy=legacy)
     await drain(runner)
     assert [s for s,_ in provider.calls].count('image_transform')==1
     assert [s for s,_ in provider.calls].count('caption')==2

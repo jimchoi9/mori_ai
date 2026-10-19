@@ -1,0 +1,308 @@
+{
+  "scope": "Actual current preprocess.ts in Chromium; thumbnail is separate Canvas API probe, not implemented app feature",
+  "results": [
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "exif-gps.jpg",
+      "processed": true,
+      "mime": "image/webp",
+      "bytes": 537930,
+      "preprocessing": {
+        "version": 1,
+        "original_width": 1024,
+        "original_height": 768,
+        "captured_at_raw": "2026:10:19 12:34:56",
+        "captured_timezone": null
+      },
+      "thumbnail": true,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "metadata_keys": [
+        "loop",
+        "background",
+        "icc_profile"
+      ],
+      "exif_tags": [],
+      "chunks": [
+        "VP8X",
+        "ICCP",
+        "VP8 "
+      ],
+      "private_marker_present": false,
+      "output_sha256": "73455e65c0728ceda3e395fb35e70b02ce4ebe75356921bd372e2095a08f4feb",
+      "input_unchanged": false,
+      "thumbnail_observation": {
+        "dimensions": [
+          480,
+          360
+        ],
+        "chunks": [
+          "VP8X",
+          "ICCP",
+          "VP8 "
+        ],
+        "metadata_keys": [
+          "loop",
+          "background",
+          "icc_profile"
+        ],
+        "exif_tags": [],
+        "private_marker_present": false
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "exif-gps.png",
+      "processed": true,
+      "mime": "image/webp",
+      "bytes": 537864,
+      "preprocessing": {
+        "version": 1,
+        "original_width": 1024,
+        "original_height": 768,
+        "captured_at_raw": "2026:10:19 12:34:56",
+        "captured_timezone": null
+      },
+      "thumbnail": true,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "metadata_keys": [
+        "loop",
+        "background",
+        "icc_profile"
+      ],
+      "exif_tags": [],
+      "chunks": [
+        "VP8X",
+        "ICCP",
+        "VP8 "
+      ],
+      "private_marker_present": false,
+      "output_sha256": "6b301a1e2274e8a2ed51104e3df8d8f5a28ce8e3cdcc56d4ffd2b946fadabee3",
+      "input_unchanged": false,
+      "thumbnail_observation": {
+        "dimensions": [
+          480,
+          360
+        ],
+        "chunks": [
+          "VP8X",
+          "ICCP",
+          "VP8 "
+        ],
+        "metadata_keys": [
+          "loop",
+          "background",
+          "icc_profile"
+        ],
+        "exif_tags": [],
+        "private_marker_present": false
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "plain.png",
+      "processed": true,
+      "mime": "image/webp",
+      "bytes": 537716,
+      "preprocessing": {
+        "version": 1,
+        "original_width": 768,
+        "original_height": 1024,
+        "captured_at_raw": null,
+        "captured_timezone": null
+      },
+      "thumbnail": true,
+      "dimensions": [
+        768,
+        1024
+      ],
+      "metadata_keys": [
+        "loop",
+        "background",
+        "icc_profile"
+      ],
+      "exif_tags": [],
+      "chunks": [
+        "VP8X",
+        "ICCP",
+        "VP8 "
+      ],
+      "private_marker_present": false,
+      "output_sha256": "e861466b64e5c173f509e6281c4c4a85f1b1b0f8f2352172bb7d3027cd0d5b44",
+      "input_unchanged": false,
+      "thumbnail_observation": {
+        "dimensions": [
+          360,
+          480
+        ],
+        "chunks": [
+          "VP8X",
+          "ICCP",
+          "VP8 "
+        ],
+        "metadata_keys": [
+          "loop",
+          "background",
+          "icc_profile"
+        ],
+        "exif_tags": [],
+        "private_marker_present": false
+      }
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "text.png",
+      "processed": false,
+      "mime": "image/png",
+      "bytes": 2002357,
+      "preprocessing": null,
+      "thumbnail": false,
+      "dimensions": [
+        768,
+        1024
+      ],
+      "metadata_keys": [
+        "Comment"
+      ],
+      "exif_tags": [],
+      "chunks": null,
+      "private_marker_present": true,
+      "output_sha256": "907e7dcd27b0291d50996de1b025aa3606fe14b964bc1da0b823912fa4551f2b",
+      "input_unchanged": true
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "icc.jpg",
+      "processed": false,
+      "mime": "image/jpeg",
+      "bytes": 1205200,
+      "preprocessing": null,
+      "thumbnail": false,
+      "dimensions": [
+        768,
+        1024
+      ],
+      "metadata_keys": [
+        "jfif",
+        "jfif_version",
+        "jfif_unit",
+        "jfif_density",
+        "icc_profile"
+      ],
+      "exif_tags": [],
+      "chunks": null,
+      "private_marker_present": false,
+      "output_sha256": "33427395a37e4b6f93be09eeb9e63a1355ee1e392d4ca9b4e08528855c6dd3d3",
+      "input_unchanged": true
+    },
+    {
+      "browser": "chromium",
+      "version": "147.0.7727.15",
+      "file": "xmp.jpg",
+      "processed": false,
+      "mime": "image/jpeg",
+      "bytes": 1204883,
+      "preprocessing": null,
+      "thumbnail": false,
+      "dimensions": [
+        768,
+        1024
+      ],
+      "metadata_keys": [
+        "xmp",
+        "jfif",
+        "jfif_version",
+        "jfif_unit",
+        "jfif_density",
+        "exif",
+        "dpi"
+      ],
+      "exif_tags": [
+        274,
+        36867,
+        34853,
+        270
+      ],
+      "chunks": null,
+      "private_marker_present": true,
+      "output_sha256": "a7e6a1e0ecac867f2a12c35bdf22ec1c5173360104c041b76814a730224a0167",
+      "input_unchanged": true
+    }
+  ],
+  "webkit": "launch/evaluation stalled with installed older build; interrupted, no successful results",
+  "icc_observations": [
+    {
+      "file": "chromium-exif-gps.jpg.out",
+      "icc_bytes": 456,
+      "icc_sha256": "12afb4d9953adee0607d347daee5b78b18d6b3cab2d572b88970703f5edb37bc",
+      "name": "sRGB",
+      "description": "sRGB"
+    },
+    {
+      "file": "chromium-exif-gps.png.out",
+      "icc_bytes": 456,
+      "icc_sha256": "12afb4d9953adee0607d347daee5b78b18d6b3cab2d572b88970703f5edb37bc",
+      "name": "sRGB",
+      "description": "sRGB"
+    },
+    {
+      "file": "chromium-plain.png.out",
+      "icc_bytes": 456,
+      "icc_sha256": "12afb4d9953adee0607d347daee5b78b18d6b3cab2d572b88970703f5edb37bc",
+      "name": "sRGB",
+      "description": "sRGB"
+    }
+  ],
+  "icc_strip_probe": {
+    "sample": "chromium-exif-gps.jpg.out",
+    "icc_to_srgb_extrema": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "icc_to_srgb_mean": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "strip_same_decoded_pixels": true,
+    "stripped_chunks": [
+      "VP8X",
+      "VP8 "
+    ]
+  },
+  "input_checks": [
+    {
+      "file": "exif-gps.jpg",
+      "gps_ifd_present": true,
+      "orientation": 6,
+      "description_marker_present": true
+    },
+    {
+      "file": "exif-gps.png",
+      "gps_ifd_present": true,
+      "orientation": 6,
+      "description_marker_present": true
+    }
+  ],
+  "thumbnail_icc_matches_body": true
+}

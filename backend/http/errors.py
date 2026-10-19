@@ -22,7 +22,9 @@ def install_errors(app):
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         if request.url.path == '/api' or request.url.path.startswith('/api/'):
-            response.headers['Cache-Control'] = 'no-store'
+            # Keep every API response non-cacheable while retaining explicit privacy.
+            private = 'private' in {v.strip().lower() for v in response.headers.get('Cache-Control', '').split(',')}
+            response.headers['Cache-Control'] = 'private, no-store' if private else 'no-store'
             response.headers['X-Request-ID'] = request.state.request_id
         return response
 

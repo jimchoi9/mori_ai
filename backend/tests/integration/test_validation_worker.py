@@ -106,7 +106,7 @@ async def test_stale_fence_and_deletion_never_link(client,db,monkeypatch,change)
     from datetime import datetime,timezone,timedelta
     me,a,u,path,data=await pending(client)
     worker=validation.ValidationWorker(db,config())
-    original=validation.normalize_in_process
+    original=validation.validate_prepared_in_process
     async def racing(*args,**kwargs):
         result=await original(*args,**kwargs)
         async with db() as s,s.begin():
@@ -117,7 +117,7 @@ async def test_stale_fence_and_deletion_never_link(client,db,monkeypatch,change)
                 from backend.models import Album
                 album=await s.get(Album,UUID(a)); album.deleted_at=datetime.now(timezone.utc);album.status='deleted'
         return result
-    monkeypatch.setattr(validation,'normalize_in_process',racing)
+    monkeypatch.setattr(validation,'validate_prepared_in_process',racing)
     assert await worker.run_once()
     async with db() as s:
         p=await s.get(Page,UUID(u['page_id'])); assert p.normalized_asset_id is None
@@ -125,7 +125,7 @@ async def test_stale_fence_and_deletion_never_link(client,db,monkeypatch,change)
     if change=='delete':
         assert not worker.store.path(f'{me["user"]["id"]}/{a}/{u["page_id"]}/normalized').exists()
     else:
-        monkeypatch.setattr(validation,'normalize_in_process',original)
+        monkeypatch.setattr(validation,'validate_prepared_in_process',original)
         async with db() as s: await recover_jobs(s,datetime.now(timezone.utc))
         assert await worker.run_once()
         assert (await client.get(path)).json()['data']['status']=='ready'
@@ -279,9 +279,12 @@ async def test_independent_heartbeat_and_snapshot_config(client,db,monkeypatch):
     async with db() as s,s.begin():
         upload=await s.get(Upload,UUID(u['upload_id']))
         assert upload.validation_config['version']==1
-        assert upload.validation_config['media']['NORMALIZATION_VERSION']==2
-        assert upload.validation_config['media']['NORMALIZED_WEBP_QUALITY']==90
-        upload.validation_config={**upload.validation_config,'media':{**upload.validation_config['media'],'NORMALIZED_MAX_EDGE':20}}
+        assert upload.validation_config['media']['NORMALIZATION_VERSION']==3
+        assert upload.validation_config['media']['NORMALIZED_WEBP_QUALITY']==85
+        # Reconstruct an already-reserved v2 job; changed defaults must not affect it.
+        legacy={k:v for k,v in upload.validation_config['media'].items() if k!='WEBP_REUSE_VERSION'}
+        legacy.update(NORMALIZATION_VERSION=2,NORMALIZED_WEBP_QUALITY=90,NORMALIZED_MAX_EDGE=20)
+        upload.validation_config={**upload.validation_config,'media':legacy}
     monkeypatch.setenv('NORMALIZED_MAX_EDGE','4096')
     original=validation.normalize_in_process
     async def slow(*args,**kwargs):

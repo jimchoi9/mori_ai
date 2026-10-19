@@ -39,11 +39,15 @@ async def visible_asset(session,owner,album_id,asset_id):
     parent=await album(session,owner,album_id,lock=False)
     asset=await session.get(MediaAsset,asset_id)
     page=await session.get(Page,asset.page_id) if asset else None
+    result_allowed = False
+    if page is not None and asset is not None and asset.role=='normalized' and page.result_asset_id==asset.id:
+        from backend.generation.output_policy import output_run, validate_page_outputs
+        result_allowed=await validate_page_outputs(session,parent,page,await output_run(session,parent))
     if (asset is None or asset.owner_id!=owner or asset.album_id!=album_id or asset.status!='ready' or asset.deleted_at is not None
         or page is None or page.album_id!=album_id or page.removed_at is not None
         or asset.role not in {'normalized','thumbnail','result'}
         or asset.id!=getattr(page,asset.role+'_asset_id')
-        or (asset.role=='normalized' and parent.status not in {'draft','processing','action_required'})):
+        or (asset.role=='normalized' and parent.status not in {'draft','processing','action_required'} and not result_allowed)):
         raise APIError(404,'RESOURCE_NOT_FOUND')
     return asset
 

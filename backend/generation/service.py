@@ -3,6 +3,7 @@
 Lock order: User -> Album -> Run -> Task. No executor or file I/O here.
 """
 from backend.access.service import require_access
+from backend.generation.concurrency import GLOBAL_STAGE_LIMITS
 from backend.generation.prompt_profiles import DEFAULT_PROMPT_VERSION, SUPPORTED_PROMPT_VERSIONS
 from datetime import datetime, timezone
 from sqlalchemy import select
@@ -13,6 +14,7 @@ from backend.http.idempotency import replay
 from backend.http.schemas import CLIENT_CONFIG
 from backend.models import Album, Run, Task, Outbox, Attempt, MediaAsset
 from backend.generation.resume_policy import eligible_resume_tasks, resume_locked_tasks
+from backend.storage.local import storage_key
 
 ACTIVE_RUNS = ('queued', 'running', 'action_required')
 
@@ -52,14 +54,15 @@ def config_snapshot(settings):
         'image_provider':'local_fake', 'image_model':'fake-canvas-v1',
         'caption_provider':'local_fake', 'caption_model':'fake-sentence-v1',
         'prompt_version':'local-fake-v1', 'target_ratio':'3:4',
+        'image_policy':'landscape_only_v1', 'result_policy':'reuse_normalized_v1',
         'normalized_webp_lossless':settings.normalized_webp_lossless,
         'normalized_webp_quality':settings.normalized_webp_quality,
         'normalized_max_edge':settings.normalized_max_edge, 'normalized_max_bytes':settings.normalized_max_bytes,
-        'result_webp_quality':settings.result_webp_quality, 'thumbnail_webp_quality':settings.thumbnail_webp_quality,
+        'result_webp_quality':85, 'thumbnail_webp_quality':settings.thumbnail_webp_quality,
         'thumbnail_max_edge':settings.thumbnail_max_edge,
         'max_attempts':3, 'attempt_budget':450, 'budget_scope':'local_test_bound', 'estimated_cost':0,
         'retry_backoff_seconds':[5,20], 'retry_jitter':True, 'sdk_max_retries':0,
-        'image_concurrency':2, 'caption_concurrency':4, 'media_concurrency':1,
+        'image_concurrency':GLOBAL_STAGE_LIMITS['image_transform'], 'caption_concurrency':4, 'media_concurrency':1,
         'image_timeout_seconds':300, 'caption_timeout_seconds':60,
         'lease_seconds':90, 'heartbeat_seconds':15,
     }
@@ -109,10 +112,14 @@ async def create_generation(session, owner_id, album_id, expected_version, key, 
     for p in pages:
         upload, normalized = uploads.get(p.id), assets.get(p.normalized_asset_id)
         source = sources.get(p.source_asset_id)
+        from backend.generation.output_policy import ready_asset
+        thumbnail = assets.get(p.thumbnail_asset_id)
         if (upload is None or upload.status != 'ready' or upload.album_id != album_id
                 or upload.asset_id != p.source_asset_id or source is None or source.page_id != p.id
                 or normalized is None or normalized.role != 'normalized' or normalized.page_id != p.id
-                or normalized.mime != 'image/webp' or not normalized.sha256
+                or not ready_asset(normalized, album, p, 'normalized', ratio=False)
+                or not ready_asset(thumbnail, album, p, 'thumbnail', ratio=False)
+                or thumbnail.storage_key != storage_key(owner_id,album_id,p.id,'thumbnail')
                 or upload.declared_bytes is None or upload.declared_bytes <= 0 or p.input_is_3_4 is None):
             not_ready.append(str(p.id))
     if not_ready:
@@ -132,15 +139,26 @@ async def create_generation(session, owner_id, album_id, expected_version, key, 
         raise APIError(409, 'STATE_CONFLICT')
     await check_concurrency(session, owner_id)
     require_local_ai(settings)
-    snapshot = [{'page_id':str(p.id), 'position':p.position, 'normalized_asset_id':str(p.normalized_asset_id),
-        'sha256':assets[p.normalized_asset_id].sha256, 'input_is_3_4':p.input_is_3_4} for p in pages]
+    snapshot = []
+    for p in pages:
+        normalized = assets[p.normalized_asset_id]
+        has_original = p.input_width is not None and p.input_height is not None and p.input_width > 0 and p.input_height > 0
+        width, height = (p.input_width, p.input_height) if has_original else (normalized.width, normalized.height)
+        snapshot.append({'page_id':str(p.id), 'position':p.position, 'normalized_asset_id':str(normalized.id),
+            'sha256':normalized.sha256, 'input_is_3_4':p.input_is_3_4,
+            'input_width':width, 'input_height':height, 'input_is_landscape':width > height,
+            'orientation_source':'original_dimensions' if has_original else 'legacy_normalized',
+            'thumbnail_asset_id':str(p.thumbnail_asset_id), 'thumbnail_sha256':assets[p.thumbnail_asset_id].sha256})
     run = Run(album_id=album_id, status='queued', input_version=album.version,
               input_snapshot=snapshot, config_snapshot=config_snapshot(settings))
     session.add(run); await session.flush()
     tasks=[]
-    for p in pages:
+    for p, item in zip(pages, snapshot):
+        skip_image = not item['input_is_landscape']
+        if skip_image:
+            p.result_asset_id = p.normalized_asset_id
         for stage in ('caption','image_transform','optimize'):
-            passthrough = stage == 'image_transform' and p.input_is_3_4
+            passthrough = stage in {'image_transform', 'optimize'} and skip_image
             task = Task(run_id=run.id, page_id=p.id, stage=stage,
                 status='succeeded' if passthrough else 'queued',
                 completion_kind='passthrough' if passthrough else None,

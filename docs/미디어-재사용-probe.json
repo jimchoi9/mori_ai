@@ -1,0 +1,416 @@
+{
+  "python": "3.12.14",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "pillow": "12.3.0",
+  "libwebp": "1.6.0",
+  "cases": [
+    {
+      "case": "rgb_lossy/clean",
+      "bytes": 19356,
+      "outer_valid": true,
+      "chunks": [
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgb_lossy/after_riff",
+      "bytes": 19405,
+      "outer_valid": false,
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossy/unknown_chunk",
+      "bytes": 19414,
+      "outer_valid": true,
+      "chunks": [
+        "VP8 ",
+        "JUNK"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossy/inside_VP8",
+      "bytes": 19406,
+      "outer_valid": true,
+      "chunks": [
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossy/truncated",
+      "bytes": 19349,
+      "outer_valid": false,
+      "decoded": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgb_lossy/duplicate_image",
+      "bytes": 38700,
+      "outer_valid": true,
+      "chunks": [
+        "VP8 ",
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgb_lossless/clean",
+      "bytes": 130,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "01800a44e4595517d80ca9cd60e014ede92b13ece0fb16d5d079723f2afd411b",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgb_lossless/after_riff",
+      "bytes": 179,
+      "outer_valid": false,
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "01800a44e4595517d80ca9cd60e014ede92b13ece0fb16d5d079723f2afd411b",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossless/unknown_chunk",
+      "bytes": 188,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L",
+        "JUNK"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "01800a44e4595517d80ca9cd60e014ede92b13ece0fb16d5d079723f2afd411b",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossless/inside_VP8L",
+      "bytes": 178,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "01800a44e4595517d80ca9cd60e014ede92b13ece0fb16d5d079723f2afd411b",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgb_lossless/truncated",
+      "bytes": 123,
+      "outer_valid": false,
+      "decoded": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgb_lossless/duplicate_image",
+      "bytes": 248,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L",
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "01800a44e4595517d80ca9cd60e014ede92b13ece0fb16d5d079723f2afd411b",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossy/clean",
+      "bytes": 20132,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9f5be8037205c258eebcfdfc38df096765086ff94f466d26798ccc6ea5db1627",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossy/after_riff",
+      "bytes": 20181,
+      "outer_valid": false,
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9f5be8037205c258eebcfdfc38df096765086ff94f466d26798ccc6ea5db1627",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossy/unknown_chunk",
+      "bytes": 20190,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 ",
+        "JUNK"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9f5be8037205c258eebcfdfc38df096765086ff94f466d26798ccc6ea5db1627",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossy/inside_ALPH",
+      "bytes": 20182,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9f5be8037205c258eebcfdfc38df096765086ff94f466d26798ccc6ea5db1627",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossy/inside_VP8",
+      "bytes": 20182,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9f5be8037205c258eebcfdfc38df096765086ff94f466d26798ccc6ea5db1627",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossy/truncated",
+      "bytes": 20125,
+      "outer_valid": false,
+      "decoded": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossy/duplicate_image",
+      "bytes": 40194,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 ",
+        "VP8 "
+      ],
+      "decoded": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossless/clean",
+      "bytes": 156,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9d9015e61963a2f977527e195800cfe16056d85a2f2d62ed7e9461f6cc2df958",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossless/after_riff",
+      "bytes": 205,
+      "outer_valid": false,
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9d9015e61963a2f977527e195800cfe16056d85a2f2d62ed7e9461f6cc2df958",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossless/unknown_chunk",
+      "bytes": 214,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L",
+        "JUNK"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9d9015e61963a2f977527e195800cfe16056d85a2f2d62ed7e9461f6cc2df958",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossless/inside_VP8L",
+      "bytes": 206,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9d9015e61963a2f977527e195800cfe16056d85a2f2d62ed7e9461f6cc2df958",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "rgba_lossless/truncated",
+      "bytes": 149,
+      "outer_valid": false,
+      "decoded": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "rgba_lossless/duplicate_image",
+      "bytes": 300,
+      "outer_valid": true,
+      "chunks": [
+        "VP8L",
+        "VP8L"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "9d9015e61963a2f977527e195800cfe16056d85a2f2d62ed7e9461f6cc2df958",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": false
+    },
+    {
+      "case": "metadata/exif",
+      "bytes": 19432,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "VP8 ",
+        "EXIF"
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "metadata/xmp",
+      "bytes": 19432,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "VP8 ",
+        "XMP "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "metadata/icc",
+      "bytes": 19432,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ICCP",
+        "VP8 "
+      ],
+      "decoded": true,
+      "same_pixels": true,
+      "pixel_sha256": "3f2f6be9b5543bee48c863f30b517e0c129fb85f0c888c1d1c0e1492a2bd2f41",
+      "marker_after_pixel_reencode": false,
+      "marker_in_input": true
+    },
+    {
+      "case": "animated",
+      "bytes": 544,
+      "outer_valid": true,
+      "chunks": [
+        "VP8X",
+        "ANIM",
+        "ANMF",
+        "ANMF"
+      ],
+      "decoded": false,
+      "marker_in_input": false
+    }
+  ],
+  "thumbnail_comparison": {
+    "same": {
+      "backgrounds": [
+        {
+          "mae": 0.058159722222222224,
+          "p99": 1
+        },
+        {
+          "mae": 0.058159722222222224,
+          "p99": 1
+        }
+      ],
+      "alpha_mae": 0.0,
+      "accepted": true
+    },
+    "local_edit": {
+      "backgrounds": [
+        {
+          "mae": 0.15201822916666666,
+          "p99": 2
+        },
+        {
+          "mae": 0.15201822916666666,
+          "p99": 2
+        }
+      ],
+      "alpha_mae": 0.0,
+      "accepted": true
+    },
+    "different": {
+      "backgrounds": [
+        {
+          "mae": 135.95203993055554,
+          "p99": 209
+        },
+        {
+          "mae": 135.95203993055554,
+          "p99": 209
+        }
+      ],
+      "alpha_mae": 0.0,
+      "accepted": false
+    }
+  },
+  "seconds": 1.4045319999986532,
+  "scope": "Synthetic local research; no production reuse path; no Linux memory validation"
+}

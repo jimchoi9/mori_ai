@@ -6,22 +6,18 @@ from backend.http.errors import APIError
 from backend.storage.local import canonical_asset_keys
 
 
-def ready_asset(asset,album,page,role):
-    return (asset is not None and asset.owner_id==album.owner_id and asset.album_id==album.id and asset.page_id==page.id
-        and asset.role==role and asset.status=='ready' and asset.deleted_at is None and asset.mime=='image/webp'
-        and asset.width is not None and asset.height is not None and asset.width>0 and asset.width*4==asset.height*3
-        and asset.sha256 is not None and asset.bytes is not None and asset.bytes>0
-        and asset.storage_key in canonical_asset_keys(album.owner_id,album.id,page.id,role))
+from backend.generation.output_policy import ready_asset, output_run, validate_page_outputs
 
 
 async def ready_pages(session,album):
     pages=await repo.album_pages(session,album.id)
     assets={a.id:a for a in await repo.ready_assets(session,album.id)}
     if not pages:raise APIError(409,'STATE_CONFLICT')
+    run=await output_run(session,album)
     rows=[]
     for index,page in enumerate(pages,1):
         result=assets.get(page.result_asset_id);thumb=assets.get(page.thumbnail_asset_id)
-        if (page.position!=index or not ready_asset(result,album,page,'result') or not ready_asset(thumb,album,page,'thumbnail')
+        if (page.position!=index or not await validate_page_outputs(session,album,page,run)
             or not isinstance(page.ai_caption,str) or not page.ai_caption.strip() or not isinstance(page.caption_text,str)):
             raise APIError(409,'STATE_CONFLICT','모든 사진의 결과가 준비되어야 합니다.')
         rows.append((page,result))

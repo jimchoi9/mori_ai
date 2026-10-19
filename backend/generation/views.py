@@ -4,6 +4,7 @@ from backend.albums import repository as albums
 from backend.http.errors import APIError
 from backend.models import Run, Task, Page
 from backend.generation.service import eligible_for_run
+from backend.generation.output_policy import valid_output_pair
 
 STAGES = ('caption','image_transform','optimize')
 
@@ -34,8 +35,7 @@ async def generation_view(session, owner_id, album_id, run_id=None):
         thumb=assets.get(page.thumbnail_asset_id) if page else None
         complete=(all(stage in stages and stages[stage].status == 'succeeded' for stage in STAGES)
             and page is not None and page.ai_caption is not None and bool(page.ai_caption.strip()) and page.caption_text is not None
-            and result is not None and result.role == 'result' and result.page_id == page.id
-            and thumb is not None and thumb.role == 'thumbnail' and thumb.page_id == page.id)
+            and valid_output_pair(album,page,run,result,thumb))
         bucket=('completed_pages' if complete else 'unknown_pages' if any(t.status=='unknown' for t in stages.values())
                 else 'failed_pages' if any(t.status=='failed' for t in stages.values()) else 'pending_pages')
         counts[bucket]+=1

@@ -7,7 +7,7 @@ import tempfile
 
 MAX_BYTES = 20971520
 UUID_PART = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-KEY = re.compile(rf'{UUID_PART}/{UUID_PART}/{UUID_PART}/(source|normalized|thumbnail|result|transform_output|result_thumbnail)\Z')
+KEY = re.compile(rf'{UUID_PART}/{UUID_PART}/{UUID_PART}/(source|normalized|thumbnail|result|transform_output|result_thumbnail|upload_thumbnail)\Z')
 
 
 class LocalStorage:
@@ -119,7 +119,7 @@ def storage_key(owner,album,page,role):
 
 
 def canonical_asset_keys(owner,album,page,role):
-    if role not in {'source','normalized','thumbnail','result','transform_output'}:
+    if role not in {'source','normalized','thumbnail','result','transform_output','upload_thumbnail'}:
         return ()
     keys=(storage_key(owner,album,page,role),)
     return keys+(storage_key(owner,album,page,'result_thumbnail'),) if role=='thumbnail' else keys

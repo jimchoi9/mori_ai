@@ -1,6 +1,6 @@
 import type {UploadPreprocessing} from '../../api/types';
 
-export interface PreparedFile { file:File; preprocessing?:UploadPreprocessing }
+export interface PreparedFile { file:File; thumbnail?:File; preprocessing?:UploadPreprocessing }
 interface ImageInfo { width:number; height:number; orientation:number; date:string|null; timezone:string|null; omit:[number,number][] }
 const ascii=(b:Uint8Array)=>String.fromCharCode(...b);
 // Parsing is deliberately conservative. Unrecognized color/HDR metadata stays on the
@@ -37,7 +37,7 @@ function exif(bytes:Uint8Array, info:ImageInfo) {
  }
  ifd(u32(4));
 }
-export function inspectImage(bytes:Uint8Array,mime:string):ImageInfo|null {
+export function inspectImage(bytes:Uint8Array,mime:string,maxPixels=12_000_000):ImageInfo|null {
  try {
   const info:ImageInfo={width:0,height:0,orientation:1,date:null,timezone:null,omit:[]};
   const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let hasExif=false;
@@ -85,12 +85,17 @@ export function inspectImage(bytes:Uint8Array,mime:string):ImageInfo|null {
    }
    if(!ihdr || !idat || !end)return null;
   } else return null;
-  if(!info.width || !info.height || info.width*info.height>12_000_000)return null;
+  if(!info.width || !info.height || info.width*info.height>maxPixels)return null;
   return info;
  } catch {return null;}
 }
-export function resizeDimensions(width:number,height:number):[number,number] {
- const scale=Math.min(1,4096/Math.max(width,height));
+export function resizeDimensions(width:number,height:number,maxEdge=2048):[number,number] {
+ // Exact portrait hints require exact 3:4 pixels, including intermediate retries.
+ if(width*4===height*3) {
+  const unit=Math.min(width/3,Math.floor(maxEdge/4));
+  if(unit>=1)return [unit*3,unit*4];
+ }
+ const scale=Math.min(1,maxEdge/Math.max(width,height));
  return [Math.max(1,Math.round(width*scale)),Math.max(1,Math.round(height*scale))];
 }
 async function prepare(file:File,signal:AbortSignal):Promise<PreparedFile> {
@@ -106,21 +111,39 @@ async function prepare(file:File,signal:AbortSignal):Promise<PreparedFile> {
   for(const [from,to] of info.omit){pieces.push(file.slice(start,from));start=to;}pieces.push(file.slice(start));
   bitmap=await createImageBitmap(new Blob(pieces,{type:file.type}));signal.throwIfAborted();
   if(bitmap.width!==info.width || bitmap.height!==info.height)return original;
-  const rotated=info.orientation>=5;
+  const orientation=info.orientation;
+  const rotated=orientation>=5;
   const originalWidth=rotated?info.height:info.width,originalHeight=rotated?info.width:info.height;
-  const [width,height]=resizeDimensions(originalWidth,originalHeight);
-  canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-  const ctx=canvas.getContext('2d');if(!ctx)return original;
+  let edge=Math.min(2048,Math.max(originalWidth,originalHeight));
+  const minimum=Math.min(1024,edge);
+  async function encode(maxEdge:number,quality:number):Promise<Blob|null> {
+  signal.throwIfAborted();
+  const [width,height]=resizeDimensions(originalWidth,originalHeight,maxEdge);
+  canvas ??=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext('2d');if(!ctx)return null;
   const matrices:number[][]=[[1,0,0,1,0,0],[-1,0,0,1,width,0],[-1,0,0,-1,width,height],[1,0,0,-1,0,height],
    [0,1,1,0,0,0],[0,1,-1,0,width,0],[0,-1,-1,0,width,height],[0,-1,1,0,0,height]];
-  const m=matrices[info.orientation-1];ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);
-  ctx.drawImage(bitmap,0,0,rotated?height:width,rotated?width:height);
-  const blob=await new Promise<Blob|null>(resolve=>canvas!.toBlob(resolve,'image/webp',.9));signal.throwIfAborted();
-  if(!blob || blob.type!=='image/webp' || !blob.size || blob.size>=file.size)return original;
+  const m=matrices[orientation-1];ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);
+  ctx.drawImage(bitmap!,0,0,rotated?height:width,rotated?width:height);
+  const blob=await new Promise<Blob|null>(resolve=>canvas!.toBlob(resolve,'image/webp',quality));signal.throwIfAborted();
+  if(!blob || blob.type!=='image/webp' || !blob.size)return null;
   const header=new Uint8Array(await blob.slice(0,12).arrayBuffer());signal.throwIfAborted();
-  if(ascii(header.subarray(0,4))!=='RIFF' || ascii(header.subarray(8,12))!=='WEBP')return original;
-  return {file:new File([blob],file.name.replace(/\.[^.]*$/,'')+'.webp',{type:'image/webp',lastModified:file.lastModified}),
-   preprocessing:{version:1,original_width:originalWidth,original_height:originalHeight,captured_at_raw:info.date,captured_timezone:info.timezone}};
+  if(ascii(header.subarray(0,4))!=='RIFF' || ascii(header.subarray(8,12))!=='WEBP')return null;
+  return blob;
+  }
+  let body=await encode(edge,.85);
+  while(body && body.size>1_000_000 && edge>minimum) {
+   edge=Math.max(minimum,Math.floor(edge*.8));body=await encode(edge,.85);
+  }
+  if(!body || body.size>1_000_000)return original;
+  // Release the body surface before allocating the thumbnail; both use the one bitmap.
+  if(canvas){canvas.width=0;canvas.height=0;canvas=undefined;}
+  const candidate=await encode(480,.8);
+  const thumbnail=candidate && candidate.size<=200_000?candidate:null;
+  if(body.size+(thumbnail?.size??0)>=file.size)return original;
+  const makeFile=(blob:Blob,suffix:string)=>new File([blob],file.name.replace(/\.[^.]*$/,'')+suffix+'.webp',{type:'image/webp',lastModified:file.lastModified});
+  return {file:makeFile(body,''),...(thumbnail?{thumbnail:makeFile(thumbnail,'.thumb')}:{ }),
+   preprocessing:{version:2,original_width:originalWidth,original_height:originalHeight,captured_at_raw:info.date,captured_timezone:info.timezone}};
  } catch {signal.throwIfAborted();return original;}
  finally {bitmap?.close();if(canvas){canvas.width=0;canvas.height=0;}}
 }
