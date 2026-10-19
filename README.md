@@ -1,86 +1,200 @@
-# Mori AI 사진첩
+# Mori AI — 사진을 추억의 책으로
 
-사진을 올리면 AI가 세로 3:4 이미지와 한 문장 글귀를 만들고, 사용자가 글귀를 수정해 모바일 사진첩으로 감상하는 서비스다. Google/Kakao 로그인, JPEG·PNG·WebP·HEIF/HEIC 업로드, WebP 정규화, 책장·글귀 수정·소유자 뷰어와 배경음악을 포함한다.
+Mori AI는 사진에 AI가 만든 한 문장 글귀를 더해 모바일 사진첩으로 감상하는 서비스입니다. 사용자가 고른 사진의 순서를 유지하고, 사진마다 한 페이지를 구성합니다. 생성된 글귀를 직접 다듬어 나만의 사진첩을 완성할 수 있습니다.
 
-## 현재 상태 — 2026-10-17
+Google·Kakao 로그인부터 사진 업로드, AI 생성, 글귀 편집, 책장과 뷰어까지 연결했습니다. 사진 한 장으로 굿즈 시안을 만들고 수정·저장하는 확장 기능도 구현했습니다.
 
-- Google/Kakao 실제 로그인, R2 실제 업로드·읽기, OpenAI 글귀·이미지 생성이 연결됐다. 사용자가 모바일 기본 흐름, 사진 품질과 최근 성능 개선 결과를 확인했다.
-- 정확한 세로 3:4 사진은 이미지 AI를 생략한다. 글귀는 설정 가능한 `gpt-5.4-mini`, 이미지는 `gpt-image-2`를 사용한다. 새 글귀는 담백한 회상형 `openai-memory-v3`; 기존 run은 생성 당시 프롬프트를 유지한다.
-- 생성 동시 실행은 DB 전역 글귀 4·이미지 2·최적화 1, 업로드 검증은 worker 프로세스당 1이다. 실제 병렬화·중복 다운로드 제거·구간 로그를 반영했다. 업로드 완료 확인만 최대 180초, 일반 API는 30초를 기다린다.
-- 승인된 UI 커밋 `a6e601b`를 총괄 `feat/development-foundation`에 통합했다. 통합·회귀 검증 근거는 [UI 통합 검증](docs/UI-통합검증.md)을 따른다.
-- BGM은 `assets/audio/bgm.mp3`를 제공하며 버튼으로 시작·반복 재생한다. 뷰어 이탈·백그라운드 전환 시 정지하고 복귀해도 자동 재생하지 않는다.
-- 외부 배포는 아직 수행하지 않았다. 실제 모바일 네트워크 중단·복귀, 장시간 외부 서비스 부하, 배포 환경 메모리 검증이 남아 있다. HDR/10bit 입력은 지원하지 않으며 고밀도 40MP 사진 일부는 이미지 처리 메모리 한도에서 거절된다.
+> **2026-10-19 기준:** Lightsail 서비스의 실제 연동·모바일 접속은 사용자 확인을 마쳤습니다. 이후 굿즈 및 최신 미디어 개선은 로컬 구현·검증 결과이며, 운영 배포 완료를 의미하지 않습니다.
 
-## 굿즈 확장 — 2026-10-18
+## 주요 기능
 
-사진 1장 기반 시안 생성·수정·선택, 이탈 폐기, 완성 저장·내 디자인·앨범 연결을 구현했다. 굿즈 기본 모델은 `gpt-image-2.5-sunburst`이며 `GOODS_IMAGE_MODEL`로 교체한다. 사진첩 모델은 유지한다. API는 [굿즈 계약](docs/굿즈-공통계약-v1.md), 실제 호출·비용·UI 검증은 [검증 기록](docs/굿즈-실제연동-검증.md)을 따른다.
-
-이번 굿즈 변경의 운영 배포·migration은 아직 수행하지 않았다. 제작 주문·PDF·메일은 후속 범위다. 별도 로컬 주소 18183의 새 앨범 직접 업로드 CORS는 사용자 결정으로 재검증을 보류했으며, 배포 후 사진 1장 업로드로 확인한다. 서버 경유 R2 검증과 브라우저 CORS 검증을 구분한다.
-
-## 문서 진입점
-
-| 문서 | 내용 |
+| 기능 | 내용 |
 |---|---|
-| [기능요구명세서](기능요구명세서.md) | 초기 기능·제외 범위·사용자 테스트와 제출 조건 |
-| [공통계약](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류 기준 |
-| [설계](docs/설계.md) | 화면·구조·worker·복구·배포 설계 |
-| [재사용 조사](docs/재사용조사.md) | 기존 moriai에서 참고한 모듈과 출처 |
-| [검증 계획](docs/검증계획.md) | 인수 기준·실행 결과·남은 확인 |
-| [개발 운영](docs/개발운영.md) · [AGENTS.md](AGENTS.md) | 편집 소유권·환경 격리·Orca 협업 규칙 |
+| 로그인과 개인 책장 | Google·Kakao 로그인, 내 사진첩 조회·생성·삭제, 소유자 접근 제어 |
+| 사진 업로드 | JPEG·PNG·WebP·HEIF/HEIC 지원, 순서 지정, 방향·촬영일 처리, 서버 검증 |
+| AI 이미지 처리 | 신규 작업은 가로 사진을 세로 3:4로 변환하고, 세로·정사각형 사진은 정규화 이미지를 사용 |
+| AI 글귀 | 사진의 시각적 단서를 바탕으로 담백한 회상형 한 문장 생성, 사용자 수정 |
+| 모바일 뷰어 | 완성된 사진첩 감상, 배경음악 시작·반복 재생. 화면 이탈·백그라운드 전환 시 정지 |
+| 굿즈 디자인 | 사진 한 장으로 시안 생성·수정·선택, 완성 저장, 내 디자인 조회와 앨범 연결 |
 
-최근 검증 근거: [실제 OAuth](docs/실제OAuth-검증결과.md), [R2](docs/R2-통합검증.md), [실제 AI·비용](docs/실제-AI-검증.md), [성능·업로드 시간 초과](docs/성능-검증결과.md), [병렬 안정성](docs/병렬처리-안정성-검증.md), [BGM](docs/BGM-구현검증.md). 오래된 문서의 ‘미구현/검증 전’ 문장은 당시 이력이며 최신 결과가 우선한다. [문서 이력](docs/archive/2026-10-16/README.md)과 초기 구현 계획은 보존한다.
+일반 공유, 결제, TTS·영상은 현재 범위에 포함하지 않습니다. 굿즈 제작 주문·PDF·메일도 후속 범위입니다.
 
-## 새 로컬 환경 실행
+## 팀원 및 역할
 
-Docker Desktop을 실행하고 다음 절차를 따른다. 기존 `.env`가 있으면 덮어쓰지 않는다.
+팀원 실명과 개인별 기여 정보는 저장소에 확정되어 있지 않아, 개발 기록의 역할을 기준으로 정리했습니다. 아래는 인원 명단이 아니며, Codex·Orca를 활용한 작업 배정과 통합 방식은 [개발 운영 문서](docs/개발운영.md)에 기록합니다.
+
+| 역할 | 담당 업무 |
+|---|---|
+| 총괄·통합 | 요구사항·공통 계약 관리, 작업 분해·배정, 변경 검토와 통합 |
+| 프론트엔드 | 책장·업로드·글귀 편집·뷰어·굿즈 화면, 브라우저 전처리 |
+| 백엔드 | 인증·동의·소유권, HTTP API, DB와 상태 전이 |
+| 미디어 | HEIF/HEIC 처리, 방향·색상 보정, WebP 정규화·썸네일·저장소 |
+| AI·worker | OpenAI 연동, 생성 스케줄링, 동시성·재시도·실패 복구·비용 관리 |
+| 검토·검증 | 계약·회귀·격리 검사, 브라우저 흐름과 성능·메모리 검증 |
+
+## 기술 스택
+
+저장소의 의존성·실행 설정 기준입니다. 정확한 패키지 버전은 [백엔드 lock](backend/requirements.lock)과 [프론트엔드 lock](frontend/package-lock.json)을 따릅니다.
+
+| 영역 | 기술 |
+|---|---|
+| Frontend | React 19, TypeScript 5.9, Vite 7, React Router 7, TanStack Query 5 |
+| Backend | Python 3.12, FastAPI, Pydantic 2, Uvicorn |
+| Database | PostgreSQL 17, SQLAlchemy 2, asyncpg, Alembic |
+| AI | OpenAI Python SDK, 글귀 `gpt-5.4-mini`, 사진첩 이미지 `gpt-image-2`, 굿즈 `gpt-image-2.5-sunburst` |
+| Media | Pillow, pillow-heif, WebP, 브라우저 Canvas |
+| Storage·Auth | Cloudflare R2(S3 호환·boto3), Google·Kakao OAuth |
+| Infra | Docker Compose, AWS Lightsail, Caddy(HTTPS), Node.js 24 빌드 환경 |
+| 검증·개발 도구 | pytest, 프론트엔드 테스트, Chromium 브라우저 검사, Codex·Orca |
+
+모델명은 현재 프로젝트 기본 설정값이며 환경변수로 교체할 수 있습니다. 모델·프롬프트·처리 정책은 생성 작업 시작 시 고정해 진행 중인 작업의 동작을 보존합니다.
+
+## 시스템 구조와 AI 활용
+
+```mermaid
+flowchart LR
+    User[사용자 브라우저] --> Web[React 정적 파일 + FastAPI]
+    User -->|서명 URL 업로드| R2[Cloudflare R2]
+    Web <-->|로그인| OAuth[Google / Kakao]
+    Web --> DB[(PostgreSQL)]
+    Worker[Python worker] <--> DB
+    Worker <--> R2
+    Worker --> AI[OpenAI API]
+    Web -->|미디어 접근| R2
+```
+
+운영 환경에서는 Caddy가 HTTPS 요청을 web 서비스로 전달합니다. FastAPI가 React 빌드와 `/api/v1`을 같은 origin에서 제공하며, 별도 worker가 DB에 저장된 작업을 가져와 검증·생성을 처리합니다. Redis·Celery 없이 PostgreSQL 기반 작업 점유와 상태 관리로 구성했습니다.
+
+### 사진에서 사진첩까지
+
+1. **업로드·전처리:** 브라우저에서 지원 가능한 사진을 축소하고 본문·썸네일을 준비합니다. HEIC 등은 서버 처리로 전환하며, 서버가 파일 형식·크기·방향을 검증합니다.
+2. **정규화:** 신규 예약은 긴 변 2,048px·WebP 품질 85·최대 1,000,000bytes를 기본값으로 고정합니다. 조건에 맞는 전처리 결과는 재사용하며, 복잡한 사진은 용량 상한에 맞춰 더 작게 축소될 수 있습니다.
+3. **이미지·글귀 생성:** 새 작업은 가로 사진에만 이미지 AI를 호출합니다. 글귀는 AI 변환 결과가 아닌 정규화된 업로드 사진을 보고 생성합니다. 회상형 프롬프트 `openai-memory-v3`는 사진에 없는 관계·장소·사연을 지어내지 않도록 설계했습니다.
+4. **편집·완성:** 사용자가 글귀를 수정한 뒤 사진첩을 완성하고 책장·모바일 뷰어에서 감상합니다.
+
+새 작업은 이미지 4·글귀 4·최적화 1의 동시 처리 한도를 사용합니다. 이미지 전역 한도는 사진첩과 굿즈가 공유하며, 기존 작업의 이미지 한도 2와 이전 정책은 유지합니다. 업로드 검증은 worker 프로세스당 1개입니다.
+
+AI 호출 전 비용을 예약하고 결과를 원장에 기록합니다. 전송 결과가 불명확한 호출은 자동 재호출하지 않으며, SDK 자동 재시도도 비활성화했습니다. 이 서비스의 AI는 이미지 변환·글귀·굿즈 생성에 사용하며, RAG·벡터 DB·대화형 장기 기억은 구현하지 않았습니다.
+
+## 실행 방법
+
+### 1. 새 로컬 환경 준비
+
+Docker Desktop 또는 Docker Engine과 Compose, `make`가 필요합니다. Python·Node.js는 Docker 빌드 안에서 준비합니다.
+
+저장소 루트에서 **기존 `.env`가 없는 경우에만** 예시를 복사합니다.
 
 ```sh
 cp .env.example .env
-# POSTGRES_PASSWORD를 새 로컬 전용 값으로 지정하고 사용할 adapter 설정을 채운다.
-# 다른 checkout과 COMPOSE_PROJECT_NAME·WEB_PORT를 다르게 지정한다.
+```
+
+`.env`에서 아래 값을 설정하면 외부 계정 없이 개발 로그인·가짜 AI·로컬 저장소로 실행할 수 있습니다. 가짜 AI는 고정 글귀와 테스트 이미지를 사용합니다.
+
+```dotenv
+COMPOSE_PROJECT_NAME=mori_ai_local
+POSTGRES_PASSWORD=replace_with_your_local_password
+WEB_PORT=18000
+APP_ORIGIN=http://127.0.0.1:18000
+APP_ENV=local
+DEV_AUTH_ENABLED=true
+SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true
+DEV_AI_ENABLED=true
+AI_REAL_CALLS_ENABLED=false
+STORAGE_MODE=local
+```
+
+비밀번호는 새 로컬 전용 값으로 바꾸며 영문·숫자·밑줄·하이픈을 사용합니다. 다른 환경과 Compose 프로젝트명·포트가 겹치지 않게 지정합니다.
+
+### 2. 시작과 종료
+
+```sh
 make up
+# 브라우저에서 http://127.0.0.1:18000 접속
+
 make down
 ```
 
-`make up`은 이미지 빌드와 migration 후 web·worker를 시작한다. `make down`은 DB·media volume을 보존한다. 기존 moriai의 운영 DB·계정·사진을 복사하거나 연결하지 않는다.
+`make up`은 이미지 빌드, PostgreSQL 준비, Alembic migration을 거쳐 web·worker를 시작합니다. `make down`은 DB·미디어 volume을 보존합니다. BGM은 `assets/audio/bgm.mp3`를 이미지에 포함해 `/audio/bgm.mp3`로 제공합니다.
 
-- 개발 로그인: 새 로컬 환경에서 `APP_ENV=local`, `DEV_AUTH_ENABLED=true`, `SESSION_COOKIE_ALLOW_INSECURE_LOCAL=true`, `APP_ORIGIN=http://127.0.0.1:<WEB_PORT>`. 운영에서는 개발 로그인과 insecure cookie를 허용하지 않는다.
-- 가짜 AI: 로컬에서만 `DEV_AI_ENABLED=true`. 실제 API와 비용이 없는 고정 글귀·테스트 canvas다.
-- 실제 연동: `.env.example`의 OAuth, R2, OpenAI 항목을 채우고 `STORAGE_MODE=r2`, `AI_REAL_CALLS_ENABLED=true`를 명시한다. SDK 호출은 누적 비용 장부·사전 예약·unknown 보수적 집계를 거친다. 사용자 승인 총 한도는 $100, 초기 운용 한도는 $5다. 한도는 소비 목표가 아니다.
-- 음원: 저장소의 `assets/audio/bgm.mp3`를 Docker 이미지에 포함한다. 임의 디렉터리를 공개하지 않고 `/audio/bgm.mp3`만 제공한다. 외부 음원 계정이나 환경변수는 필요 없다.
+### 3. 실제 외부 서비스 연결
 
-현재 테스트 서버는 `.env.qa`와 Compose project `mori-r2-qa`, `http://127.0.0.1:8000`을 사용한다. 기존 DB·OAuth origin을 보존하기 위해 이 환경을 다른 `.env`로 임의 재생성하지 않는다. 병렬 UI 세션은 별도 worktree·포트·DB를 사용한다. `.env*`와 키는 출력하거나 커밋하지 않는다.
+[환경변수 예시](.env.example)의 항목을 서비스 전용 값으로 채웁니다.
 
-OAuth 인증 code가 로그에 남지 않도록 Uvicorn은 `--no-access-log`로 실행한다. `mori.performance` 구조화 로그는 허용된 시간·단계·ID·오류 분류만 기록하며 사진·서명 URL·본문을 기록하지 않는다.
+| 연결 | 설정 |
+|---|---|
+| Google·Kakao | 각 Client ID·Secret·Redirect URI 설정. OAuth callback은 `APP_ORIGIN`과 같은 origin 사용 |
+| Cloudflare R2 | `STORAGE_MODE=r2`, bucket·endpoint·접근 키 설정, 브라우저 origin에 대한 bucket CORS 등록 |
+| OpenAI | `OPENAI_API_KEY` 설정, `DEV_AI_ENABLED=false`, `AI_REAL_CALLS_ENABLED=true` |
 
-## R2 설정과 검증
+실제 AI 호출에는 비용이 발생합니다. 현재 프로젝트의 승인 총 한도는 USD 100, 초기 운용 한도는 USD 5이며 소비 목표가 아닙니다. 누적 원장을 보존하고, 실제 사용 가능 한도와 모델 설정을 확인합니다. 키는 프론트엔드 환경변수나 Git에 넣지 않습니다.
 
-비공개 bucket의 로컬 CORS는 [JSON](docs/storage/r2-cors.local.json)을 사용한다. `http://127.0.0.1:8000`과 `localhost`는 다른 origin이다. 배포 주소나 별도 모바일 접속 주소에는 그 origin의 OAuth callback·R2 CORS 설정이 필요하다.
+R2 CORS 예시는 [로컬 설정 JSON](docs/storage/r2-cors.local.json)을 참고해 실제 origin에 맞춥니다. `localhost`와 `127.0.0.1`, 서로 다른 포트는 별개 origin입니다. 로컬 저장소를 사용하던 DB를 R2 모드로 바꾸는 자동 이관은 제공하지 않습니다.
 
-`make verify-storage`는 실제 R2의 고유 `mori-ai-storage-check/<UUID>/` 경로에서 합성 파일·hash·조건부 덮어쓰기 거부·서명·CORS·삭제 등을 검증하고 생성 객체를 정리한다. 실제 저장소 요청은 발생하지만 사용자 사진·AI는 사용하지 않는다. local 객체가 있는 DB를 그대로 R2 모드로 바꾸지 않는다.
+기존 QA는 `.env.qa`·Compose project `mori-r2-qa`·포트 8000을 사용합니다. 위 새 로컬 환경과 분리하고 QA의 DB·사진·OAuth 설정을 보존합니다. Lightsail 실행·HTTPS·승인 계정·백업 절차는 [배포 문서](docs/Lightsail-배포.md)를 따릅니다. 운영에서는 개발 로그인과 insecure cookie를 비활성화합니다.
 
-## 자동 검증
+## 구현 및 검증 결과
+
+아래는 **기존 검증 기록의 요약**입니다. 로컬 코드의 검사 결과, 실제 외부 연동, 사용자 확인을 구분했습니다.
+
+| 항목 | 확인한 결과 | 근거 |
+|---|---|---|
+| 실제 로그인·저장소·AI | Google·Kakao 로그인, R2 업로드·읽기, OpenAI 글귀·사진첩 이미지 생성 연결 | [OAuth](docs/실제OAuth-검증결과.md), [R2](docs/R2-통합검증.md), [AI·비용](docs/실제-AI-검증.md) |
+| 배포·모바일 접속 | 2026-10-18 사용자로부터 Lightsail 실제 연동·모바일 접속 성공 보고 | [배포 절차](docs/Lightsail-배포.md), [작업 기록](AGENTS.md) |
+| 굿즈 실제 생성 | 합성 사진으로 투명 배경 시안 생성·수정, R2 저장·재조회·소유권 검증 | [굿즈 실제 연동](docs/굿즈-실제연동-검증.md) |
+| 최신 기능 회귀 | backend 전체 967개 통과, frontend 132개 통과, TypeScript·Vite production build 성공. 추가 집중 검사는 중복 합산하지 않음 | [셋째 묶음 검증](docs/미디어-셋째묶음-검증.md) |
+| 전송·처리 개선 | 작업별 원본 다운로드 3회→1회, 전처리 본문·썸네일 조건부 재사용, 가로 전용 AI 적용 | [성능 검증](docs/성능-검증결과.md), [첫째](docs/미디어-첫묶음-검증.md)·[둘째 묶음](docs/미디어-둘째묶음-검증.md) |
+| 합성 화질·메모리 비교 | 12MP JPEG 출력 2,430,018B→604,338B. 2GiB 예산의 분할 컨테이너 검사에서 병렬 4의 유휴 RSS 증가 18.21%로 운영 권고 보류 | [최소 메모리 검증](docs/미디어-최소메모리검증.md) |
+
+메모리 비교는 모의 AI 응답을 사용하는 로컬 시험이며 실제 OpenAI 처리 속도나 운영 OS 전체의 메모리 수용을 보장하지 않습니다. 병렬 2·4 양쪽에서 검증 driver의 메모리 한도 접촉이 발생해 엄격 인수 기준은 미통과했습니다. 최신 구현의 기능 검사 통과를 운영 병렬 4의 안전성으로 해석하지 않습니다.
+
+### 검증 명령
 
 ```sh
-make verify-install       # 의존성·빌드·기본 테스트
+make verify-install       # 검증 이미지 빌드, 의존성·기본 테스트
 make verify-isolation     # 임시 Compose 환경 격리
-make verify-codecs
-make verify-db            # 전용 임시 PostgreSQL의 통합 검사
-make verify-worker
-make verify-media-load    # 기존 순차 미디어 부하 검사
+make verify-codecs        # 이미지 codec
+make verify-db            # 전용 임시 PostgreSQL 통합 검사
+make verify-worker        # worker 동작
+make verify-media-load    # 순차 미디어 부하 검사
 ```
 
-현재 검증 이미지는 `mori-ai:ai-tests`다. 이를 사용할 때는 `MORI_VERIFY_TEST_IMAGE=mori-ai:ai-tests`를 지정한다. 이미지가 없으면 먼저 설치 검증으로 검증 이미지를 빌드한다. 전체 backend 검증은 `bash scripts/verify-db.sh backend/tests`를 사용한다. 병렬 메모리·다중 프로세스 재현 명령은 [병렬 안정성 보고서](docs/병렬처리-안정성-검증.md)에 있다. 테스트용 DB는 QA DB와 분리되고 종료 시 자신의 임시 볼륨만 제거한다.
+전체 backend 검사는 설치 검증에서 만든 이미지를 지정해 실행할 수 있습니다.
 
-## 남은 작업
+```sh
+MORI_VERIFY_TEST_IMAGE=mori-ai:verify-tests bash scripts/verify-db.sh backend/tests
+```
 
-배포 선택(2026-10-17): 사용자 요청으로 Render 대신 Lightsail 단일 VPS `ai_mori`와 `https://aimori.kro.kr`을 사용한다. 운영용 파일과 단계별 실행·백업 절차는 [Lightsail 배포](docs/Lightsail-배포.md)를 따른다. 2026-10-18 사용자가 Lightsail 실제 연동·모바일 접속 성공을 보고했다. 2GB 장시간 부하와 백업 복구의 완료 보고는 별도로 확인한다.
+기존 `mori-ai:ai-tests` 이미지를 사용하는 경우 해당 이름으로 바꿉니다. 검사 DB는 QA와 분리하며 종료 시 자신의 임시 볼륨만 정리합니다. 실제 R2 검사인 `make verify-storage`는 전용 설정에서 합성 객체를 생성·검증·삭제하며 외부 저장소 요청이 발생합니다.
 
-1. 미디어 v1.6 변경 배포 후 실제 모바일 전처리·화질·중단·복귀 검증. 로컬 구현 및 합성40MP 근거는 [미디어 전처리 검증](docs/미디어-전처리-검증.md)을 따른다.
-2. 배포 후 개선 UI의 모바일 실기기·BGM 청취 확인.
-3. 운영 DB 백업 복구·비용/오류·장시간 부하 점검 및 미디어 업데이트 배포.
-4. 명세 기준 최소 5명 사용자 테스트와 피드백 반영·제출 자료 정리.
+### 남은 검증과 제한
 
-외부 배포와 운영 변경은 별도 승인 범위다. 공유·결제·TTS·영상 등 제외 기능을 남은 초기 구현으로 추가하지 않는다.
+- 최신 미디어·굿즈 변경의 운영 배포 및 배포 후 실제 사진 업로드·R2 CORS 확인. 별도 굿즈 로컬 origin 18183의 직접 업로드 CORS 재검증은 보류 상태입니다.
+- 실제 iPhone·WebKit, 모바일 전처리 화질·네트워크 중단/복귀·BGM 청취 확인.
+- 2GB 환경 장시간 부하, 반복 후 worker 잔류 메모리 분석, 검증 driver 메모리 압박 해소와 백업 복구.
+- HDR·10bit 입력은 미지원입니다. 고해상도 입력은 형식·메모리 제한에 따라 거절될 수 있습니다.
+- 실제 인물·반려동물의 굿즈 품질 확인, 명세 기준 최소 5명 사용자 테스트·피드백 반영과 제출 자료 정리.
 
-운영 비공개 테스트는 `ACCESS_MODE=approved_only`로 계정별 승인 후 업로드·AI 생성을 허용한다. 서버 승인/취소 명령과 전체 공개 전환은 [Lightsail 배포](docs/Lightsail-배포.md)의 테스트 계정 절차를 따른다. 기존 AI 비용 한도는 별도로 유지된다.
+## 문서와 코드 안내
+
+| 경로 | 내용 |
+|---|---|
+| `frontend/` | React 화면, API 클라이언트, 업로드 전처리와 테스트 |
+| `backend/` | HTTP API, 도메인·repository, AI·미디어 adapter, worker, migration·테스트 |
+| `scripts/` | 로컬 검증, 배포·백업 도구 |
+| `assets/audio/` | 뷰어 배경음악 |
+| `docs/` | 계약·설계·운영·검증 근거 |
+
+| 문서 | 내용 |
+|---|---|
+| [기능요구명세서](기능요구명세서.md) | 제품 목적·기능·제외 범위·사용자 테스트와 제출 조건 |
+| [공통계약 v1.11](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류·미디어 정책 |
+| [굿즈 계약](docs/굿즈-공통계약-v1.md) | 굿즈 생성·수정·저장과 앨범 연결 |
+| [설계](docs/설계.md) | 화면·시스템 구조·worker·복구 설계 |
+| [재사용 조사](docs/재사용조사.md) | 기존 moriai 참고·이식 코드의 출처와 채택 조건 |
+| [검증 계획](docs/검증계획.md) | 인수 기준과 남은 확인 항목 |
+| [개발 운영](docs/개발운영.md) · [AGENTS.md](AGENTS.md) | 역할·편집 소유권·환경 격리·협업 규칙 |
+| [UI 통합 검증](docs/UI-통합검증.md) · [BGM 검증](docs/BGM-구현검증.md) | 화면 통합 및 음악 재생 확인 |
+| [쌍 업로드 검증](docs/업로드-쌍-호환성-검증.md) · [미디어 전처리 검증](docs/미디어-전처리-검증.md) | 최신 미디어 개선의 선행 구현과 호환성 |
+| [문서 이력](docs/archive/2026-10-16/README.md) | 과거 설계·검토 기록 |
+
+과거 문서의 미구현 표기나 정책은 당시 이력입니다. 현재 계약과 최신 검증 결과를 우선하며, 이전 예약·생성 작업에는 저장된 설정을 유지합니다.
