@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     openai_image_model: str = "gpt-image-2"
     goods_image_model: str = "gpt-image-2.5-sunburst"
     goods_generation_limit: int | None = Field(default=None, ge=1)
+    goods_checkout_mode: Literal['disabled', 'test'] = 'disabled'
     ai_validation_budget_usd: Decimal = Field(default=Decimal('100'), gt=0, le=100, allow_inf_nan=False)
     ai_validation_initial_budget_usd: Decimal = Field(default=Decimal('5'), gt=0, le=100, allow_inf_nan=False)
 

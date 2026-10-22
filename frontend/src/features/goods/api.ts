@@ -1,7 +1,9 @@
 import {api,uploadHeaders,ApiError} from '../../api/client';
 import type {Placement} from './mockup/preview';
+import type {AlbumStatus} from '../../api/types';
 export interface GoodsRevision {id:string;request_key:string;parent_id:string|null;message:string;style:string;status:'queued'|'running'|'ready'|'failed'|'unknown'|'cancelled';image_url:string|null;error_code:string|null;fake:boolean}
-export interface GoodsDesign {id:string;fake:boolean;image_url:string;placement:Placement;album_id:string|null;version:number;production_started:boolean;created_at:string}
+export interface TestPurchase {id:string;mode:'test';status:'simulated';album_id:string;album_status:AlbumStatus}
+export interface GoodsDesign {id:string;fake:boolean;image_url:string;placement:Placement;album_id:string|null;version:number;production_started:boolean;created_at:string;test_purchase?:TestPurchase|null}
 const sourceMessages:Record<string,string>={
  IMAGE_SIZE_LIMIT_EXCEEDED:'사진 용량이 너무 큽니다. 20MiB 이하 사진을 선택해 주세요.',
  IMAGE_PIXEL_LIMIT_EXCEEDED:'사진 해상도가 너무 큽니다. 4,000만 화소 이하로 줄인 사진을 선택해 주세요.',

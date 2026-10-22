@@ -16,6 +16,7 @@ import type {GoodsRevision,GoodsDesign} from './api';
 import {abandon,uploadSource,loadSourcePreview} from './api';
 import {goodsSourceAccept,prepareGoodsSource} from './preprocess';
 import {discardMessage,replacePhoto,generationParent} from './workflow';
+import {TestCheckout} from './TestCheckout';
 import './goods.css';
 
 export function GoodsWorkspace({userId}:{userId:string}){
@@ -96,7 +97,7 @@ export function GoodsWorkspace({userId}:{userId:string}){
   catch(e){if(live.current&&epoch.current===token)setError(errorText(e));}finally{if(live.current&&epoch.current===token)setBusy(false);}
  }
  const ready=!!current?.image_url&&current.status==='ready'&&preview?.status==='ready'&&preview.key===previewKey({src,product:'keyring',placement});
- if(saved)return <section className="goods-workspace"><ScreenHeader title="디자인이 완성됐어요" subtitle="내 디자인에 저장했어요. 사진첩은 이어서 연결할 수 있어요."/><>{saved.fake&&<p className="notice">개발용 가짜 AI 결과입니다.</p>}</><GoodsMockup src={saved.image_url} product="keyring" placement={saved.placement}/><Link className="button-link" to={`/designs/${saved.id}`}>앨범 연결하기</Link><Link className="button-link" to="/designs">내 디자인</Link></section>;
+ if(saved)return <section className="goods-workspace"><ScreenHeader title="디자인이 완성됐어요" subtitle="내 디자인에 저장했어요."/><>{saved.fake&&<p className="notice">개발용 가짜 AI 결과입니다.</p>}</><GoodsMockup src={saved.image_url} product="keyring" placement={saved.placement}/><TestCheckout key={saved.id} design={saved} userId={userId}/><Link className="button-link" to={`/designs/${saved.id}`}>디자인 상세 보기</Link><Link className="button-link" to="/designs">내 디자인</Link></section>;
  return <section className="goods-workspace goods-designer">
   <div className="goods-step-label">0{step} / 03</div><ScreenHeader title={step===1?'모양을 골라 주세요':step===2?'시안을 함께 다듬어요':'고리를 달아 주세요'} subtitle="사진 한 장으로 만드는 나만의 작은 키링"/>
   {error&&<p role="alert">{error}</p>}{catalog.isError&&<button onClick={()=>void catalog.refetch()}>모양 목록 다시 불러오기</button>}

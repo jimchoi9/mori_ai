@@ -279,3 +279,14 @@ class GoodsDesign(Identity, Created, Base):
     album_id: Mapped[UUID|None]=mapped_column(ForeignKey('albums.id'))
     version: Mapped[int]=mapped_column(Integer,default=1)
     production_started_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
+
+
+class GoodsTestPurchase(Identity, Created, Base):
+    """A simulated checkout, never evidence of payment or a production order."""
+    __tablename__ = 'goods_test_purchases'
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), index=True)
+    design_id: Mapped[UUID] = mapped_column(ForeignKey('goods_designs.id'), unique=True)
+    album_id: Mapped[UUID] = mapped_column(ForeignKey('albums.id'), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default='simulated')
+    design_snapshot: Mapped[dict] = mapped_column(JSONB)
+    __table_args__ = (CheckConstraint("status = 'simulated'"),)

@@ -33,6 +33,20 @@ class LinkAlbum(StrictBody):
     album_id:UUID
     expected_version:int=Field(ge=1,strict=True)
 
+class TestCheckout(StrictBody):
+    expected_version:int=Field(ge=1,strict=True)
+
+@router.post('/designs/{id}/test-checkout')
+async def test_checkout(request:Request,id:UUID,body:TestCheckout,
+                        context:AuthContext=Depends(require_approved_user),
+                        idempotency_key:str|None=Header(None)):
+    require_csrf(request,context)
+    from backend.goods_design.checkout import test_checkout as checkout
+    async with request.app.state.session_factory() as s,s.begin():
+        status,data=await checkout(s,context.user_id,id,body.expected_version,
+                                   require_key(idempotency_key),request.app.state.settings)
+    return JSONResponse(envelope(request,data),status_code=status)
+
 @router.get('/catalog')
 async def get_catalog(request:Request,context:AuthContext=Depends(require_user)):
     return envelope(request,{'styles':catalog()})

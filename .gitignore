@@ -18,3 +18,4 @@ frontend/dist/
 
 # Local generated artifacts
 /output/
+.gstack/

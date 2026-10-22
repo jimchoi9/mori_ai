@@ -68,7 +68,10 @@ async def design(s,owner,id,lock=False):
 
 async def design_view(s,d):
     r=await s.get(GoodsRevision,d.revision_id)
-    return {'id':str(d.id),'fake':r.config.get('mode')=='fake','image_url':f'/api/v1/goods/images/{d.revision_id}','placement':d.placement,'album_id':str(d.album_id) if d.album_id else None,'version':d.version,'production_started':d.production_started_at is not None,'created_at':d.created_at.isoformat()}
+    from backend.goods_design.checkout_repository import test_purchase, purchase_view
+    purchase=await test_purchase(s,d.owner_id,d.id)
+    return {'id':str(d.id),'fake':r.config.get('mode')=='fake','image_url':f'/api/v1/goods/images/{d.revision_id}','placement':d.placement,'album_id':str(d.album_id) if d.album_id else None,'version':d.version,'production_started':d.production_started_at is not None,'created_at':d.created_at.isoformat(),
+            'test_purchase':purchase_view(*purchase) if purchase else None}
 
 async def complete(s,owner,id,revision_id,placement):
     w=await work(s,owner,id,active=False)
@@ -87,6 +90,8 @@ async def link_album(s,owner,id,album_id,expected_version):
     album=await find_album(s,owner,album_id,lock=True)
     if album is None:raise APIError(404,'RESOURCE_NOT_FOUND')
     d=await design(s,owner,id,lock=True)
+    from backend.goods_design.checkout_repository import test_purchase
+    if await test_purchase(s,owner,id):raise APIError(409,'STATE_CONFLICT')
     if d.production_started_at or d.version!=expected_version:raise APIError(409,'VERSION_CONFLICT')
     if album.status!='published':raise APIError(422,'VALIDATION_ERROR')
     d.album_id=album.id;d.version+=1
