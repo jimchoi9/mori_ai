@@ -1,110 +1,64 @@
-import {useEffect,useRef,useState} from 'react';
-import {Link,useBlocker} from 'react-router';
-import {useQuery} from '@tanstack/react-query';
-import {api,errorText} from '../../api/client';
+import {Link} from 'react-router';
 import {GlassButton} from '../../components/ui/GlassButton';
-import {GlassPanel} from '../../components/ui/GlassPanel';
-import {ScreenHeader} from '../../components/layout/ScreenHeader';
-import {BottomActionBar} from '../../components/layout/BottomActionBar';
 import {StylePicker} from './design/StylePicker';
-import type {DesignStyle,StyleId} from './design/catalog';
 import {RevisionHistory} from './design/RevisionHistory';
 import {GoodsMockup} from './mockup/GoodsMockup';
-import {previewKey} from './mockup/preview';
-import type {Placement} from './mockup/preview';
-import type {GoodsRevision,GoodsDesign} from './api';
-import {abandon,uploadSource,loadSourcePreview} from './api';
-import {goodsSourceAccept,prepareGoodsSource} from './preprocess';
-import {discardMessage,replacePhoto,generationParent} from './workflow';
 import {TestCheckout} from './TestCheckout';
+import {GoodsDialog} from './GoodsDialog';
+import {GoodsIcon} from './GoodsIcon';
+import {GoodsLogin} from './GoodsLogin';
+import {goodsSourceAccept} from './preprocess';
+import {forgetGoodsSave} from './guestIntent';
+import {PromptSuggestions} from './suggestions/PromptSuggestions';
+import {useGoodsWorkspace,type GoodsWorkspaceProps} from './useGoodsWorkspace';
 import './goods.css';
+import './studio.css';
 
-export function GoodsWorkspace({userId}:{userId:string}){
- const [step,setStep]=useState(1),[style,setStyle]=useState<StyleId|null>(null),[work,setWork]=useState<string|null>(null),[source,setSource]=useState(''),[selected,setSelected]=useState<string|null>(null),[draft,setDraft]=useState(''),[rows,setRows]=useState<GoodsRevision[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState<GoodsDesign|null>(null),[preview,setPreview]=useState<{key:string;status:string}|null>(null),[placement,setPlacement]=useState<Placement>({holeX:.5,holeY:0,widthMm:50});
- const uploadController=useRef<AbortController|null>(null);
- const live=useRef(true),epoch=useRef(0),workRef=useRef<string|null>(null),sourceRef=useRef(''),savedRef=useRef(false),fileInput=useRef<HTMLInputElement>(null),pending=useRef<{body:string;key:string}|null>(null);
- const catalog=useQuery({queryKey:['goods-catalog',userId],queryFn:({signal})=>api<{styles:DesignStyle[]}>('/goods/catalog',{signal})});
- const current=rows.find(r=>r.id===selected),src=current?.image_url||source;
- const running=rows.some(r=>r.status==='queued'||r.status==='running');
- const uncertain=rows.some(r=>r.status==='unknown');
- const dirty=!saved&&(!!work||busy||!!draft||!!style);
- const blocker=useBlocker(dirty);
- function dispose(){epoch.current++;uploadController.current?.abort();uploadController.current=null;if(sourceRef.current){URL.revokeObjectURL(sourceRef.current);sourceRef.current='';}const id=workRef.current;workRef.current=null;if(id&&!savedRef.current)void abandon(id,true);}
- useEffect(()=>{
-  live.current=true;
-  return()=>{live.current=false;dispose();if(sourceRef.current)URL.revokeObjectURL(sourceRef.current);};
- },[]);
- useEffect(()=>{if(blocker.state==='blocked'){if(window.confirm(discardMessage)){dispose();blocker.proceed();}else blocker.reset();}},[blocker]);
- useEffect(()=>{
-  if(!dirty)return;
-  const before=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};
-  const logout=(e:Event)=>{if(!window.confirm(discardMessage))e.preventDefault();else dispose();};
-  const hide=()=>dispose();
-  const restore=(event:PageTransitionEvent)=>{if(event.persisted){setWork(null);setSource('');setRows([]);setSelected(null);setDraft('');setStyle(null);setStep(1);setBusy(false);setError('이전 작업은 화면을 떠나면서 폐기됐어요. 새로 시작해 주세요.');pending.current=null;}};
-  window.addEventListener('pageshow',restore);
-  window.addEventListener('beforeunload',before);window.addEventListener('pagehide',hide);window.addEventListener('mori:before-logout',logout);
-  return()=>{window.removeEventListener('pageshow',restore);window.removeEventListener('beforeunload',before);window.removeEventListener('pagehide',hide);window.removeEventListener('mori:before-logout',logout);};
- },[dirty]);
- useEffect(()=>{
-  if(!work||saved)return;let closed=false;let timer:number;
-  const poll=async()=>{try{const data=await api<{revisions:GoodsRevision[]}>(`/goods/work/${work}`);if(!closed){const accepted=data.revisions.find(r=>r.request_key===pending.current?.key);if(accepted){pending.current=null;setSelected(accepted.id);setDraft('');}setRows(data.revisions);setSelected(old=>old??[...data.revisions].reverse().find(r=>r.status==='ready')?.id??null);}}catch(e){if(!closed)setError(errorText(e));}finally{if(!closed)timer=window.setTimeout(poll,2000);}};
-  void poll();return()=>{closed=true;clearTimeout(timer);};
- },[work,saved]);
- async function upload(file?:File){
-  if(!file||busy||running)return;
-  setError('');setBusy(true);const token=epoch.current;
-  const controller=new AbortController();uploadController.current=controller;const signal=controller.signal;
-  let candidate:string|null=null,candidatePreview='';
-  try{
-   const id=await replacePhoto(!!work,()=>window.confirm('사진을 바꾸면 현재 사진과 생성한 시안, 대화 내역, 고리 위치 설정이 삭제됩니다. 새 사진으로 시작할까요?'),async()=>{
-    const prepared=await prepareGoodsSource(file,signal);
-    // Keep the bounded create response alive so disposal can clean up its ID
-    // even when the screen leaves after the server commits the empty work.
-    candidate=(await api<{id:string}>('/goods/work',{method:'POST',body:{},key:crypto.randomUUID()})).id;
-    signal.throwIfAborted();
-    await uploadSource(candidate,prepared,signal);
-    candidatePreview=await loadSourcePreview(candidate,signal);
-    signal.throwIfAborted();
-    if(!live.current||epoch.current!==token)throw new DOMException('작업이 종료되었습니다.','AbortError');
-    return candidate;
-   },async()=>{signal.throwIfAborted();if(workRef.current)await abandon(workRef.current);});
-   if(!id)return;
-   if(!live.current||epoch.current!==token){void abandon(id);return;}
-   workRef.current=id;setWork(id);candidate=null;
-   if(sourceRef.current)URL.revokeObjectURL(sourceRef.current);
-   sourceRef.current=candidatePreview;candidatePreview='';setSource(sourceRef.current);setRows([]);setSelected(null);setDraft('');setPreview(null);setPlacement({holeX:.5,holeY:0,widthMm:50});pending.current=null;
-  }catch(e){if(live.current&&epoch.current===token)setError(errorText(e));}
-  finally{if(candidate)void abandon(candidate);if(candidatePreview)URL.revokeObjectURL(candidatePreview);if(uploadController.current===controller)uploadController.current=null;if(live.current&&epoch.current===token)setBusy(false);}
- }
- async function generate(){
-  if(!work||!style||!draft.trim()||busy||running||uncertain)return;
-  const token=epoch.current;setBusy(true);setError('');
-  const body={style,message:draft.trim(),parent_id:generationParent(rows,selected)};const serialized=JSON.stringify(body);
-  if(pending.current&&pending.current.body!==serialized){setError('앞선 요청 결과를 확인한 뒤 내용을 바꿔 주세요.');setBusy(false);return;}
-  pending.current??={body:serialized,key:crypto.randomUUID()};
-  try{
-   const result=await api<{id:string}>(`/goods/work/${work}/revisions`,{method:'POST',body,key:pending.current.key});
-   if(!live.current||epoch.current!==token)return;
-   pending.current=null;setDraft('');setSelected(result.id);
-   const state=await api<{revisions:GoodsRevision[]}>(`/goods/work/${work}`);if(live.current&&epoch.current===token)setRows(state.revisions);
-  }catch(e){if(live.current&&epoch.current===token)setError(errorText(e));}
-  finally{if(live.current&&epoch.current===token)setBusy(false);}
- }
- async function finish(){
-  if(!work||!current||busy)return;
-  const token=epoch.current;setBusy(true);setError('');
-  try{const result=await api<GoodsDesign>(`/goods/work/${work}/complete`,{method:'POST',body:{revision_id:current.id,placement}});if(!live.current||epoch.current!==token)return;savedRef.current=true;setSaved(result);}
-  catch(e){if(live.current&&epoch.current===token)setError(errorText(e));}finally{if(live.current&&epoch.current===token)setBusy(false);}
- }
- const ready=!!current?.image_url&&current.status==='ready'&&preview?.status==='ready'&&preview.key===previewKey({src,product:'keyring',placement});
- if(saved)return <section className="goods-workspace"><ScreenHeader title="디자인이 완성됐어요" subtitle="내 디자인에 저장했어요."/><>{saved.fake&&<p className="notice">개발용 가짜 AI 결과입니다.</p>}</><GoodsMockup src={saved.image_url} product="keyring" placement={saved.placement}/><TestCheckout key={saved.id} design={saved} userId={userId}/><Link className="button-link" to={`/designs/${saved.id}`}>디자인 상세 보기</Link><Link className="button-link" to="/designs">내 디자인</Link></section>;
- return <section className="goods-workspace goods-designer">
-  <div className="goods-step-label">0{step} / 03</div><ScreenHeader title={step===1?'모양을 골라 주세요':step===2?'시안을 함께 다듬어요':'고리를 달아 주세요'} subtitle="사진 한 장으로 만드는 나만의 작은 키링"/>
-  {error&&<p role="alert">{error}</p>}{catalog.isError&&<button onClick={()=>void catalog.refetch()}>모양 목록 다시 불러오기</button>}
-  {step===1&&<><StylePicker styles={catalog.data?.styles??[]} product="keyring" selected={style} disabled={busy||running} onSelect={setStyle}/><BottomActionBar><GlassButton disabled={!style} onClick={()=>setStep(2)}>이 모양으로 시작하기</GlassButton></BottomActionBar></>}
-  {step===2&&<><div className="goods-editor-layout"><GlassPanel><h2>참고 사진 1장</h2>{src?<GoodsMockup src={src} product="keyring" placement={placement}/>:<p>기기에서 사진 한 장을 올려 주세요.</p>}<input hidden type="file" accept={goodsSourceAccept} ref={fileInput} onChange={e=>{const file=e.target.files?.[0];e.target.value='';void upload(file);}}/><GlassButton disabled={busy||running} onClick={()=>fileInput.current?.click()}>{busy?'처리 중…':work?'사진 바꾸기':'사진 업로드'}</GlassButton></GlassPanel><GlassPanel><h2>어떻게 만들어 볼까요?</h2><label htmlFor="goods-request">원하는 모습이나 수정할 내용</label><textarea id="goods-request" value={draft} maxLength={3000} disabled={busy||running} onChange={e=>setDraft(e.target.value)}/><GlassButton disabled={!work||!draft.trim()||busy||running||uncertain} onClick={()=>void generate()}>{running?'시안을 만들고 있어요…':pending.current?'같은 요청 다시 확인':'시안 생성·수정'}</GlassButton>{uncertain&&<p role="alert">AI 요청 결과를 확인하지 못했어요. 중복 호출을 막기 위해 자동 재시도하지 않습니다. 기존 시안은 보존돼 있어요.</p>}{current?.fake&&<p className="notice">개발용 가짜 AI 결과입니다.</p>}</GlassPanel></div>
-   <RevisionHistory selectedId={selected} disabled={busy||running} onSelect={id=>{setSelected(id);setPreview(null);setPlacement({holeX:.5,holeY:0,widthMm:50});}} items={rows.map((r,i)=>r.status==='ready'?{id:r.id,label:`시안 ${i+1} · ${r.message}`,status:'ready',imageUrl:r.image_url!}:{id:r.id,label:`시안 ${i+1}`,status:r.status==='queued'||r.status==='running'?'pending':'failed'})}/>
-   <BottomActionBar><GlassButton disabled={!current?.image_url||busy||running||uncertain} onClick={()=>setStep(3)}>이 시안으로 고리 위치 정하기</GlassButton></BottomActionBar><GlassButton variant="secondary" disabled={busy||running} onClick={()=>setStep(1)}>모양 선택으로</GlassButton></>}
-  {step===3&&current?.image_url&&<><GoodsMockup src={src} product="keyring" placement={placement} interactive onChange={setPlacement} onPreview={setPreview}/><BottomActionBar><GlassButton disabled={!ready||busy} onClick={()=>void finish()}>{busy?'저장 중…':'디자인 완성하고 저장'}</GlassButton></BottomActionBar><GlassButton disabled={busy} variant="secondary" onClick={()=>setStep(2)}>시안으로 돌아가기</GlassButton></>}
+/** Presentation only. Work lifecycle and contextual suggestions have independent owners. */
+export function GoodsWorkspace(props:GoodsWorkspaceProps){
+ const {account,consent,userId}=props;
+ const {product,productLabel,loginBusy,setLoginBusy,showLogin,setShowLogin,agreed,setAgreed,remaining,step,setStep,style,setStyle,work,source,sourceAttached,setSourceAttached,selected,draft,setDraft,rows,busy,error,saved,placement,setPlacement,preview,tail,fileInput,pending,catalog,current,src,running,uncertain,ready,upload,generate,finish,newConversation,choose,openPreview,setProduct,setPreview}=useGoodsWorkspace(props);
+ const consentControl=consent?.required?<div className="goods-consent"><label><input type="checkbox" checked={agreed} disabled={busy||running} onChange={e=>setAgreed(e.target.checked)}/>사진 업로드와 AI 처리에 동의합니다.</label><details><summary>안내 보기</summary><p>{consent.notice}</p></details></div>:null;
+ return <section className="goods-studio" aria-label="굿즈 만들기">
+  <header className="goods-site-header"><Link className="goods-brand" to="/goods" aria-label="Mori 굿즈 만들기"><span className="goods-brand-mark" aria-hidden="true">m</span><span>Mori</span></Link>
+   <div className="goods-header-actions"><button type="button" className="goods-text-button" disabled={busy||running} onClick={()=>void newConversation()}><GoodsIcon name="plus" size={15}/>새 대화</button>{account}</div>
+  </header>
+  <div className="goods-studio-body">
+   {saved?<section className="goods-saved"><span className="goods-success-mark"><GoodsIcon name="check" size={26}/></span><h1>내 디자인에 저장했어요</h1><p>이제 굿즈에 담을 사진을 더해 보세요.</p>
+    {saved.fake&&<p className="goods-fake-note">개발용 가짜 AI 결과입니다.</p>}
+    <div className="goods-saved-preview"><GoodsMockup src={saved.image_url} product={saved.product??'keyring'} placement={saved.placement}/></div>
+    <TestCheckout key={saved.id} design={saved} userId={userId}/><div className="goods-saved-links"><Link to={`/designs/${saved.id}`}>디자인 상세 보기</Link><Link to="/designs">내 디자인</Link></div>
+   </section>:<>
+    <div className="goods-direction-heading"><h1>{rows.length?'다른 형태도 시도해 보세요':'어떤 모양으로 만들까요?'}</h1><span>AI 제품 목업 · {productLabel}</span></div>
+    {catalog.isError?<div className="goods-error" role="alert">예시를 불러오지 못했어요. <button type="button" className="goods-text-button" onClick={()=>void catalog.refetch()}>다시 불러오기</button></div>:<StylePicker styles={catalog.data?.styles??[]} product={product} selected={style} disabled={busy||running} onSelect={setStyle}/>}
+    <div className="goods-product-line"><div className="goods-product-switch" role="group" aria-label="굿즈 선택">{(['keyring','magnet'] as const).map(value=><button type="button" key={value} aria-pressed={product===value} disabled={busy||running||uncertain} onClick={()=>{setProduct(value);setPreview(null);}}>{value==='keyring'?'키링':'마그네틱'}</button>)}</div><span>{style==='free'?'모양도 자유롭게 설명하세요':catalog.data?.styles.find(s=>s.id===style)?.label}</span></div>
+    <RevisionHistory selectedId={selected} disabled={busy||running||uncertain} onSelect={choose} onPreview={openPreview} items={rows.map((r,i)=>({...r,label:`시안 ${i+1}`,message:r.message,referenceUrl:r.parent_id?rows.find(p=>p.id===r.parent_id)?.image_url||undefined:r.uses_source!==false?source||undefined:undefined,parentLabel:r.parent_id?`시안 ${rows.findIndex(p=>p.id===r.parent_id)+1}`:undefined,unknown:r.status==='unknown',...(r.status==='ready'?{status:'ready' as const,imageUrl:r.image_url!}:{status:r.status==='queued'||r.status==='running'?'pending' as const:'failed' as const})}))}/>
+    <div ref={tail}/>
+    {error&&<p className="goods-error" role="alert">{error}</p>}
+    <PromptSuggestions userId={props.userId} workId={work} parentId={current?.status==='ready'?current.id:null}
+     style={style??'free'} product={product} hasPhoto={!!source&&sourceAttached} enabled={!!catalog.data?.suggestions_enabled&&!consent?.required}
+     disabled={busy||running||uncertain||remaining===0} draft={draft}
+     onChangeDraft={setDraft}/>
+    <form className="goods-composer" aria-label="디자인 요청 입력" onSubmit={e=>{e.preventDefault();void generate();}}>
+     {((source&&sourceAttached)||current?.image_url)&&<div className="goods-composer-attachments" aria-label="첨부 이미지">
+      {source&&sourceAttached&&<div className="goods-composer-thumbnail"><img src={source} alt="첨부된 원본 사진"/><span>원본</span><button type="button" aria-label="원본 사진 첨부 해제" disabled={busy||running||uncertain||!!pending.current} onClick={()=>setSourceAttached(false)}>×</button></div>}
+      {current?.image_url&&<div className="goods-composer-thumbnail"><img src={current.image_url} alt={`첨부된 시안 ${rows.findIndex(r=>r.id===current.id)+1}`}/><span>시안 {rows.findIndex(r=>r.id===current.id)+1}</span><button type="button" aria-label="시안 첨부 해제" disabled={busy||running||uncertain||!!pending.current} onClick={()=>choose(null)}>×</button></div>}
+     </div>}
+     <label className="goods-sr-only" htmlFor="goods-request">디자인 요청</label><textarea id="goods-request" value={draft} rows={3} maxLength={3000} disabled={busy||running||uncertain} onChange={e=>setDraft(e.target.value)} placeholder={selected?'예: 글자는 작게, 얼굴과 나머지 부분은 그대로 해 줘.':'사진만 올려도 좋아요. 원하는 느낌이 있으면 말해 주세요.'}/>
+     <div className="goods-composer-tools"><button type="button" className="goods-text-button goods-attach" aria-label="사진 첨부" disabled={busy||running||uncertain} onClick={()=>fileInput.current?.click()}><GoodsIcon name="photo"/><span>사진</span></button>
+      {source&&!sourceAttached&&<button type="button" className="goods-text-button" disabled={busy||running||uncertain||!!pending.current} onClick={()=>setSourceAttached(true)}>원본 다시 첨부</button>}
+      <span className="goods-generation-count" aria-label="요청당 이미지 1장">1장</span><button type="submit" className="goods-send" aria-label={pending.current?'같은 요청 다시 확인':'이미지 만들기'} disabled={(!draft.trim()&&(!source||!sourceAttached||!!selected))||busy||running||uncertain||remaining===0||!!consent?.required&&!agreed}>{busy||running?<span className="goods-spinner"/>:<GoodsIcon name="arrow" size={21}/>}</button>
+     </div>
+     <input hidden type="file" accept={goodsSourceAccept} ref={fileInput} onChange={e=>{const file=e.target.files?.[0];e.target.value='';void upload(file);}}/>
+    </form>
+    {consentControl}
+    <div className="goods-studio-notes"><p role="status">{busy?'요청을 준비하고 있어요…':running?'시안을 만들고 있어요…':remaining!==null?(remaining>0?`로그인 없이 ${remaining}회 더 만들 수 있어요.`:'무료 체험 3회를 모두 사용했어요. 마음에 드는 시안을 저장해 보세요.'):'사진만 올려도, 설명만 적어도 만들 수 있어요.'}</p><span>예시는 AI 제품 목업입니다.</span></div>
+   </>}
+  </div>
+  <GoodsDialog open={step===3&&!!current?.image_url&&!showLogin&&!saved} label="굿즈 미리보기" kind="mockup" locked={busy} onClose={()=>setStep(2)}>
+   <header className="goods-dialog-heading"><h2>굿즈 미리보기</h2><button type="button" className="goods-icon-button" disabled={busy} aria-label="대화로 돌아가기" onClick={()=>setStep(2)}><GoodsIcon name="close"/></button></header>
+   {current?.image_url&&<div className="goods-mockup-grid"><div className="goods-mockup-stage"><GoodsMockup src={src} product={product} placement={placement} interactive={!busy&&product==='keyring'} onChange={setPlacement} onPreview={setPreview}/></div><div className="goods-mockup-controls"><span className="goods-eyebrow">나만의 아크릴 {productLabel}</span><h3>이 순간을 굿즈로 간직해요</h3>{product==='keyring'?<p>그림의 테두리 가까이를 눌러 고리 위치를 골라 주세요.</p>:<p>고리 없이 디자인의 모양을 살린 마그네틱이에요.</p>}<p className="goods-muted">실물과 차이가 있을 수 있는 미리보기입니다.</p>{error&&<p className="goods-error" role="alert">{error}</p>}<GlassButton className="goods-primary" disabled={!ready||busy} onClick={()=>void finish()}>{busy?'저장 중…':'디자인 완성하고 저장'}<GoodsIcon name="right" size={16}/></GlassButton><button type="button" className="goods-text-button" disabled={busy} onClick={()=>setStep(2)}>대화에서 더 수정하기</button></div></div>}
+  </GoodsDialog>
+  <GoodsDialog open={showLogin} label="디자인 저장 로그인" kind="login" locked={loginBusy} onClose={()=>{setShowLogin(false);forgetGoodsSave();}}><GoodsLogin onBusyChange={setLoginBusy} onClose={()=>{setShowLogin(false);forgetGoodsSave();}}/></GoodsDialog>
  </section>;
 }

@@ -39,7 +39,7 @@ async def test_checkout(session, owner_id, design_id, expected_version, key, set
         purchase = GoodsTestPurchase(owner_id=owner_id, design_id=design_id,
             album_id=album.id, status='simulated', design_snapshot={
                 'revision_id': str(current.revision_id), 'placement': current.placement,
-                'design_version': current.version})
+                'design_version': current.version, 'product': current.product})
         session.add(purchase)
         await session.flush()
         # The test receipt owns the link; legacy design.album_id is not repurposed.

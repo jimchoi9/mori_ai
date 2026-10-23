@@ -77,7 +77,7 @@ export function GoodsMockup(props: GoodsMockupProps) {
     props.onChange({...placement, holeX: anchor.x, holeY: anchor.y});
   }
   return <figure className={className} style={{margin: 0}}>
-    <canvas ref={canvas} onPointerDown={event=>{pointerStart.current=event.isPrimary&&event.button===0?{x:event.clientX,y:event.clientY,id:event.pointerId}:null;}} onPointerUp={select} onPointerCancel={()=>{pointerStart.current=null;}} role="img" aria-label="굿즈 목업" style={{display:'block', width:'100%', height:'auto', aspectRatio:'800 / 840'}}/>
+    <canvas ref={canvas} onPointerDown={event=>{pointerStart.current=event.isPrimary&&event.button===0?{x:event.clientX,y:event.clientY,id:event.pointerId}:null;}} onPointerUp={select} onPointerCancel={()=>{pointerStart.current=null;}} role="img" aria-label={product==='magnet'?'마그네틱 목업':'키링 목업'} style={{display:'block', width:'100%', height:'auto', aspectRatio:'800 / 840'}}/>
     {!ready && !error && <p role="status">미리보기를 만들고 있어요.</p>}
     {error && <p role="alert">그림을 불러오지 못했어요. <GlassButton variant="secondary" onClick={() => setRetry(n => n + 1)}>다시 시도</GlassButton></p>}
     {interactive && product === 'keyring' && <p className="goods-note">그림의 테두리를 클릭하거나 터치해 고리 위치를 골라 주세요.</p>}

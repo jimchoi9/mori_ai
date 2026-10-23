@@ -29,14 +29,14 @@ try{for(const [name,engine] of [['chromium',chromium],['webkit',webkit]].filter(
  if(expected===false)assert.equal(result.processed,false);if(name==='chromium'&&expected===true)assert.equal(result.processed,true);if(result.size)assert.ok(Math.max(...result.size)<=2048);row.preprocess.push(result);
  }
  await page.getByRole('button',{name:/책 모양/}).click();await page.getByRole('button',{name:'이 모양으로 시작하기',exact:true}).click();
- await page.locator('input[type=file]').setInputFiles(directory+'/normal.jpg');await page.getByRole('button',{name:'선택한 시안',exact:true}).waitFor();
+ await page.locator('input[type=file]').setInputFiles(directory+'/normal.jpg');await page.getByRole('button',{name:'수정 기준 시안',exact:true}).waitFor();
  await page.locator('#goods-request').fill('preserve draft');
  await page.waitForFunction(()=>!document.body.textContent.includes('미리보기를 만들고 있어요.'));
  const before=await page.locator('canvas').evaluate(c=>c.toDataURL());row.replacements=[];
  for(const mode of [422,401,403,500,503,'network','preprocess']){failure=mode==='preprocess'?null:mode;const start=count;
  await page.locator('input[type=file]').setInputFiles(mode==='preprocess'?{name:'oversized.jpg',mimeType:'image/jpeg',buffer:Buffer.alloc(20*1024*1024+1)}:directory+'/normal.jpg');
  await page.getByRole('alert').first().waitFor();await page.getByRole('button',{name:'사진 바꾸기',exact:true}).waitFor();
- assert.equal(await page.locator('#goods-request').inputValue(),'preserve draft');assert.equal(await page.getByRole('button',{name:'선택한 시안',exact:true}).getAttribute('aria-pressed'),'true');assert.equal(await page.locator('canvas').evaluate(c=>c.toDataURL()),before);
+ assert.equal(await page.locator('#goods-request').inputValue(),'preserve draft');assert.equal(await page.getByRole('button',{name:'수정 기준 시안',exact:true}).getAttribute('aria-pressed'),'true');assert.equal(await page.locator('canvas').evaluate(c=>c.toDataURL()),before);
  assert.ok(!calls.some(c=>c.method==='DELETE'&&c.path.endsWith('/old')));
  if(mode==='preprocess')assert.equal(count,start);else {await page.waitForTimeout(50);assert.ok(calls.some(c=>c.method==='DELETE'&&c.path.endsWith(`/candidate-${count}`)));}row.replacements.push({mode,preserved:true});}
  await page.evaluate(()=>window.unmount());await page.waitForTimeout(50);assert.ok(calls.some(c=>c.method==='DELETE'&&c.path.endsWith('/old')));row.unmountDiscard=true;row.status='passed';

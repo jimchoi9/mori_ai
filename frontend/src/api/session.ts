@@ -1,3 +1,4 @@
+import {forgetGoodsSave} from '../features/goods/guestIntent';
 import {reviewDrafts} from '../features/review/drafts.js';
 import {requestIntents} from '../features/generation/flow.js';
 import type {QueryClient} from '@tanstack/react-query';
@@ -11,7 +12,7 @@ export function selectSessionOwner(userId:string) {
   owner=userId;reviewDrafts.selectOwner(userId);
 }
 export async function resetSession(cache:QueryClient,reason:'logout'|'expired'='logout'):Promise<void> {
-  if(reason==='logout'){clearPrivateMemory();owner=null;}
+  if(reason==='logout'){forgetGoodsSave();clearPrivateMemory();owner=null;}
   // Expiry removes private responses but preserves user-scoped unsent input and
   // exact mutation identities for a same-owner login. No input uses persistence.
   if(typeof window!=='undefined')window.dispatchEvent(new Event(reason==='logout'?'mori:logout':'mori:session-expired'));

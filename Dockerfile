@@ -36,7 +36,7 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
     && node tests/goods_upload.test.mjs && node tests/goods_workspace.test.mjs \
     && node tests/goods_mockup.test.mjs \
     && node tests/goods_catalog.test.mjs \
-    && node tests/goods_components.test.mjs \
+    && node tests/goods_components.test.mjs && node tests/goods_suggestions.test.mjs \
     && ./node_modules/.bin/esbuild src/features/goods/mockup/renderer.ts --bundle --platform=node --format=esm --outfile=/tmp/goods-renderer.mjs \
     && node tests/goods_renderer.test.mjs file:///tmp/goods-renderer.mjs
 

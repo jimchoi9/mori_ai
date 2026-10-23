@@ -50,3 +50,18 @@ async def test_goods_sunburst_accounts_reviewed_standard_usage():
     p=GoodsProvider(Settings(database_url='postgresql+asyncpg://a:b@localhost/test',openai_api_key='test'),UsageClient(out.getvalue()))
     result=await p.generate(b'source',None,'instruction','gpt-image-2.5-sunburst')
     assert result.cost_usd==Decimal('0.00705')
+
+@pytest.mark.asyncio
+async def test_text_only_uses_generate_and_edits_use_selected_image():
+    class TextClient(Client):
+        async def generate(self,**kwargs):
+            self.generated=True
+            return await super().edit(**kwargs)
+    out=BytesIO();im=Image.new('RGBA',(20,20));im.putpixel((5,5),(255,0,0,255));im.save(out,format='PNG')
+    client=TextClient(out.getvalue())
+    provider=GoodsProvider(Settings(database_url='postgresql+asyncpg://a:b@localhost/test',openai_api_key='test'),client)
+    await provider.generate(None,None,'a travel keepsake','gpt-image-2')
+    assert client.generated and 'image' not in client.request
+    client.generated=False
+    await provider.generate(None,b'selected','make it round','gpt-image-2')
+    assert not client.generated and client.request['image']==[('selected.png',b'selected','image/png')]

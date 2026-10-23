@@ -4,11 +4,11 @@ from datetime import timedelta
 from io import BytesIO
 from decimal import Decimal
 from backend.storage.factory import result_store
-from sqlalchemy import select,func
+from sqlalchemy import select,func,delete,update
 from PIL import Image,ImageOps
 from backend.goods_design.models import GoodsWork,GoodsRevision,GoodsDesign
 from backend.goods_design.service import now
-from backend.models import Task
+from backend.models import Task,GoodsSuggestionBatch
 from backend.access.service import require_access
 from backend.generation.repository import lock_claims
 from backend.generation.concurrency import GLOBAL_STAGE_LIMITS
@@ -40,13 +40,14 @@ class GoodsWorker:
             if real!=self.settings.ai_real_calls_enabled:return False
             r.status='running';r.lease_until=now()+timedelta(seconds=600)
             rid,wid,source_key=r.id,w.id,w.source_key
+            if r.config.get('input_version')==2:source_key=r.config.get('source_key')
             output=f'{w.owner_id}/{w.id}/{r.id}/result'
             parent=await s.get(GoodsRevision,r.parent_id) if r.parent_id else None
             parent_key=parent.result_key if parent else None
             prompt,model=r.prompt,r.config['model']
         reserved=False;dispatched=False
         try:
-            source=await asyncio.to_thread(self.store.read_bytes,source_key)
+            source=await asyncio.to_thread(self.store.read_bytes,source_key) if source_key else None
             previous=await asyncio.to_thread(self.store.read_bytes,parent_key) if parent_key else None
             if real:
                 reserved=await self.ledger.reserve(rid,IMAGE_RESERVATION_USD)
@@ -67,6 +68,11 @@ class GoodsWorker:
                 await self.ledger.settle(rid,result.cost_usd,result.usage,result.request_id)
             else:
                 def fake():
+                    if not (previous or source):
+                        from PIL import ImageDraw
+                        canvas=Image.new('RGBA',(768,768))
+                        ImageDraw.Draw(canvas).rounded_rectangle((100,100,668,668),radius=100,fill='#a8c6b5')
+                        out=BytesIO();canvas.save(out,format='PNG');return out.getvalue()
                     with Image.open(BytesIO(previous or source)) as im:
                         im=ImageOps.contain(im.convert('RGBA'),(700,700))
                         canvas=Image.new('RGBA',(768,768));canvas.alpha_composite(im,((768-im.width)//2,(768-im.height)//2))
@@ -91,6 +97,8 @@ class GoodsWorker:
                 w=await s.scalar(select(GoodsWork).where(GoodsWork.id==wid).with_for_update())
                 r=await s.get(GoodsRevision,rid)
                 r.status='unknown' if unknown else 'failed';r.lease_until=None
+                if not dispatched or isinstance(exc,ProviderFailure) and exc.dispatch_state in ('not_sent','rejected'):
+                    r.config={**r.config,'guest_counted':False}
                 r.error_code='ACCESS_APPROVAL_REQUIRED' if getattr(exc,'code',None)=='ACCESS_APPROVAL_REQUIRED' else 'AI_BUDGET_EXCEEDED' if isinstance(exc,BudgetExceeded) else 'AI_RESULT_UNKNOWN' if unknown else 'AI_TEMPORARY_FAILURE'
         return True
 
@@ -123,7 +131,12 @@ class GoodsWorker:
                 rows=(await s.scalars(select(GoodsRevision).where(GoodsRevision.work_id==wid))).all()
                 if any(r.status=='running' for r in rows):continue
                 keys=[w.source_key] if w.source_key else []
-                keys += [f'{w.owner_id}/{w.id}/{r.id}/result' for r in rows]
+                keys += [r.result_key or f'{w.owner_id}/{w.id}/{r.id}/result' for r in rows]
                 for key in keys:await asyncio.to_thread(self.store.delete,key)
                 w.source_key=None;w.source_hash=None;w.status='cleaned'
                 for r in rows:r.status='cancelled';r.message='';r.prompt='';r.result_key=None
+                # Erase private image descriptions with the work, retaining admission counts.
+                await s.execute(update(GoodsSuggestionBatch).where(GoodsSuggestionBatch.work_id==wid)
+                    .values(items=None,visual_summary=None,status='fallback'))
+        async with self.sessions() as s,s.begin():
+            await s.execute(delete(GoodsSuggestionBatch).where(GoodsSuggestionBatch.created_at<now()-timedelta(hours=24)))

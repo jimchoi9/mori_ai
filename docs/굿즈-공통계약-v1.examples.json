@@ -8,7 +8,9 @@
     "status": "ready",
     "error_code": null,
     "image_url": "/api/v1/goods/images/11111111-1111-4111-8111-111111111111",
-    "fake": true
+    "fake": true,
+    "product": "keyring",
+    "uses_source": true
   },
   "design": {
     "id": "22222222-2222-4222-8222-222222222222",
@@ -23,14 +25,175 @@
     "test_purchase": null,
     "version": 1,
     "production_started": false,
-    "created_at": "2026-10-18T00:00:00+00:00"
+    "created_at": "2026-10-18T00:00:00+00:00",
+    "product": "keyring"
   },
-  "test_checkout_request": {"expected_version": 1},
+  "test_checkout_request": {
+    "expected_version": 1
+  },
   "test_checkout_response": {
     "id": "33333333-3333-4333-8333-333333333333",
     "mode": "test",
     "status": "simulated",
     "album_id": "44444444-4444-4444-8444-444444444444",
     "album_status": "draft"
+  },
+  "text_only_generation_request": {
+    "style": "free",
+    "message": "제주 여행의 조개 모양 키링",
+    "parent_id": null,
+    "use_source": false
+  },
+  "guest_session": {
+    "user": {
+      "id": "55555555-5555-4555-8555-555555555555",
+      "display_name": "방문자"
+    },
+    "access": {
+      "mode": "approved_only",
+      "allowed": true
+    },
+    "csrf_token": "example-only-not-a-token",
+    "consent": {
+      "required": true,
+      "policy_version": "example-policy",
+      "notice": "사진 처리 안내"
+    },
+    "guest": {
+      "remaining": 3,
+      "work_id": null
+    }
+  },
+  "work": {
+    "id": "66666666-6666-4666-8666-666666666666",
+    "revisions": [
+      {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "request_key": "example-client-request",
+        "parent_id": null,
+        "message": "사진을 작은 액자로",
+        "style": "photo",
+        "status": "ready",
+        "error_code": null,
+        "image_url": "/api/v1/goods/images/11111111-1111-4111-8111-111111111111",
+        "fake": true,
+        "product": "keyring",
+        "uses_source": true
+      }
+    ],
+    "has_source": false,
+    "remaining_generations": 2
+  },
+  "claim_request": {
+    "work_id": "66666666-6666-4666-8666-666666666666"
+  },
+  "claim_response": {
+    "work_id": "66666666-6666-4666-8666-666666666666"
+  },
+  "magnet_generation_request": {
+    "style": "free",
+    "message": "제주 여행의 조개 모양 키링",
+    "parent_id": null,
+    "use_source": false,
+    "product": "magnet"
+  },
+  "magnet_complete_request": {
+    "revision_id": "11111111-1111-4111-8111-111111111111",
+    "placement": {
+      "holeX": 0.5,
+      "holeY": 0,
+      "widthMm": 50
+    },
+    "product": "magnet"
+  },
+  "magnet_design": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "fake": true,
+    "image_url": "/api/v1/goods/images/11111111-1111-4111-8111-111111111111",
+    "placement": {
+      "holeX": 0.5,
+      "holeY": 0,
+      "widthMm": 50
+    },
+    "album_id": null,
+    "test_purchase": null,
+    "version": 1,
+    "production_started": false,
+    "created_at": "2026-10-18T00:00:00+00:00",
+    "product": "magnet"
+  },
+  "photo_only_generate_request": {
+    "style": "illustration",
+    "message": "",
+    "parent_id": null,
+    "use_source": true,
+    "product": "keyring"
+  },
+  "suggestion_request": {
+    "style": "badge",
+    "product": "magnet",
+    "parent_id": null,
+    "batch": 0
+  },
+  "suggestion_response": {
+    "items": [
+      {
+        "id": "sample-1",
+        "prompt": "색연필로 그린 듯이",
+        "category": "medium"
+      },
+      {
+        "id": "sample-2",
+        "prompt": "배경은 단순하게",
+        "category": "background"
+      },
+      {
+        "id": "sample-3",
+        "prompt": "부드러운 물결 테두리로",
+        "category": "border"
+      },
+      {
+        "id": "sample-4",
+        "prompt": "수채화 스타일로",
+        "category": "medium"
+      },
+      {
+        "id": "sample-5",
+        "prompt": "모서리에 꽃 장식",
+        "category": "decoration"
+      },
+      {
+        "id": "sample-6",
+        "prompt": "화사한 파스텔로",
+        "category": "color"
+      },
+      {
+        "id": "sample-7",
+        "prompt": "두 사람을 크게 담아",
+        "category": "composition"
+      },
+      {
+        "id": "sample-8",
+        "prompt": "장면을 따라가는 외곽으로",
+        "category": "border"
+      },
+      {
+        "id": "sample-9",
+        "prompt": "3D 그림체로",
+        "category": "medium"
+      },
+      {
+        "id": "sample-10",
+        "prompt": "배경을 풍성하게",
+        "category": "background"
+      }
+    ],
+    "source": "ai",
+    "batch": 0
+  },
+  "suggestion_pending_response": {
+    "items": [],
+    "source": "pending",
+    "batch": 0
   }
 }

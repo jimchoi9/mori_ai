@@ -1,10 +1,10 @@
-.goods-workspace{max-width:1064px;margin:0 auto;padding:24px var(--mori-space) calc(24px + env(safe-area-inset-bottom));color:var(--mori-ink)}
+.goods-workspace{max-width:1064px;margin:0 auto;padding:16px 0 calc(24px + env(safe-area-inset-bottom));color:var(--mori-ink)}
 .goods-workspace h2{font-size:22px;line-height:1.35;letter-spacing:-.035em;margin:0 0 16px}
 .goods-workspace h3{font-size:17px;margin:0 0 12px}
 .goods-workspace section+section{margin-top:28px}
 .goods-note{color:var(--mori-muted);font-size:13px;line-height:1.5;font-weight:400;overflow-wrap:anywhere}
-.goods-style-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 6px 18px;scroll-padding-inline:6px;scrollbar-width:none;overscroll-behavior-x:contain}.goods-style-track::-webkit-scrollbar{display:none}
-.goods-style.mori-button{min-width:0;flex:0 0 84%;scroll-snap-align:center;display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:8px 8px 14px;border-radius:var(--mori-panel-radius);text-align:left;white-space:normal}
+.goods-style-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px 6px 12px;scroll-padding-inline:6px;scrollbar-width:none;overscroll-behavior-x:contain}.goods-style-track::-webkit-scrollbar{display:none}
+.goods-style.mori-button{min-width:0;flex:0 0 152px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:8px 8px 14px;border-radius:16px;text-align:left;white-space:normal}
 .goods-style[aria-pressed=true]{outline:2px solid var(--mori-ink);outline-offset:1px}
 .goods-style-label{font-size:15px;line-height:1.4;padding:0 4px}
 .goods-style .goods-note{padding:0 4px}
@@ -34,3 +34,13 @@
 .goods-designer .mori-bottom-action .mori-button{white-space:normal;min-height:56px}
 @media(min-width:768px){.goods-editor-layout{grid-template-columns:1.1fr 1fr;align-items:start}.goods-chat{position:sticky;top:20px}.goods-designer .mori-bottom-action{max-width:640px;margin-inline:auto}}
 @media(prefers-reduced-motion:reduce){.goods-style-track{scroll-behavior:auto}}
+.goods-signin{display:block;width:max-content;margin-left:auto;min-height:44px;padding:8px 0;font-size:14px}
+.goods-entry-composer{display:grid;gap:12px;padding:16px;border:1px solid #d8dfd1;border-radius:18px;background:#fff}
+.goods-entry-composer>label{font-size:15px;font-weight:600}
+.goods-entry-composer textarea{min-height:90px;border:0;padding:0;background:transparent;font-size:16px;resize:vertical}
+.goods-entry-tools{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.goods-entry-tools .mori-button{min-height:44px;padding:10px 16px;font-size:14px}
+.goods-attachment{width:64px;height:64px;border-radius:10px;object-fit:cover}
+.goods-consent{font-size:12px}.goods-consent .check{font-size:12px;margin:12px 0}
+.goods-login{max-width:440px;margin:24px auto}.goods-login details{margin:20px 0}.goods-login details button{display:block;margin-top:10px}
+@media(max-width:767px){.goods-slide-nav,.goods-card-action{display:none}.goods-style-label{font-size:13px}.goods-style .goods-note{font-size:11px}.goods-designer .mori-screen-header h1{font-size:28px}.goods-designer .mori-screen-header p{font-size:14px}}

@@ -2,12 +2,14 @@
 import asyncio
 import hashlib
 from uuid import UUID
+from typing import Literal
 from fastapi import APIRouter,Depends,Header,Request,Query
 from fastapi.responses import Response,JSONResponse
-from pydantic import Field,StrictStr
+from pydantic import Field,StrictStr,StrictBool
 from sqlalchemy import select
 from backend.http.schemas import StrictBody,EmptyBody
 from backend.http.security import AuthContext,require_user,require_csrf,require_approved_user
+from backend.http.security import require_goods_actor,require_approved_goods_actor
 from backend.http.errors import APIError,envelope
 from backend.http.idempotency import require_key
 from backend.goods_design import service
@@ -20,13 +22,16 @@ router=APIRouter(prefix='/api/v1/goods')
 
 class Generate(StrictBody):
     style:StrictStr
-    message:StrictStr=Field(min_length=1,max_length=3000)
+    message:StrictStr=Field(max_length=3000)
     parent_id:UUID|None=None
+    use_source:StrictBool=True
+    product:Literal['keyring','magnet']='keyring'
 class Placement(StrictBody):
     holeX:float=Field(ge=0,le=1,allow_inf_nan=False)
     holeY:float=Field(ge=0,le=1,allow_inf_nan=False)
     widthMm:float=Field(ge=20,le=100,allow_inf_nan=False)
 class Complete(StrictBody):
+    product:Literal['keyring','magnet']='keyring'
     revision_id:UUID
     placement:Placement
 class LinkAlbum(StrictBody):
@@ -48,11 +53,11 @@ async def test_checkout(request:Request,id:UUID,body:TestCheckout,
     return JSONResponse(envelope(request,data),status_code=status)
 
 @router.get('/catalog')
-async def get_catalog(request:Request,context:AuthContext=Depends(require_user)):
-    return envelope(request,{'styles':catalog()})
+async def get_catalog(request:Request):
+    return envelope(request,{'styles':catalog(),'suggestions_enabled':request.app.state.settings.goods_suggestions_enabled and bool(request.app.state.goods_suggestions.provider)})
 
 @router.post('/work')
-async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(require_approved_user),idempotency_key:str|None=Header(None)):
+async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(require_approved_goods_actor),idempotency_key:str|None=Header(None)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():
         await require_consent(s,context.user_id,request.app.state.settings)
@@ -60,7 +65,7 @@ async def create(request:Request,body:EmptyBody,context:AuthContext=Depends(requ
     return JSONResponse(envelope(request,data),status_code=201)
 
 @router.put('/work/{id}/source')
-async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_approved_user)):
+async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_approved_goods_actor)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():
         await service.work(s,context.user_id,id)
@@ -76,7 +81,7 @@ async def upload(request:Request,id:UUID,context:AuthContext=Depends(require_app
     return envelope(request,{'ready':True})
 
 @router.get('/work/{id}/source')
-async def source_preview(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+async def source_preview(request:Request,id:UUID,context:AuthContext=Depends(require_goods_actor)):
     async with request.app.state.session_factory() as s:
         w=await s.scalar(select(GoodsWork).where(GoodsWork.id==id,GoodsWork.owner_id==context.user_id))
         if w is None or w.status!='active' or w.expires_at<=service.now() or not w.source_key:
@@ -89,28 +94,31 @@ async def source_preview(request:Request,id:UUID,context:AuthContext=Depends(req
         'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'})
 
 @router.get('/work/{id}')
-async def work_detail(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+async def work_detail(request:Request,id:UUID,context:AuthContext=Depends(require_goods_actor)):
     async with request.app.state.session_factory() as s,s.begin():data=await service.detail(s,context.user_id,id)
     return envelope(request,data)
 
 @router.delete('/work/{id}')
-async def abandon(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+async def abandon(request:Request,id:UUID,context:AuthContext=Depends(require_goods_actor)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():await service.discard(s,context.user_id,id)
     return Response(status_code=204)
 
 @router.post('/work/{id}/revisions',status_code=202)
-async def generate(request:Request,id:UUID,body:Generate,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(None)):
+async def generate(request:Request,id:UUID,body:Generate,context:AuthContext=Depends(require_approved_goods_actor),idempotency_key:str|None=Header(None)):
     require_csrf(request,context)
     async with request.app.state.session_factory() as s,s.begin():
         await require_consent(s,context.user_id,request.app.state.settings)
-        data=await service.generate(s,context.user_id,id,body.model_dump(mode='json'),require_key(idempotency_key),request.app.state.settings)
+        payload=body.model_dump(mode='json')
+        if payload['use_source']:payload.pop('use_source')
+        if payload['product']=='keyring':payload.pop('product')
+        data=await service.generate(s,context.user_id,id,payload,require_key(idempotency_key),request.app.state.settings)
     return envelope(request,data)
 
 @router.post('/work/{id}/complete')
 async def complete(request:Request,id:UUID,body:Complete,context:AuthContext=Depends(require_user)):
     require_csrf(request,context)
-    async with request.app.state.session_factory() as s,s.begin():data=await service.complete(s,context.user_id,id,body.revision_id,body.placement.model_dump())
+    async with request.app.state.session_factory() as s,s.begin():data=await service.complete(s,context.user_id,id,body.revision_id,body.placement.model_dump(),product=body.product)
     return envelope(request,data)
 
 @router.get('/designs')
@@ -132,7 +140,7 @@ async def link(request:Request,id:UUID,body:LinkAlbum,context:AuthContext=Depend
     return envelope(request,data)
 
 @router.get('/images/{id}')
-async def image(request:Request,id:UUID,context:AuthContext=Depends(require_user)):
+async def image(request:Request,id:UUID,context:AuthContext=Depends(require_goods_actor)):
     async with request.app.state.session_factory() as s:
         row=(await s.execute(select(GoodsRevision,GoodsWork).join(GoodsWork,GoodsRevision.work_id==GoodsWork.id).where(GoodsRevision.id==id,GoodsWork.owner_id==context.user_id))).first()
         if row is None:raise APIError(404,'RESOURCE_NOT_FOUND')

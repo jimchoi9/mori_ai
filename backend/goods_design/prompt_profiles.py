@@ -1,7 +1,8 @@
 """Versioned goods prompts adapted from pilot fb5a3418. No model or paid call policy."""
 from dataclasses import dataclass
+from backend.goods_design.design_rules import DIRECTIONS, PRODUCT_RULES, SMALL_GOODS_RULES, TEXT_RULES, IDENTITY_RULES, goods_rules, SCENE_RULES
 
-PROFILE_VERSION = "goods-pilot-v1"
+PROFILE_VERSION = "goods-small-v10"
 
 @dataclass(frozen=True)
 class PromptSnapshot:
@@ -9,35 +10,45 @@ class PromptSnapshot:
     style_id: str
     prompt: str
 
-_PROFILES = {
-    'photo': ('사진형 액자', '사진을 작은 액자처럼', 'Keep the source as a photograph without changing faces or the photography style. Preserve the scene inside one clean rounded rectangle. Only outside that rectangle is transparent.'),
-    'illustration': ('사진을 그림으로', '구도는 살리고 그림체만', 'Turn the reference photo into a warm polished illustration while keeping the people count, their composition and scene. Frame it in one rounded rectangle, with transparency only outside the frame.'),
-    'cutout': ('인물·반려동물', '배경 없이 주인공만', 'Isolate the main people or pet from the reference, preserving its photographic appearance unless the customer asks for an illustrated style. Remove the surrounding scene. The silhouette follows the subject, with a truly transparent exterior and one connected printable shape.'),
-    'badge': ('여행·문구', '상징물과 글자를 한 모양에', 'Create one cohesive souvenir badge using the requested location symbols and lettering. Design an original connected outline, with transparent space outside the badge. Use only lettering explicitly requested by the user.'),
-    'book': ('추억을 펼친 책', '그림과 문구를 오픈북에', 'Create a flat print illustration shaped like a small open book. Put the reference people or scene on one page and requested lettering or symbols on the other. The printed book can have gentle dimensional shading. Outside the connected open-book silhouette is transparent.'),
-    'free': ('자유롭게', '원하는 모양을 말로 설명', 'Choose an original cohesive printable silhouette appropriate to the customer request, without forcing a rectangular frame.'),
-}
-
-
 def catalog() -> list[dict[str, str]]:
-    return [{"id": key, "label": value[0], "hint": value[1]} for key, value in _PROFILES.items()]
+    return [{"id": key, "label": value.label, "hint": value.hint} for key, value in DIRECTIONS.items()]
 
 
-def build_prompt(style_id: str, request: str, context: tuple[str, ...] = (), *, editing: bool = False) -> PromptSnapshot:
-    if style_id not in _PROFILES or not isinstance(request, str) or not request.strip() or len(request) > 3000:
+def build_prompt(style_id: str, request: str, context: tuple[str, ...] = (), *, editing: bool = False, product: str = 'keyring') -> PromptSnapshot:
+    if product not in ('keyring','magnet'):
+        raise ValueError('Invalid product')
+    if style_id not in DIRECTIONS or not isinstance(request, str) or not request.strip() or len(request) > 3000:
         raise ValueError("Invalid style or design request")
     if any(not isinstance(item, str) for item in context):
         raise ValueError("Invalid design context")
+    scene = style_id in ('photo', 'illustration')
+    small_rules, product_rules = goods_rules(style_id, product)
     base = (
-        "Create flat acrylic print artwork following the customer's reference images and request. "
-        "Preserve requested people count and recognizable features. Produce one cohesive connected silhouette, "
+        "OUTPUT: a flat 2D print design, the ink artwork ONLY, isolated on transparent alpha. "
+        "Use the customer's reference images and request as subject matter for the selected approach. "
+        "Preserve requested people count and recognizable features. "
+        + ("Retain the entire scene inside a complete enclosing frame, " if scene else "Produce one cohesive connected silhouette, ") +
         "all artwork fully visible. No keychain hardware, drilled holes, acrylic rim or product mockup background. "
-        "Render requested Korean text exactly. The region OUTSIDE the design must have a truly transparent alpha background. "
-        "Design approach: " + _PROFILES[style_id][2]
+        "The region OUTSIDE the design must have a truly transparent alpha background. "
+        "No cast shadow on a background, physical acrylic thickness, bevel or photorealistic product rendering. "
+        + small_rules + "\nProduct: " + product_rules
+        + "\nDesign approach: " + DIRECTIONS[style_id].generation
+        + "\n" + TEXT_RULES + "\n" + IDENTITY_RULES
     )
     if editing:
-        base += " The first image is the selected design to edit. Preserve everything except the requested changes. Other images are original references."
+        base += " The first image is the selected design: use it for layout, border and the intended design decisions. Other images, when present, are original photographic references and are the authority for identity, facial anatomy, expression and fine real-world details. Apply only the requested change, but reconstruct clean detail from the original reference rather than copying accumulated smudges, artificial skin patterns, repeated decorative noise or sharpening artifacts from generated images. Do not intensify texture with each edit. A change of drawing medium replaces the old medium; it is not an extra filter on top of it. Preserve existing composition and ornaments unless requested otherwise."
+    else:
+        base += (" This is a new design in the selected approach, not a product-photo retouch. "
+                 "If a reference already shows a souvenir, do not copy its acrylic rim, shine, "
+                 "cast shadow or display background into the output. For photo frames and illustration, "
+                 "retain the defining original scene and likeness; choose the border independently of the drawing medium. "
+                 "Only cutout, badge, book and free approaches may recompose according to their rules.")
     if context:
         base += "\nEarlier instructions from the selected branch (current request takes precedence):\n" + "\n".join(context)
     base += "\nCurrent customer request: " + request.strip()
-    return PromptSnapshot(PROFILE_VERSION, style_id, base)
+    base += ("\nDeliver only the flat artwork. Outside the artwork boundary: alpha 0, no cast shadow. "
+             "Final check: no added lettering without explicit text-placement permission; "
+             "natural-media portraits must still look like the original people.")
+    if scene:
+        base += '\nFINAL SCENE CHECK: ' + SCENE_RULES
+    return PromptSnapshot(f'{PROFILE_VERSION}-{product}', style_id, base)

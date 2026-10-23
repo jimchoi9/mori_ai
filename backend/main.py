@@ -12,7 +12,7 @@ from backend.settings import Settings
 BUILD_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
-def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None, media_storage=None) -> FastAPI:
+def create_app(static_dir: Path | None = None, *, settings: Settings | None = None, session_factory=None, media_storage=None, suggestion_provider=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         from backend.telemetry import configure_web_logging
@@ -28,9 +28,18 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
             session.info['media_signer'] = app.state.media_signer
             return session
         app.state.session_factory = request_session
+        from backend.goods_design.suggestions.service import SuggestionService
+        provider = suggestion_provider
+        if provider is None and app.state.settings.goods_suggestions_enabled and app.state.settings.ai_real_calls_enabled:
+            from backend.goods_design.suggestions.provider import LunaSuggestionProvider
+            provider = LunaSuggestionProvider(app.state.settings)
+        app.state.goods_suggestions = SuggestionService(request_session, app.state.media_storage,
+                                                        app.state.settings, provider)
         try:
             yield
         finally:
+            if provider is not None and suggestion_provider is None:
+                await provider.aclose()
             # Injected factories are owned by the caller (including test fixtures).
             if session_factory is None:
                 await factory.kw['bind'].dispose()
@@ -52,6 +61,10 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(generation_router)
     from backend.goods_design.routes import router as goods_router
     app.include_router(goods_router)
+    from backend.goods_design.guests import router as goods_guests_router
+    app.include_router(goods_guests_router)
+    from backend.goods_design.suggestions.routes import router as suggestions_router
+    app.include_router(suggestions_router)
     build_dir = (static_dir if static_dir is not None else BUILD_DIR).resolve()
 
     @app.get("/health")

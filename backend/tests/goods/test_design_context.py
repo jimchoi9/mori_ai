@@ -51,3 +51,29 @@ def test_catalog_is_public_metadata_without_provider_instructions():
     rows = catalog()
     assert {r['id'] for r in rows} == {'photo', 'illustration', 'cutout', 'badge', 'book', 'free'}
     assert all(set(r) == {'id', 'label', 'hint'} for r in rows)
+
+
+def test_magnet_profile_is_versioned_without_changing_keyring_defaults():
+    default = build_prompt('free', '바다 여행')
+    assert build_prompt('free', '바다 여행', product='keyring') == default
+    assert default.version == 'goods-small-v10-keyring'
+    magnet = build_prompt('free', '바다 여행', product='magnet')
+    assert magnet.version == 'goods-small-v10-magnet'
+    assert 'acrylic magnet artwork' in magnet.prompt
+    assert 'drilled holes' in magnet.prompt and 'transparent' in magnet.prompt
+    with pytest.raises(ValueError):
+        build_prompt('free', '바다 여행', product='unknown')
+
+@pytest.mark.parametrize('style', ['photo', 'illustration'])
+@pytest.mark.parametrize('product', ['keyring', 'magnet'])
+def test_scene_options_do_not_inherit_cutout_instructions(style, product):
+    from backend.goods_design.design_rules import recommendation_brief, SCENE_RULES
+    snapshot=build_prompt(style, '사진으로 만들어줘', product=product)
+    assert 'connected silhouette' not in snapshot.prompt
+    assert 'subject grouping' not in snapshot.prompt
+    assert 'no backdrop' not in snapshot.prompt
+    assert 'FINAL SCENE CHECK' in snapshot.prompt
+    brief=recommendation_brief(style,product,editing=False)
+    assert brief['small_goods']==SCENE_RULES
+    assert 'do not extract or regroup' in brief['product_rules']
+    assert 'Remove the surrounding scene' in build_prompt('cutout','사진으로 만들어줘',product=product).prompt

@@ -5,7 +5,7 @@ export type AlbumStatus = 'draft'|'processing'|'action_required'|'review_ready'|
 export interface Album { id: string; title: string; status: AlbumStatus; version: number; page_count: number; cover: MediaRef | null; created_at: string; updated_at: string; published_at: string|null }
 export interface Page { id: string; position: number; version: number; upload_status: 'reserved'|'validating'|'ready'|'rejected'|'expired'; source: MediaRef|null; thumbnail: MediaRef|null; result: MediaRef|null; caption_text: string|null; sort_date:string; sort_date_source:'exif'|'file_modified'|'reserved_at' }
 export interface Detail { detail: { album: Album; pages: Page[]; order_mode: 'date'|'manual'; active_run_id: string|null; generation_mode:GenerationMode }; media_access: MediaAccess[] }
-export interface Me { access?: { mode: 'approved_only'|'all_authenticated'; allowed: boolean }; user: { id: string; display_name: string }; csrf_token: string; consent: { required: boolean; policy_version: string; notice: string } }
+export interface Me { access?: { mode: 'approved_only'|'all_authenticated'; allowed: boolean }; user: { id: string; display_name: string }; csrf_token: string; consent: { required: boolean; policy_version: string; notice: string };guest?:{remaining:number;work_id:string|null} }
 export type AuthProvider = 'google'|'kakao';
 export interface Config { auth_providers: AuthProvider[]; upload_allowed_extensions: string[]; upload_allowed_mimes: string[]; upload_max_file_bytes: number; upload_max_album_bytes: number; album_max_photos: number; goods_checkout_mode?:'disabled'|'test' }
 export interface DevConfig { dev_auth_enabled:boolean; dev_ai_enabled:boolean; generation_enabled:boolean; generation_mode:GenerationMode }

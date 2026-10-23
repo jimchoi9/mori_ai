@@ -14,8 +14,9 @@ class GoodsProvider:
     async def generate(self,source,parent,prompt,model):
         files=[]
         if parent:files.append(('selected.png',parent,'image/png'))
-        files.append(('reference.webp',source,'image/webp'))
-        response=await self._call(self.client.images.edit,model=model,image=files,prompt=prompt,n=1,size='1024x1024',quality='medium',background='transparent',output_format='png',timeout=300.0)
+        if source:files.append(('reference.webp',source,'image/webp'))
+        options=dict(model=model,prompt=prompt,n=1,size='1024x1024',quality='medium',background='transparent',output_format='png',timeout=300.0)
+        response=await self._call(self.client.images.edit,image=files,**options) if files else await self._call(self.client.images.generate,**options)
         accounting=_accounting(response,image=True)
         # Standard pricing reviewed 2026-10-18: sunburst text/image input
         # $5/$8 and image output $30 per 1M, same as the existing profile.

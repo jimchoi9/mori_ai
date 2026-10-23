@@ -21,6 +21,7 @@ class Created:
 
 class User(Identity, Created, Base):
     __tablename__ = 'users'
+    is_guest: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
     test_access_approved: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
     test_access_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dev_account: Mapped[str | None] = mapped_column(String(20), unique=True)
@@ -246,6 +247,24 @@ class AIBudgetEntry(Created, Base):
     )
 
 
+class GoodsSuggestionBatch(Identity, Created, Base):
+    """Bounded private cache and durable per-principal recommendation admission."""
+    __tablename__ = 'goods_suggestion_batches'
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), index=True)
+    work_id: Mapped[UUID] = mapped_column(ForeignKey('goods_work.id', ondelete='CASCADE'), index=True)
+    context_hash: Mapped[str] = mapped_column(String(64))
+    image_ref: Mapped[str] = mapped_column(String(80))
+    batch: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default='pending')
+    items: Mapped[list | None] = mapped_column(JSONB)
+    visual_summary: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (
+        UniqueConstraint('owner_id', 'context_hash', 'batch'),
+        CheckConstraint('batch >= 0 AND batch <= 3'),
+        CheckConstraint("status IN ('pending','ready','fallback')"),
+    )
+
+
 class GoodsWork(Identity, Created, Base):
     __tablename__='goods_work'
     owner_id: Mapped[UUID]=mapped_column(ForeignKey('users.id'),index=True)
@@ -275,10 +294,13 @@ class GoodsDesign(Identity, Created, Base):
     owner_id: Mapped[UUID]=mapped_column(ForeignKey('users.id'),index=True)
     work_id: Mapped[UUID]=mapped_column(ForeignKey('goods_work.id'),unique=True)
     revision_id: Mapped[UUID]=mapped_column(ForeignKey('goods_revisions.id'))
+    product: Mapped[str]=mapped_column(String(20),default='keyring',server_default='keyring')
     placement: Mapped[dict]=mapped_column(JSONB)
     album_id: Mapped[UUID|None]=mapped_column(ForeignKey('albums.id'))
     version: Mapped[int]=mapped_column(Integer,default=1)
     production_started_at: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
+
+    __table_args__=(CheckConstraint("product IN ('keyring', 'magnet')",name='ck_goods_design_product'),)
 
 
 class GoodsTestPurchase(Identity, Created, Base):
