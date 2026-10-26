@@ -45,7 +45,7 @@ Google·Kakao 로그인부터 사진 업로드, AI 생성, 글귀 편집, 책장
 | Infra | Docker Compose, AWS Lightsail, Caddy(HTTPS), Node.js 24 빌드 환경 |
 | 검증·개발 도구 | pytest, 프론트엔드 테스트, Chromium 브라우저 검사, Codex·Orca |
 
-굿즈 입력창 위 추천은 기본 문구로 즉시 동작합니다. 사진·시안에 맞춘 Luna 추천은 `GOODS_SUGGESTIONS_ENABLED=true`와 `AI_REAL_CALLS_ENABLED=true`를 함께 설정해야 하며, 기존 AI 예산 원장을 공유합니다. 기본값은 비활성으로 실제 유료 호출 없이 UI를 확인할 수 있습니다. 상세는 [굿즈 계약 v1.11](docs/굿즈-공통계약-v1.md)을 따릅니다.
+굿즈 입력창 위 추천은 사진·시안 첨부 후 실제 AI 응답만 표시합니다. 사진·시안에 맞춘 Luna 추천은 `GOODS_SUGGESTIONS_ENABLED=true`와 `AI_REAL_CALLS_ENABLED=true`를 함께 설정해야 하며, 기존 AI 예산 원장을 공유합니다. 기본값은 비활성이며 미리 준비된 문구로 대체하지 않습니다. 상세는 [굿즈 계약 v1.15](docs/굿즈-공통계약-v1.md)을 따릅니다.
 
 모델명은 현재 프로젝트 기본 설정값이며 환경변수로 교체할 수 있습니다. 모델·프롬프트·처리 정책은 생성 작업 시작 시 고정해 진행 중인 작업의 동작을 보존합니다.
 

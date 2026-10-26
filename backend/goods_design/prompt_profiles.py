@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from backend.goods_design.design_rules import DIRECTIONS, PRODUCT_RULES, SMALL_GOODS_RULES, TEXT_RULES, IDENTITY_RULES, goods_rules, SCENE_RULES
 
-PROFILE_VERSION = "goods-small-v10"
+PROFILE_VERSION = "goods-small-v13"
 
 @dataclass(frozen=True)
 class PromptSnapshot:
@@ -27,7 +27,7 @@ def build_prompt(style_id: str, request: str, context: tuple[str, ...] = (), *, 
         "OUTPUT: a flat 2D print design, the ink artwork ONLY, isolated on transparent alpha. "
         "Use the customer's reference images and request as subject matter for the selected approach. "
         "Preserve requested people count and recognizable features. "
-        + ("Retain the entire scene inside a complete enclosing frame, " if scene else "Produce one cohesive connected silhouette, ") +
+        + ("Retain the meaningful scene inside a complete enclosing frame, " if scene else "Produce one cohesive connected silhouette, ") +
         "all artwork fully visible. No keychain hardware, drilled holes, acrylic rim or product mockup background. "
         "The region OUTSIDE the design must have a truly transparent alpha background. "
         "No cast shadow on a background, physical acrylic thickness, bevel or photorealistic product rendering. "
@@ -50,5 +50,5 @@ def build_prompt(style_id: str, request: str, context: tuple[str, ...] = (), *, 
              "Final check: no added lettering without explicit text-placement permission; "
              "natural-media portraits must still look like the original people.")
     if scene:
-        base += '\nFINAL SCENE CHECK: ' + SCENE_RULES
+        base += '\nFINAL SCENE CHECK: preserve the meaningful background and all intended subjects. Default to a plain rounded-rectangle panel. Use only conservative framing and tonal correction when useful; retain the original composition when uncertain. No unrequested decoration.'
     return PromptSnapshot(f'{PROFILE_VERSION}-{product}', style_id, base)

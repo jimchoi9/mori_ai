@@ -42,7 +42,7 @@ class SuggestionService:
         items = None
         if result:
             try:
-                items = public_items(result.result, context.excluded)
+                items = public_items(result.result, context.excluded, style=context.style, editing=context.editing)
             except ValueError:
                 emit('goods.suggestions.fallback', error_code='SUGGESTIONS_NOT_DISTINCT', outcome='fallback')
         async with self.sessions() as session, session.begin():

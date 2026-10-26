@@ -35,16 +35,16 @@ export function GoodsWorkspace(props:GoodsWorkspaceProps){
     <RevisionHistory selectedId={selected} disabled={busy||running||uncertain} onSelect={choose} onPreview={openPreview} items={rows.map((r,i)=>({...r,label:`시안 ${i+1}`,message:r.message,referenceUrl:r.parent_id?rows.find(p=>p.id===r.parent_id)?.image_url||undefined:r.uses_source!==false?source||undefined:undefined,parentLabel:r.parent_id?`시안 ${rows.findIndex(p=>p.id===r.parent_id)+1}`:undefined,unknown:r.status==='unknown',...(r.status==='ready'?{status:'ready' as const,imageUrl:r.image_url!}:{status:r.status==='queued'||r.status==='running'?'pending' as const:'failed' as const})}))}/>
     <div ref={tail}/>
     {error&&<p className="goods-error" role="alert">{error}</p>}
-    <PromptSuggestions userId={props.userId} workId={work} parentId={current?.status==='ready'?current.id:null}
+    {((source&&sourceAttached)||current?.status==='ready')&&<PromptSuggestions isGuest={!!props.guest} userId={props.userId} workId={work} parentId={current?.status==='ready'?current.id:null}
      style={style??'free'} product={product} hasPhoto={!!source&&sourceAttached} enabled={!!catalog.data?.suggestions_enabled&&!consent?.required}
-     disabled={busy||running||uncertain||remaining===0} draft={draft}
-     onChangeDraft={setDraft}/>
+     disabled={busy||running||uncertain} draft={draft}
+     onChangeDraft={setDraft}/>}
     <form className="goods-composer" aria-label="디자인 요청 입력" onSubmit={e=>{e.preventDefault();void generate();}}>
      {((source&&sourceAttached)||current?.image_url)&&<div className="goods-composer-attachments" aria-label="첨부 이미지">
       {source&&sourceAttached&&<div className="goods-composer-thumbnail"><img src={source} alt="첨부된 원본 사진"/><span>원본</span><button type="button" aria-label="원본 사진 첨부 해제" disabled={busy||running||uncertain||!!pending.current} onClick={()=>setSourceAttached(false)}>×</button></div>}
       {current?.image_url&&<div className="goods-composer-thumbnail"><img src={current.image_url} alt={`첨부된 시안 ${rows.findIndex(r=>r.id===current.id)+1}`}/><span>시안 {rows.findIndex(r=>r.id===current.id)+1}</span><button type="button" aria-label="시안 첨부 해제" disabled={busy||running||uncertain||!!pending.current} onClick={()=>choose(null)}>×</button></div>}
      </div>}
-     <label className="goods-sr-only" htmlFor="goods-request">디자인 요청</label><textarea id="goods-request" value={draft} rows={3} maxLength={3000} disabled={busy||running||uncertain} onChange={e=>setDraft(e.target.value)} placeholder={selected?'예: 글자는 작게, 얼굴과 나머지 부분은 그대로 해 줘.':'사진만 올려도 좋아요. 원하는 느낌이 있으면 말해 주세요.'}/>
+     <label className="goods-sr-only" htmlFor="goods-request">디자인 요청</label><textarea id="goods-request" value={draft} rows={3} maxLength={3000} disabled={busy||running||uncertain} onChange={e=>setDraft(e.target.value)} placeholder={selected?'예: 글자는 작게, 얼굴과 나머지 부분은 그대로 해 줘.':((source&&sourceAttached)?'사진만으로 만들어도 좋아요. 원하는 느낌이 있다면 적어 주세요.':(style==='photo'||style==='illustration'||style==='cutout')?'사진을 첨부해 보세요. 사진 없이 만들고 싶은 장면을 적어도 좋아요.':'만들고 싶은 대상이나 장면을 적어 주세요.')}/>
      <div className="goods-composer-tools"><button type="button" className="goods-text-button goods-attach" aria-label="사진 첨부" disabled={busy||running||uncertain} onClick={()=>fileInput.current?.click()}><GoodsIcon name="photo"/><span>사진</span></button>
       {source&&!sourceAttached&&<button type="button" className="goods-text-button" disabled={busy||running||uncertain||!!pending.current} onClick={()=>setSourceAttached(true)}>원본 다시 첨부</button>}
       <span className="goods-generation-count" aria-label="요청당 이미지 1장">1장</span><button type="submit" className="goods-send" aria-label={pending.current?'같은 요청 다시 확인':'이미지 만들기'} disabled={(!draft.trim()&&(!source||!sourceAttached||!!selected))||busy||running||uncertain||remaining===0||!!consent?.required&&!agreed}>{busy||running?<span className="goods-spinner"/>:<GoodsIcon name="arrow" size={21}/>}</button>

@@ -71,14 +71,14 @@ test('photo-only generation uses the selected style and an empty request, while 
  const sent=JSON.parse(e.calls.find(c=>c.url.endsWith('/revisions')).body);
  assert.equal(sent.message,'');assert.equal(sent.style,'illustration');assert.equal(sent.use_source,true);h.unmount();
 });
-test('suggestion selection preserves the draft and never dispatches generation automatically',()=>{
- const e=environment(),h=harness();let tree=h.render();globalThis.document={getElementById:()=>({focus(){}})};
+test('suggestion selection preserves the draft and never dispatches generation automatically',async()=>{
+ const e=environment(),h=harness();let tree=await existing(h);const before=e.calls.filter(c=>c.url.endsWith('/revisions')).length;globalThis.document={getElementById:()=>({focus(){}})};
  find(tree,n=>n.type==='textarea').props.onChange({target:{value:'기존 요청'}});tree=h.render();
  const suggestions=component(tree,'PromptSuggestions').props;
  assert.equal(suggestions.draft,'기존 요청');
  suggestions.onChangeDraft(suggestions.draft+'\n수채화로 그려줘');tree=h.render();
  assert.equal(find(tree,n=>n.type==='textarea').props.value,'기존 요청\n수채화로 그려줘');
- assert.ok(!e.calls.some(c=>c.url.endsWith('/revisions')));delete globalThis.document;h.unmount();
+ assert.equal(e.calls.filter(c=>c.url.endsWith('/revisions')).length,before);delete globalThis.document;h.unmount();
 });
 test('exhausted guest can view results but cannot request a fourth generation',async()=>{
  const e=environment(),h=harness({guest:{remaining:0,work_id:null}});let tree=h.render();find(tree,n=>n.type==='textarea').props.onChange({target:{value:'another request'}});tree=h.render();
@@ -130,9 +130,18 @@ test('removing every thumbnail sends no images and preserves the draft',async()=
  find(tree,n=>n.type==='textarea').props.onChange({target:{value:'새로운 바다 그림'}});tree=h.render();
  button(tree,'시안 첨부 해제').props.onClick();tree=h.render();
  button(tree,'원본 사진 첨부 해제').props.onClick();tree=h.render();
- assert.equal(component(tree,'PromptSuggestions').props.hasPhoto,false);
- assert.equal(component(tree,'PromptSuggestions').props.parentId,null);
+ assert.ok(!nodes(tree).some(n=>n.type?.name==='PromptSuggestions'));
  assert.ok(!nodes(tree).some(n=>n.props?.className==='goods-composer-thumbnail'));
  await generate(h);const sent=JSON.parse(e.calls.filter(c=>c.url.endsWith('/revisions')&&c.method==='POST').at(-1).body);
  assert.equal(sent.parent_id,null);assert.equal(sent.use_source,false);assert.equal(sent.message,'새로운 바다 그림');h.unmount();
+});
+
+
+test('blank input and text-only descriptions hide recommendations without disabling generation',()=>{
+ environment();const h=harness();let tree=h.render();
+ assert.ok(!nodes(tree).some(n=>n.type?.name==='PromptSuggestions'));
+ component(tree,'StylePicker').props.onSelect('illustration');tree=h.render();
+ find(tree,n=>n.type==='textarea').props.onChange({target:{value:'바닷가의 작은 등대'}});tree=h.render();
+ assert.ok(!nodes(tree).some(n=>n.type?.name==='PromptSuggestions'));
+ assert.equal(button(tree,'이미지 만들기').props.disabled,false);h.unmount();
 });

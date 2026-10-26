@@ -260,7 +260,7 @@ class GoodsSuggestionBatch(Identity, Created, Base):
     visual_summary: Mapped[str | None] = mapped_column(Text)
     __table_args__ = (
         UniqueConstraint('owner_id', 'context_hash', 'batch'),
-        CheckConstraint('batch >= 0 AND batch <= 3'),
+        CheckConstraint('batch >= 0', name='ck_goods_suggestions_batch_nonnegative'),
         CheckConstraint("status IN ('pending','ready','fallback')"),
     )
 

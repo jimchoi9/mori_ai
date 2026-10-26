@@ -12,3 +12,10 @@ export function startRotation(tick:(pixels:number)=>void, paused:()=>boolean,
   id=schedule(frame);
   return ()=>cancel(id);
 }
+
+/** Move through a single, finite set without cloning candidates or jumping to the start. */
+export function advanceStrip(position:number, max:number, pixels:number, direction:1|-1) {
+  const next=Math.max(0,Math.min(max,position+pixels*direction));
+  const atEdge=pixels>0 && (direction===1 ? next>=max : next<=0);
+  return {position:next,direction:(atEdge?-direction:direction) as 1|-1,atEdge};
+}

@@ -1,6 +1,6 @@
 """Owner-serialized admission and private cache; never hold locks across an LLM call."""
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -27,8 +27,10 @@ def response(row):
 
 
 async def prepare(session, owner, work_id, body: SuggestRequest) -> Admission:
-    await lock_owner(session, owner)
+    actor = await lock_owner(session, owner)
     current = await work(session, owner, work_id)
+    if actor.is_guest and body.batch > 3:
+        raise APIError(429, 'SUGGESTIONS_BATCH_LIMIT')
     revisions = (await session.scalars(select(GoodsRevision).where(
         GoodsRevision.work_id == work_id))).all()
     parent = next((r for r in revisions if r.id == body.parent_id), None)
@@ -52,8 +54,9 @@ async def prepare(session, owner, work_id, body: SuggestRequest) -> Admission:
     day_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     used = await session.scalar(select(func.count()).select_from(GoodsSuggestionBatch).where(
         GoodsSuggestionBatch.owner_id == owner, GoodsSuggestionBatch.created_at >= day_start))
-    if used >= DAILY_CALL_LIMIT:
-        return Admission(None, {'items': [], 'source': 'fallback', 'batch': body.batch})
+    if actor.is_guest and used >= DAILY_CALL_LIMIT:
+        raise APIError(429, 'SUGGESTIONS_DAILY_LIMIT', '오늘의 AI 추천 요청 한도에 도달했습니다.',
+            details={'limit': DAILY_CALL_LIMIT, 'retry_at': (day_start + timedelta(days=1)).isoformat()})
     cached = (await session.scalars(select(GoodsSuggestionBatch).where(
         GoodsSuggestionBatch.owner_id == owner, GoodsSuggestionBatch.work_id == work_id,
         GoodsSuggestionBatch.status == 'ready').order_by(GoodsSuggestionBatch.created_at.desc()))).all()

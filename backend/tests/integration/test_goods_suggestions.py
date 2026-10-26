@@ -101,7 +101,10 @@ async def test_parallel_same_context_only_dispatches_once_and_daily_admission_is
                 s.add(GoodsSuggestionBatch(owner_id=UUID(me['user']['id']), work_id=UUID(wid),
                     context_hash=uuid4().hex, image_ref='source:test', batch=0, status='fallback'))
         limited = await c.post(url, json=payload(batch=1), headers=headers(me))
-        assert limited.json()['data']['source'] == 'fallback' and len(provider.calls) == 1
+        assert limited.status_code == 429 and limited.json()['error']['code'] == 'SUGGESTIONS_DAILY_LIMIT'
+        assert limited.json()['error']['details']['limit'] == 20
+        assert limited.json()['error']['details']['retry_at']
+        assert len(provider.calls) == 1
 
 
 @pytest.mark.asyncio
@@ -132,7 +135,7 @@ async def test_csrf_consent_owner_expiration_and_parent_are_checked(db, tmp_path
         me, wid = await setup(c); url = f'/api/v1/goods/work/{wid}/suggestions'
         assert (await c.post(url, json=payload())).status_code == 403
         assert (await c.post(url, json=payload(parent_id=str(uuid4())), headers=headers(me))).status_code == 422
-        assert (await c.post(url, json=payload(batch=4), headers=headers(me))).status_code == 422
+        assert (await c.post(url, json=payload(batch=4), headers=headers(me))).status_code == 429
         async with db() as s, s.begin():
             current = await s.get(GoodsWork, UUID(wid))
             current.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
@@ -154,8 +157,8 @@ async def test_photo_without_prompt_generates_selected_style_and_replay_keeps_qu
         async with db() as s:
             row = await s.get(GoodsRevision, UUID(first.json()['data']['id']))
             assert row.message == '' and row.config['automatic_request']
-            assert row.config['prompt_version'] == 'goods-small-v10-keyring-auto'
-            assert 'WHOLE photographed scene' in row.prompt
+            assert row.config['prompt_version'] == 'goods-small-v13-keyring-auto'
+            assert 'Translate the photographed scene' in row.prompt
         assert await GoodsWorker(db, store, settings).run_once()
         state = (await c.get(f'/api/v1/goods/work/{wid}')).json()['data']
         assert state['remaining_generations'] == 2
@@ -243,3 +246,26 @@ async def test_selected_design_is_the_image_and_only_its_ancestry_is_used(db, tm
         context, data = provider.calls[-1]
         assert context.editing and context.image_ref == f'revision:{ids[1]}' and data
         assert context.history == ('첫 여행', '선택한 수정')
+
+@pytest.mark.asyncio
+async def test_members_pass_daily_and_batch_limits_but_guests_cannot(db, tmp_path):
+    provider = Provider()
+    app = create_app(settings=config(goods_suggestions_enabled=True), session_factory=db,
+        media_storage=LocalStorage(tmp_path), suggestion_provider=provider)
+    async with app.router.lifespan_context(app), httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as c:
+        me, wid = await setup(c); url = f'/api/v1/goods/work/{wid}/suggestions'
+        denied = await c.post(url, json=payload(batch=4), headers=headers(me))
+        assert denied.status_code == 429 and provider.calls == []
+        member = await login(c)
+        from backend.tests.integration.test_upload_http import consent as member_consent
+        await member_consent(c, member)
+        assert (await c.post('/api/v1/goods/claim', json={'work_id':wid}, headers=headers(member))).status_code == 200
+        async with db() as s, s.begin():
+            for _ in range(20):
+                s.add(GoodsSuggestionBatch(owner_id=UUID(member['user']['id']), work_id=UUID(wid),
+                    context_hash=uuid4().hex, image_ref='source:test', batch=0, status='fallback'))
+        response = await c.post(url, json=payload(batch=4), headers=headers(member))
+        assert response.status_code == 200 and response.json()['data']['source'] == 'ai'
+        assert len(provider.calls) == 1
+        repeat = await c.post(url, json=payload(batch=4), headers=headers(member))
+        assert repeat.json()['data'] == response.json()['data'] and len(provider.calls) == 1

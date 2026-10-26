@@ -56,9 +56,9 @@ def test_catalog_is_public_metadata_without_provider_instructions():
 def test_magnet_profile_is_versioned_without_changing_keyring_defaults():
     default = build_prompt('free', '바다 여행')
     assert build_prompt('free', '바다 여행', product='keyring') == default
-    assert default.version == 'goods-small-v10-keyring'
+    assert default.version == 'goods-small-v13-keyring'
     magnet = build_prompt('free', '바다 여행', product='magnet')
-    assert magnet.version == 'goods-small-v10-magnet'
+    assert magnet.version == 'goods-small-v13-magnet'
     assert 'acrylic magnet artwork' in magnet.prompt
     assert 'drilled holes' in magnet.prompt and 'transparent' in magnet.prompt
     with pytest.raises(ValueError):
@@ -77,3 +77,31 @@ def test_scene_options_do_not_inherit_cutout_instructions(style, product):
     assert brief['small_goods']==SCENE_RULES
     assert 'do not extract or regroup' in brief['product_rules']
     assert 'Remove the surrounding scene' in build_prompt('cutout','사진으로 만들어줘',product=product).prompt
+
+
+@pytest.mark.parametrize('style', ['photo', 'illustration'])
+def test_scene_defaults_are_plain_and_ornaments_are_opt_in(style):
+    from backend.goods_design.design_rules import recommendation_brief
+    plain=build_prompt(style,'둥근 사각형 테두리로')
+    assert 'DEFAULT DECORATION: none' in plain.prompt
+    assert 'DEFAULT OUTLINE: a rounded rectangle' in plain.prompt
+    assert 'only when explicitly requested' in plain.prompt
+    assert 'not permission for new ornaments' in plain.prompt
+    assert 'DEFAULT DECORATION: none' in recommendation_brief(style,'keyring',editing=False)['small_goods']
+    requested=build_prompt(style,'모서리에 작은 꽃 장식')
+    assert 'Current customer request: 모서리에 작은 꽃 장식' in requested.prompt
+
+
+@pytest.mark.parametrize('style', ['photo', 'illustration'])
+@pytest.mark.parametrize('product', ['keyring', 'magnet'])
+def test_scene_polish_is_conditional_and_not_wedding_specific(style, product):
+    from backend.goods_design.design_rules import SCENE_POLISH_RULES, recommendation_brief
+    prompt=build_prompt(style,'자연스럽게 만들어줘',product=product).prompt
+    assert SCENE_POLISH_RULES in prompt
+    assert SCENE_POLISH_RULES in recommendation_brief(style,product,editing=False)['small_goods']
+    for rule in ['When subject importance is ambiguous, do not crop', 'Keep all intended people in group photos',
+                 'For landscapes, architecture, wide groups', 'For food, pets and object photos',
+                 'Do not turn night into day', 'On edits, keep the selected design crop']:
+        assert rule in prompt
+    for specific in ['wedding', 'bride', 'groom', 'cake', 'curtains']:
+        assert specific not in SCENE_POLISH_RULES.lower()

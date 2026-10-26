@@ -15,3 +15,5 @@
 #main-content.goods-root .goods-suggestion-options:active {cursor:grabbing;}
 #main-content.goods-root .goods-suggestion-group {display:flex;flex-shrink:0;gap:7px;padding-right:7px;}
 #main-content.goods-root .goods-suggestion-options button {user-select:none;}
+
+#main-content.goods-root .goods-suggestion-feedback {font-size:11px;color:#718071;margin:7px 0 0;}

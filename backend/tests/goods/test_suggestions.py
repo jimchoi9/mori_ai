@@ -36,7 +36,7 @@ def test_recommendations_are_bounded_unique_plain_text_and_separate_from_images(
     parsed = SuggestionResult.model_validate(result())
     assert len(public_items(parsed, [parsed.suggestions[0].prompt])) == 9
     duplicate = {**result(), 'suggestions': [{'prompt': '같은 문구', 'category': ('border','color','composition')[i % 3]} for i in range(10)]}
-    with pytest.raises(ValueError): public_items(SuggestionResult.model_validate(duplicate))
+    assert len(public_items(SuggestionResult.model_validate(duplicate))) == 1
     for prompt in ['<script>', 'http://example.com', '줄\n바꿈', 'x' * 25]:
         invalid = result(); invalid['suggestions'][0]['prompt'] = prompt
         with pytest.raises(ValueError): SuggestionResult.model_validate(invalid)
@@ -44,8 +44,12 @@ def test_recommendations_are_bounded_unique_plain_text_and_separate_from_images(
     with pytest.raises(ValueError): SuggestionResult.model_validate(invalid_category)
     same_category = result()
     for item in same_category['suggestions']: item['category'] = 'border'
-    with pytest.raises(ValueError): SuggestionResult.model_validate(same_category)
-    for body in [{'style': 'other'}, {'style': 'free', 'batch': True}, {'style': 'book', 'batch': 4},
+    assert len(SuggestionResult.model_validate(same_category).suggestions)==10
+    single = result(); single['suggestions']=single['suggestions'][:1]
+    assert len(public_items(SuggestionResult.model_validate(single)))==1
+    empty = result(); empty['suggestions']=[]
+    with pytest.raises(ValueError): SuggestionResult.model_validate(empty)
+    for body in [{'style': 'other'}, {'style': 'free', 'batch': True}, {'style': 'book', 'batch': -1},
                  {'style': 'book', 'count': 3}]:
         with pytest.raises(ValueError): SuggestRequest.model_validate(body)
 
@@ -148,3 +152,14 @@ async def test_selected_approach_product_and_stage_are_trusted_but_photo_history
                 assert packet == {'visual_summary': private_command,
                     'recent_requests': [private_command], 'exclude': [private_command]}
     assert len(calls) == 24
+
+
+def test_default_obligations_are_filtered_but_concrete_alternatives_survive():
+    from backend.goods_design.suggestions.policy import useful_choice
+    for text in ['사진 바깥은 투명하게','중심을 안정감 있게','둥근 사각 장면 테두리로','사진을 여백 없이 꽉 차게']:
+        assert not useful_choice(text,style='photo')
+    for text in ['폴라로이드 여백으로','흑백 사진으로','얇은 흰색 테두리로']:
+        assert useful_choice(text,style='photo')
+    assert useful_choice('둥근 사각 테두리로',style='photo',editing=True)
+    candidate=result();candidate['suggestions']=[{'prompt':'사진 바깥은 투명하게','category':'background'}]
+    with pytest.raises(ValueError):public_items(SuggestionResult.model_validate(candidate),style='photo')

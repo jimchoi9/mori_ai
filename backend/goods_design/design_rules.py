@@ -14,26 +14,36 @@ class DesignDirection:
 DIRECTIONS = {
     'photo': DesignDirection(
         '사진형 액자', '사진을 작은 액자처럼',
-        'Keep the reference image itself intact, including faces, people count, medium and the relative '
+        'Preserve the reference photograph, including faces, people count, medium and the relative '
         'positions of every subject and scene element. Do not turn an illustrated reference into a photograph. '
-        'Compose the scene inside a cohesive photo frame. A rounded rectangle is one option, not a requirement. Allow a softly scalloped frame or modest reference-derived ornaments attached to its edge. Keep important subjects complete and '
-        'large enough to recognize. Frame treatment must support the photograph, not overpower it. '
-        'Preserve the full photographed background inside the frame, including curtains, scenery and the spaces between people. Never replace it with transparency or floral arrangements. Only outside the frame is transparent.',
+        'DEFAULT: show the photograph as a simple flat rounded-rectangle photo panel, with conservative framing and natural tonal polish as described below. '
+        'The image itself reaches the clean edge; frame means the outer boundary of the picture, '
+        'not a separate decorative frame object. Keep the original aspect ratio where practical. '
+        'A request for rounded rectangular edges changes only the outer shape. '
+        'Preserve the meaningful photographed background inside the panel, including scenery '
+        'and the spaces between people. Only outside the panel is transparent. '
+        'Do not add a border band, gold trim, metallic shine, bevel, ribbon, floral wreath or '
+        'extra flower ornaments unless the customer explicitly selects or requests that element. '
+        'Flowers already IN the photo stay in their original positions; they do not authorize '
+        'copying flowers onto the frame. The occasion or visible objects do not authorize adding themed decorations.',
         ('frame color and width', 'rounded corner treatment', 'balanced margins and whole-image scale'),
         ('illustrating or cartoonizing the photo', 'adding fictional scene objects',
          'losing the photo-frame structure', 'cropping off faces or important subjects',
-         'moving individual objects, altering their colors or reconstructing the photographed scene'),
+         'moving individual objects, recoloring them beyond natural tonal correction or reconstructing the photographed scene'),
     ),
     'illustration': DesignDirection(
         '사진을 그림으로', '구도는 살리고 그림체만',
-        'Translate the WHOLE photographed scene into the requested drawing medium. Preserve the '
-        'original composition, people positions, body poses, spatial relationships and recognizable '
-        'background (curtains, sky, buildings, landscape or interior as applicable). A medium-only '
-        'request such as colored-pencil texture changes the rendering technique, NOT the scene layout '
+        'Translate the photographed scene into the requested drawing medium, allowing only the conservative framing and tonal polish below. Preserve the '
+        'relative composition, people positions, body poses, spatial relationships and recognizable '
+        'background and the sense of place. A medium-only '
+        'request such as colored-pencil texture changes the rendering technique, NOT the relative scene layout '
         'or background presence. Keep a continuous illustrated background behind and between subjects. '
-        'For a medium-only request, use a complete rectangular or rounded-rectangular scene panel with four connected sides enclosing the background. Do not follow a dress hem, person, cake or bouquet as the outer silhouette. Keep the scene panel intact behind them. Frame decorations are small corner accents, not a new surrounding flower arrangement. Only an explicit frame-shape request changes that default panel. Softly curved frame edges and modest '
-        'floral corner ornaments may extend the frame, but must never erase the scene or trace only '
-        'the people, cake, pets or foreground objects. Only outside the complete scene frame is '
+        'For a medium-only request, use a simple rounded-rectangular scene panel '
+        'with the artwork reaching its clean edge and no added frame decoration. Keep four '
+        'connected sides enclosing the background. Do not follow a person, pet or '
+        'individual object as the outer silhouette. Only an explicit frame-shape or ornament request changes '
+        'this default. A selected ornament may decorate the edge but must not erase the scene. '
+        'Only outside the complete scene panel is '
         'transparent; do not create transparent holes where the photographed background belongs. '
         'Remove a background or create a subject cutout ONLY if explicitly requested by the customer. '
         'For watercolor and colored pencil, retain original facial geometry, expression and likeness. '
@@ -131,7 +141,7 @@ IDENTITY_RULES = (
     'over prettiness, simplification and decorative composition. A bright, flattering result '
     'must not enlarge eyes, slim the face, reshape the nose, de-age the person or replace them with '
     'a generic handsome/beautiful character. Preserve the pose and occlusion: do not uncover a face '
-    'hidden behind a cake or other object by inventing missing features. Do not transfer features '
+    'hidden behind an object by inventing missing features. Do not transfer features '
     'between people. Only when the customer explicitly requests cartoon, manga, animation or digital '
     '3D character styling may proportions and facial forms adapt naturally to that style; retain '
     'distinctive personal cues and the original people rather than interchangeable characters. '
@@ -148,16 +158,44 @@ SMALL_GOODS_RULES = (
     'requested, using the exact supplied text. These are visual design guidelines, not manufacturing approval.'
 )
 
+SCENE_POLISH_RULES = (
+    'CONSERVATIVE SCENE POLISH: make the image readable and visually balanced at small print size '
+    'by interpreting this particular photo, not by applying a fixed portrait crop or a themed template. '
+    'Identify the intended main subject AND meaningful context from visible evidence and the current request. '
+    'When clearly useful, modestly crop only peripheral empty space or unambiguous edge distractions '
+    'and scale the retained image as one unit. Do not relocate, erase, replace or invent scene objects. '
+    'Keep all intended people in group photos; do not assume a peripheral person is unimportant. '
+    'Protect faces, heads, hands, paws, important body parts, held objects and the subject being celebrated. '
+    'For landscapes, architecture, wide groups or scenes without a clear main subject, retain the wide '
+    'composition and meaningful negative space; do not force a centered close-up. Preserve a landmark '
+    'or meaningful background even if people stay smaller. For food, pets and object photos, keep the '
+    'whole important subject and its useful surroundings. When subject importance is ambiguous, '
+    'do not crop. Treat user requests to keep the full composition as overriding automatic framing. '
+    'Gently balance exposure, white balance and contrast only where needed; preserve natural colors, '
+    'skin tone, highlight detail and the original lighting mood. Do not turn night into day, add an '
+    'orange cast, over-saturate, over-sharpen, smooth faces into plastic or invent blurred backgrounds. '
+    'Photo mode must remain photographic; illustration mode uses the requested medium without changing '
+    'identity or relative scene geometry. A well-composed or well-exposed photo needs little or no correction. '
+    'On edits, keep the selected design crop and tonal balance unless the current request changes them; '
+    'never zoom in or intensify retouching automatically on each generation.'
+)
+
+
 SCENE_RULES = (
     'SCENE PRESERVATION: photo and illustration are complete scene panels, NOT subject cutouts. '
+    'DEFAULT OUTLINE: a rounded rectangle with four softly rounded corners and otherwise straight sides. '
+    'A drawing-medium change alone never changes this outline. Use another outline only when explicitly requested. '
     'Keep the photographed background visible behind and between people and objects. '
     'Transparency applies ONLY to the canvas outside the enclosing scene frame, never to the '
-    'photographed background inside it. Curtains, sky, landscape and interior are image content, '
+    'photographed background inside it. The setting, scenery and interior are image content, '
     'not a product display backdrop. Keep foreground/background spatial relationships. '
+    'DEFAULT DECORATION: none. Plain requests retain the unadorned outline while allowing conservative scene polish. '
+    'Add flowers, ribbons, metallic trim or border bands only when explicitly requested; photographed '
+    'flowers remain scene content, not permission for new ornaments. Do not add a physical 3D frame. '
     'Frame ornaments must not replace scenery or turn the frame into a people-and-flowers silhouette. '
-    'Preserve the photograph as a whole in photo mode; change only its rendering medium in illustration mode. '
-    'For a background-free subject design, the separate cutout option exists.'
-)
+    'Keep the scene photographic in photo mode; apply the requested rendering medium in illustration mode. Conservative whole-image framing and tonal polish are allowed in both modes. '
+    'For a background-free subject design, the separate cutout option exists. '
+) + SCENE_POLISH_RULES
 
 
 def goods_rules(style: str, product: str) -> tuple[str, str]:
@@ -165,7 +203,7 @@ def goods_rules(style: str, product: str) -> tuple[str, str]:
         return (SCENE_RULES,
                 f'Printable acrylic {"keyring" if product == "keyring" else "magnet"} artwork: '
                 'a complete framed image, with a continuous scene inside its boundary. '
-                'Fit and scale the entire image as one unit; do not extract or regroup its subjects. '
+                'Frame and scale the image as one unit; do not extract or regroup its subjects. '
                 'Do not draw hardware, drilled holes, acrylic rims, physical thickness or product mockups.')
     return SMALL_GOODS_RULES, PRODUCT_RULES[product]
 

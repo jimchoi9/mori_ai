@@ -36,7 +36,7 @@ async def test_magnet_guest_generation_claim_save_and_checkout_preserve_product(
         async with db() as s:
             revision = await s.get(GoodsRevision, UUID(rid))
             assert revision.config['product'] == 'magnet'
-            assert revision.config['prompt_version'] == 'goods-small-v10-magnet'
+            assert revision.config['prompt_version'] == 'goods-small-v13-magnet'
             assert 'acrylic magnet artwork' in revision.prompt
         member = await login(c)
         assert (await c.post('/api/v1/goods/claim', json={'work_id': wid}, headers=headers(member))).status_code == 200
