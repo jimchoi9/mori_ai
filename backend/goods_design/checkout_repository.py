@@ -6,8 +6,7 @@ async def test_purchase(session, owner_id, design_id):
     return (await session.execute(select(GoodsTestPurchase, Album)
         .join(Album, Album.id == GoodsTestPurchase.album_id)
         .where(GoodsTestPurchase.owner_id == owner_id,
-               GoodsTestPurchase.design_id == design_id,
-               Album.owner_id == owner_id))).first()
+               GoodsTestPurchase.design_id == design_id))).first()
 
 
 def purchase_view(purchase, album):

@@ -35,7 +35,7 @@ test('test checkout explains no charge and blocks double clicks until album is r
  finish();await first;
  // onClick is intentionally fire-and-forget; wait for the fetch continuation.
  await new Promise(r=>setTimeout(r,0));
- assert.deepEqual(navigation,['/albums/album/edit']);h.dispose();
+ assert.deepEqual(navigation,['/purchases/purchase']);h.dispose();
 });
 
 test('lost response retry keeps the same request key and frozen design version',async()=>{
@@ -46,20 +46,20 @@ test('lost response retry keeps the same request key and frozen design version',
  action(tree).props.onClick();await new Promise(r=>setTimeout(r,0));
  assert.equal(calls[0].headers['Idempotency-Key'],calls[1].headers['Idempotency-Key']);
  assert.equal(calls[0].body,calls[1].body);assert.equal(JSON.parse(calls[1].body).expected_version,1);
- assert.deepEqual(navigation,['/albums/album/edit']);h.dispose();
+ assert.deepEqual(navigation,['/purchases/purchase']);h.dispose();
 });
 
 test('disabled mode never exposes a checkout and existing receipt opens the correct album stage',()=>{
  const h=harness();query.data.goods_checkout_mode='disabled';assert.equal(h.render(),null);
  const tree=h.render({...design,test_purchase:{...receipt,album_status:'review_ready'}});
  assert.equal(action(tree),undefined);
- assert.equal(nodes(tree).find(n=>n.type==='link').props.to,'/albums/album/review');h.dispose();
+ assert.equal(nodes(tree).find(n=>n.type==='link').props.to,'/purchases/purchase');h.dispose();
 });
 
 test('deleted receipt stays visibly deleted without a new checkout action',()=>{
  const h=harness({...design,test_purchase:{...receipt,album_status:'deleted'}});
  const tree=h.render();assert.match(JSON.stringify(tree),/삭제되었습니다/);
- assert.equal(action(tree),undefined);assert.ok(!nodes(tree).some(n=>n.type==='link'));h.dispose();
+ assert.equal(action(tree),undefined);assert.equal(nodes(tree).find(n=>n.type==='link').props.to,'/purchases/purchase');h.dispose();
 });
 
 test('session expiry aborts checkout and prevents navigation from a late response',async()=>{

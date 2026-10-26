@@ -195,5 +195,59 @@
     "items": [],
     "source": "pending",
     "batch": 0
+  },
+  "gift_test_checkout_request": {
+    "expected_version": 1,
+    "gift": true
+  },
+  "purchase_detail_response": {
+    "data": {
+      "id": "00000000-0000-0000-0000-000000000021",
+      "design_id": "00000000-0000-0000-0000-000000000020",
+      "mode": "test",
+      "created_at": "2026-10-26T00:00:00+00:00",
+      "album_id": "00000000-0000-0000-0000-000000000022",
+      "album_status": "draft",
+      "product": "keyring",
+      "placement": {
+        "holeX": 0.5,
+        "holeY": 0,
+        "widthMm": 50
+      },
+      "gift": false,
+      "gift_registered": false,
+      "can_manage": true,
+      "print_box_mm": 50,
+      "image_url": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/original",
+      "delivery_status": "waiting_configuration",
+      "attempt_count": 0,
+      "files_ready": true,
+      "address_ready": true,
+      "link_expires_at": null,
+      "upload_url": "https://mori.example/purchases/00000000-0000-0000-0000-000000000021/photos",
+      "files": {
+        "original": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/original",
+        "preview": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/preview",
+        "qr": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/qr",
+        "sheet": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/sheet",
+        "spec": "/api/v1/goods/purchases/00000000-0000-0000-0000-000000000021/files/spec"
+      }
+    }
+  },
+  "gift_inspect_request": {
+    "token": "example-placeholder-not-a-real-token"
+  },
+  "gift_inspect_response": {
+    "data": {
+      "status": "available",
+      "album_id": null
+    }
+  },
+  "gift_claim_response": {
+    "data": {
+      "status": "registered",
+      "album_id": "00000000-0000-0000-0000-000000000022",
+      "album_status": "draft"
+    }
   }
 }

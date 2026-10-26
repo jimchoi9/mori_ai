@@ -9,7 +9,9 @@ export function oauthLoginUrl(provider: AuthProvider, returnTo = '/goods'): stri
   if (provider !== 'google' && provider !== 'kakao') throw new Error('Unsupported login provider');
   const albumPath = /^\/albums\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(edit|progress|review|view)$/i;
   const designPath = /^\/designs\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const destination = ['/goods','/designs','/albums'].includes(returnTo) || albumPath.test(returnTo) || designPath.test(returnTo) ? returnTo : '/goods';
+  const purchasePath = /^\/purchases\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/photos)?$/i;
+  const giftPath = /^\/gifts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const destination = ['/goods','/designs','/albums'].includes(returnTo) || albumPath.test(returnTo) || designPath.test(returnTo) || purchasePath.test(returnTo) || giftPath.test(returnTo) ? returnTo : '/goods';
   return `/api/v1/auth/${provider}/start?return_to=${encodeURIComponent(destination)}`;
 }
 

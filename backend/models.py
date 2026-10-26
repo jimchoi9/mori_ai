@@ -31,6 +31,7 @@ class User(Identity, Created, Base):
 
 class Album(Identity, Created, Base):
     __tablename__ = 'albums'
+    management_pending: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'))
     order_mode: Mapped[str] = mapped_column(String(10), server_default='date')
     next_selection_index: Mapped[int] = mapped_column(server_default='1')
@@ -311,4 +312,41 @@ class GoodsTestPurchase(Identity, Created, Base):
     album_id: Mapped[UUID] = mapped_column(ForeignKey('albums.id'), unique=True)
     status: Mapped[str] = mapped_column(String(20), default='simulated')
     design_snapshot: Mapped[dict] = mapped_column(JSONB)
+    gift: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
+    gift_token: Mapped[str | None] = mapped_column(Text)
+    gift_token_hash: Mapped[str | None] = mapped_column(String(64))
+    claimed_by: Mapped[UUID | None] = mapped_column(ForeignKey('users.id'))
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (CheckConstraint("status = 'simulated'"),)
+
+
+class GoodsPurchaseDelivery(Created, Base):
+    """Durable outbox, separate from the successful simulated purchase."""
+    __tablename__ = 'goods_purchase_deliveries'
+    purchase_id: Mapped[UUID] = mapped_column(ForeignKey('goods_test_purchases.id'), primary_key=True)
+    status: Mapped[str] = mapped_column(String(30), default='pending')
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(50))
+    manifest: Mapped[dict | None] = mapped_column(JSONB)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text('now()'))
+    __table_args__ = (
+        CheckConstraint("status IN ('pending','waiting_configuration','preparing','sending','accepted','failed','unknown','not_requested')", name='ck_goods_delivery_status'),
+        CheckConstraint('attempt_count >= 0', name='ck_goods_delivery_attempt_count'),
+    )
+
+
+class GoodsDeliveryAttempt(Identity, Created, Base):
+    __tablename__ = 'goods_delivery_attempts'
+    purchase_id: Mapped[UUID] = mapped_column(ForeignKey('goods_purchase_deliveries.purchase_id'), index=True)
+    number: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20))
+    payload: Mapped[dict] = mapped_column(JSONB)
+    provider_id: Mapped[str | None] = mapped_column(String(200))
+    error_code: Mapped[str | None] = mapped_column(String(50))
+    first_dispatched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        UniqueConstraint('purchase_id', 'number'),
+        CheckConstraint("status IN ('sending','accepted','failed','unknown')", name='ck_goods_mail_attempt_status'),
+    )

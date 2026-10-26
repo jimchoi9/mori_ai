@@ -10,3 +10,5 @@ pillow-heif>=1,<2
 httpx>=0.28,<1
 boto3>=1.40,<2
 openai>=2,<3
+reportlab>=4,<5
+qrcode>=8,<9

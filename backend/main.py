@@ -61,6 +61,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(generation_router)
     from backend.goods_design.routes import router as goods_router
     app.include_router(goods_router)
+    from backend.goods_design.delivery.routes import router as goods_delivery_router
+    app.include_router(goods_delivery_router)
     from backend.goods_design.guests import router as goods_guests_router
     app.include_router(goods_guests_router)
     from backend.goods_design.suggestions.routes import router as suggestions_router

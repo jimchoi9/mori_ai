@@ -16,7 +16,7 @@ async def find_record(session, owner_id, operation, key):
 
 async def find_album(session, owner_id, album_id, *, lock=False):
     query = select(Album).where(Album.id == album_id, Album.owner_id == owner_id,
-                               Album.deleted_at.is_(None), Album.status != 'deleted')
+                               Album.deleted_at.is_(None), Album.status != 'deleted', Album.management_pending.is_(False))
     return await session.scalar(query.with_for_update() if lock else query)
 
 
@@ -34,7 +34,7 @@ async def save_record(session, owner_id, operation, key, hashed, album_id, statu
 
 
 async def list_albums(session, owner_id, cursor, limit):
-    query = select(Album).where(Album.owner_id == owner_id, Album.deleted_at.is_(None), Album.status != 'deleted')
+    query = select(Album).where(Album.owner_id == owner_id, Album.deleted_at.is_(None), Album.status != 'deleted', Album.management_pending.is_(False))
     if cursor:
         query = query.where(tuple_(Album.created_at, Album.id) < tuple_(*cursor))
     return (await session.scalars(query.order_by(Album.created_at.desc(), Album.id.desc()).limit(limit + 1))).all()

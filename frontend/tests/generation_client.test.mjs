@@ -24,3 +24,15 @@ test('slow upload confirmation has its own deadline; ordinary requests stay boun
   assert.deepEqual(waits,[180000,30000,180000]);
  }finally{globalThis.fetch=previousFetch;AbortSignal.timeout=previousTimeout;}
 });
+
+test('first authenticated POST can use its session token before parent effects initialize globals',async()=>{
+ const previous=globalThis.fetch,seen=[];
+ globalThis.fetch=async(_url,options)=>{seen.push(options.headers['X-CSRF-Token']);return new Response(JSON.stringify({data:{status:'available'}}));};
+ try{
+  client.setCsrf();
+  await client.api('/goods/purchases/example/gift/inspect',{method:'POST',body:{token:'test-only'},csrfToken:'current-session'});
+  client.setCsrf('stale-global');
+  await client.api('/goods/purchases/example/gift/claim',{method:'POST',body:{token:'test-only'},csrfToken:'current-session'});
+  assert.deepEqual(seen,['current-session','current-session']);
+ }finally{globalThis.fetch=previous;client.setCsrf();}
+});

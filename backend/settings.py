@@ -1,6 +1,9 @@
 """Shared web/worker settings. Credentials must be explicitly configured."""
 from pathlib import Path
+from uuid import UUID
 from decimal import Decimal
+from datetime import datetime
+import ipaddress
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -34,6 +37,50 @@ class Settings(BaseSettings):
     goods_image_model: str = "gpt-image-2.5-sunburst"
     goods_generation_limit: int | None = Field(default=None, ge=1)
     goods_checkout_mode: Literal['disabled', 'test'] = 'disabled'
+    goods_delivery_origin: str = ''
+    goods_delivery_origin_expires_at: datetime | None = None
+    goods_delivery_allow_lan: bool = False
+    goods_mail_enabled: bool = False
+    goods_mail_purchase_id: UUID | None = None
+    goods_mail_from: str = Field(default='', repr=False)
+    goods_mail_to: str = Field(default='', repr=False)
+    resend_api_key: SecretStr = Field(default=SecretStr(''), repr=False)
+
+    @field_validator('goods_delivery_origin_expires_at', 'goods_mail_purchase_id', mode='before')
+    @classmethod
+    def optional_delivery_expiry(cls, value):
+        return None if value == '' else value
+
+    @model_validator(mode='after')
+    def validate_delivery(self):
+        origin = self.goods_delivery_origin
+        if origin:
+            url = urlsplit(origin)
+            if (url.scheme != 'https' or not url.hostname or url.username or url.password
+                    or url.path or url.query or url.fragment or len(origin) > 200):
+                raise ValueError('delivery origin must be an exact HTTPS origin')
+            url.port
+            hostname = url.hostname.lower()
+            if hostname == 'localhost' or hostname.endswith('.localhost'):
+                raise ValueError('delivery origin must be reachable from a phone')
+            try:
+                address = ipaddress.ip_address(hostname)
+            except ValueError:
+                address = None
+            if address and (address.is_loopback or address.is_unspecified or address.is_multicast):
+                raise ValueError('invalid delivery origin address')
+            local = address and not address.is_global or hostname.endswith('.local') or '.' not in hostname
+            if local and not (self.app_env == 'local' and self.goods_delivery_allow_lan
+                              and self.goods_delivery_origin_expires_at):
+                raise ValueError('LAN delivery origin requires local mode and an expiry')
+        if self.goods_delivery_origin_expires_at and self.goods_delivery_origin_expires_at.tzinfo is None:
+            raise ValueError('delivery expiry requires timezone')
+        for value in (self.goods_mail_from, self.goods_mail_to):
+            if value and (len(value) > 320 or '\n' in value or '\r' in value):
+                raise ValueError('invalid mail address')
+        if self.goods_mail_to and not re.fullmatch(r'[^\s,;<>@]+@[^\s,;<>@]+\.[^\s,;<>@]+', self.goods_mail_to):
+            raise ValueError('exactly one operator recipient is required')
+        return self
     goods_guest_enabled: bool = True
     goods_suggestions_enabled: bool = False
     goods_suggestions_model: Literal['gpt-6-luna'] = 'gpt-6-luna'

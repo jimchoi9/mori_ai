@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import func, select
 
 from backend.main import create_app
-from backend.models import Album, GoodsDesign, GoodsRevision, GoodsTestPurchase, GoodsWork
+from backend.models import Album, GoodsDesign, GoodsRevision, GoodsTestPurchase, GoodsWork, GoodsPurchaseDelivery
 from backend.tests.integration.test_auth_http import config, login, ORIGIN
 from backend.tests.integration.test_album_http import headers
 
@@ -56,6 +56,10 @@ async def test_checkout_creates_and_connects_draft_without_legacy_or_paid_state(
         async with db() as s:
             purchase = await s.get(GoodsTestPurchase, UUID(data['id']))
             assert purchase.design_snapshot['placement']['widthMm'] == 50
+            assert purchase.design_snapshot['snapshot_version'] == 2
+            assert purchase.design_snapshot['artwork_key']
+            delivery = await s.get(GoodsPurchaseDelivery, purchase.id)
+            assert delivery.status == 'pending' and delivery.attempt_count == 0
         # Even a separate client request must not reassign the test album manually.
         assert (await client.put(f'/api/v1/goods/designs/{design_id}/album',
             json={'album_id':data['album_id'],'expected_version':1},
@@ -81,6 +85,7 @@ async def test_checkout_replay_and_concurrent_new_keys_provision_only_one_album(
         async with db() as s:
             assert await s.scalar(select(func.count()).select_from(Album)) == 1
             assert await s.scalar(select(func.count()).select_from(GoodsTestPurchase)) == 1
+            assert await s.scalar(select(func.count()).select_from(GoodsPurchaseDelivery)) == 1
         conflict = await client.post(f'/api/v1/goods/designs/{design_id}/test-checkout',
             json={'expected_version':2},headers=headers(me,'key-0'))
         assert conflict.status_code == 409
@@ -103,6 +108,7 @@ async def test_checkout_failure_rolls_back_receipt_album_and_retries_cleanly(db,
         async with db() as s:
             assert await s.scalar(select(func.count()).select_from(Album)) == 0
             assert await s.scalar(select(func.count()).select_from(GoodsTestPurchase)) == 0
+            assert await s.scalar(select(func.count()).select_from(GoodsPurchaseDelivery)) == 0
         monkeypatch.setattr(checkout,'save_record',original)
         assert (await client.post(f'/api/v1/goods/designs/{design_id}/test-checkout',
             json={'expected_version':1},headers=headers(me,'retry'))).status_code == 201
@@ -170,3 +176,38 @@ async def test_checkout_preserves_legacy_designs(db,legacy):
             json={'expected_version':1},headers=headers(me,'legacy'))).status_code==409
         async with db() as s:
             assert await s.scalar(select(func.count()).select_from(GoodsTestPurchase))==0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('product', ['keyring', 'magnet'])
+async def test_purchase_snapshot_does_not_follow_later_design_or_revision_changes(db, product):
+    app = app_for(db)
+    async with app.router.lifespan_context(app), httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as client:
+        me = await login(client)
+        design_id = await seed(db, me['user']['id'])
+        async with db() as s, s.begin():
+            design = await s.get(GoodsDesign, UUID(design_id))
+            design.product = product
+        url = f'/api/v1/goods/designs/{design_id}/test-checkout'
+        first = (await client.post(url, json={'expected_version': 1},
+            headers=headers(me, 'snapshot-first'))).json()['data']
+        async with db() as s, s.begin():
+            purchase = await s.get(GoodsTestPurchase, UUID(first['id']))
+            frozen = dict(purchase.design_snapshot)
+            design = await s.get(GoodsDesign, UUID(design_id))
+            design.product = 'magnet' if product == 'keyring' else 'keyring'
+            design.placement = {'holeX': .9, 'holeY': .9, 'widthMm': 70}
+            design.version += 1
+            revision = await s.get(GoodsRevision, design.revision_id)
+            revision.message = 'later request'
+        again = (await client.post(url, json={'expected_version': 2},
+            headers=headers(me, 'snapshot-again'))).json()['data']
+        assert again == first
+        async with db() as s:
+            purchase = await s.get(GoodsTestPurchase, UUID(first['id']))
+            assert purchase.design_snapshot == frozen
+            assert frozen['product'] == product
+            assert frozen['placement'] == {'holeX': .5, 'holeY': 0, 'widthMm': 50}
+            assert frozen['message'] == 'travel'
+            assert await s.scalar(select(func.count()).select_from(GoodsPurchaseDelivery)) == 1

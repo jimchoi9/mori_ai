@@ -21,7 +21,7 @@ async def _poll(operation, stopped, interval, name):
 
 
 async def run_worker(validation, runner, stopped, *, poll_seconds,
-                     generation_enabled=True, oauth_cleanup=None, goods_operation=None):
+                     generation_enabled=True, oauth_cleanup=None, goods_operation=None, delivery_operation=None):
     if poll_seconds <= 0:
         raise ValueError('poll_seconds must be positive')
     async def scan():
@@ -33,6 +33,8 @@ async def run_worker(validation, runner, stopped, *, poll_seconds,
         operations.append(_poll(oauth_cleanup, stopped, 60, 'oauth_cleanup'))
     if goods_operation is not None:
         operations.append(_poll(goods_operation, stopped, poll_seconds, 'goods'))
+    if delivery_operation is not None:
+        operations.append(_poll(delivery_operation, stopped, max(5, poll_seconds), 'purchase_delivery'))
     if generation_enabled:
         for stage, count in GLOBAL_STAGE_LIMITS.items():
             for _ in range(count):

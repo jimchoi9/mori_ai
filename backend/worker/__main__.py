@@ -29,6 +29,8 @@ async def main() -> None:
     runner = Runner(sessions, result_store(validation.store), executor, local_executor=executor)
     from backend.goods_design.worker import GoodsWorker
     goods = GoodsWorker(sessions, validation.store, settings)
+    from backend.goods_design.delivery.worker import DeliveryWorker
+    delivery = DeliveryWorker(sessions, validation.store, settings)
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -44,7 +46,8 @@ async def main() -> None:
         await run_worker(validation, runner, stopped,
                          poll_seconds=settings.worker_poll_seconds,
                          generation_enabled=executor is not None,
-                         oauth_cleanup=oauth_cleanup, goods_operation=goods.run_once if executor else goods.maintenance)
+                         oauth_cleanup=oauth_cleanup, goods_operation=goods.run_once if executor else goods.maintenance,
+                         delivery_operation=delivery.run_once)
     finally:
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.remove_signal_handler(sig)
@@ -52,6 +55,7 @@ async def main() -> None:
             await executor.provider.aclose()
         if goods.provider is not None:
             await goods.provider.aclose()
+        await delivery.aclose()
         await sessions.kw['bind'].dispose()
         logging.info('Worker stopped safely')
 

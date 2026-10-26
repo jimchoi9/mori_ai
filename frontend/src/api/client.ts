@@ -13,11 +13,12 @@ export class ApiError extends Error {
 }
 const messages: Record<number,string> = {401:'로그인이 만료되었습니다. 다시 로그인해 주세요.',403:'동의 또는 접근 권한을 확인해 주세요.',404:'사진첩이나 사진을 찾을 수 없습니다.',409:'다른 변경이 있습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.',413:'파일 용량이 너무 큽니다.',422:'파일 형식이나 입력값을 확인해 주세요.'};
 export function errorText(error: unknown) { if(error instanceof DOMException && ['TimeoutError','AbortError'].includes(error.name))return '응답을 기다리는 시간이 지났습니다. 같은 요청으로 다시 시도해 주세요.'; if(error instanceof TypeError)return '서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'; return error instanceof Error ? error.message : '요청을 처리하지 못했습니다.'; }
-export async function api<T>(path: string, options: {method?: string; body?: unknown; key?: string; signal?: AbortSignal} = {}): Promise<T> {
+export async function api<T>(path: string, options: {method?: string; body?: unknown; key?: string; signal?: AbortSignal; csrfToken?: string} = {}): Promise<T> {
   const method = options.method ?? 'GET';
   const headers: Record<string,string> = {};
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-  if (method !== 'GET' && csrf) headers['X-CSRF-Token'] = csrf;
+  const requestCsrf=options.csrfToken??csrf;
+  if (method !== 'GET' && requestCsrf) headers['X-CSRF-Token'] = requestCsrf;
   if (options.key) headers['Idempotency-Key'] = options.key;
   const url = path.startsWith('/api/') ? path : `/api/v1${path}`;
   // Completion verifies the immutable remote bytes before acknowledging acceptance.
