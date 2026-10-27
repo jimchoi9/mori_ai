@@ -17,27 +17,34 @@ async def create(client, me, key='create-1'):
     return await client.post('/api/v1/albums', json={}, headers=headers(me, key))
 
 
+async def seed_legacy_album(client, me):
+    """Explicit pre-migration fixture, never a successful public create request."""
+    from backend.albums.service import summary
+    factory = client._transport.app.state.session_factory
+    async with factory() as session, session.begin():
+        album = Album(owner_id=UUID(me['user']['id']), legacy_access=True)
+        session.add(album); await session.flush()
+        return await summary(session, album)
+
+
 @pytest.mark.asyncio
-async def test_default_serialization_replay_and_version_priority(client, db):
+async def test_legacy_serialization_and_new_creation_closed(client, db):
     me = await login(client)
-    first = await create(client, me)
-    assert first.status_code == 201
-    album = first.json()['data']['album']
-    UUID(album['id'])
-    assert album == {**album, 'title': '나의 사진첩', 'status': 'draft', 'version': 1,
-                     'page_count': 0, 'cover': None, 'published_at': None}
-    assert set(album) == {'id','title','status','version','page_count','cover','created_at','updated_at','published_at'}
-    for field in ['created_at', 'updated_at']:
-        assert datetime.fromisoformat(album[field].replace('Z', '+00:00')).utcoffset().total_seconds() == 0
+    album = await seed_legacy_album(client, me)
     detail = await client.get('/api/v1/albums/' + album['id'])
-    assert detail.json()['data'] == {'detail': {'album': album, 'order_mode': 'date', 'pages': [], 'active_run_id': None, 'generation_mode': None}, 'media_access': []}
+    assert detail.status_code == 200
+    assert detail.json()['data']['detail']['album'] == album
+    assert set(album) == {'id','title','status','version','page_count','cover','created_at','updated_at','published_at'}
+    # Existing albums and even old idempotency records do not mint a new grant.
     async with db() as s, s.begin():
-        await s.execute(update(Album).values(version=2))
-    replay = await create(client, me)
-    assert replay.status_code == 201 and replay.json()['data'] == first.json()['data']
-    assert replay.json()['request_id'] != first.json()['request_id']
-    assert replay.headers['cache-control'] == 'no-store'
-    assert replay.headers['x-request-id'] == replay.json()['request_id']
+        s.add(IdempotencyRecord(owner_id=UUID(me['user']['id']), operation='POST /api/v1/albums',
+            key='create-1', request_hash='a'*64, resource_id=UUID(album['id']), http_status=201,
+            response_body={'album':album}))
+    for key in ['create-1', 'new']:
+        response = await create(client, me, key)
+        assert response.status_code == 403 and response.json()['error']['code'] == 'PURCHASE_REQUIRED'
+    async with db() as s:
+        assert await s.scalar(select(func.count()).select_from(Album)) == 1
 
 
 @pytest.mark.asyncio
@@ -54,39 +61,30 @@ async def test_required_key_strict_body_uuid_query_and_csrf(client):
     assert (await client.get('/api/v1/albums/not-uuid')).status_code == 422
     for query in ['limit=0', 'limit=51', 'limit=bad', 'cursor=bad', 'cursor=']:
         assert (await client.get('/api/v1/albums?' + query)).status_code == 422
-    a = (await create(client, me)).json()['data']['album']['id']
+    a = (await seed_legacy_album(client, me))['id']
     for query in ['', '?expected_version=0', '?expected_version=bad']:
         assert (await client.delete('/api/v1/albums/' + a + query, headers=h)).status_code == 422
     assert (await client.delete('/api/v1/albums/' + a + '?expected_version=1')).status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_same_key_simultaneous_one_album_and_record(client, db):
+async def test_parallel_independent_creates_never_allocate_album(client, db):
     me = await login(client)
-    a,b = await asyncio.wait_for(asyncio.gather(create(client, me), create(client, me)), 10)
-    assert a.status_code == b.status_code == 201
-    assert a.json()['data'] == b.json()['data']
-    assert a.json()['request_id'] != b.json()['request_id']
+    replies = await asyncio.gather(create(client, me), create(client, me), create(client, me, 'other'))
+    assert all(r.status_code == 403 and r.json()['error']['code'] == 'PURCHASE_REQUIRED' for r in replies)
     async with db() as s:
-        assert await s.scalar(select(func.count()).select_from(Album)) == 1
-        assert await s.scalar(select(func.count()).select_from(IdempotencyRecord)) == 1
+        assert await s.scalar(select(func.count()).select_from(Album)) == 0
+        assert await s.scalar(select(func.count()).select_from(IdempotencyRecord)) == 0
 
 
 @pytest.mark.asyncio
-async def test_request_hash_conflict_and_owner_scope(client, db):
+async def test_legacy_owner_scope(client, db):
     me = await login(client)
-    a = (await create(client, me)).json()['data']['album']['id']
-    from backend.albums.service import create_album
-    from backend.http.errors import APIError
-    async with db() as s, s.begin():
-        with pytest.raises(APIError) as exc:
-            await create_album(s, UUID(me['user']['id']), 'create-1', 'a'*64)
-        assert exc.value.status == 409 and exc.value.code == 'IDEMPOTENCY_CONFLICT'
+    a = (await seed_legacy_album(client, me))['id']
     beta = await login(client, 'beta')
     assert (await client.get('/api/v1/albums/' + a)).status_code == 404
     assert (await client.delete('/api/v1/albums/' + a + '?expected_version=1', headers=headers(beta))).status_code == 404
-    b = await create(client, beta)
-    assert b.status_code == 201 and b.json()['data']['album']['id'] != a
+    assert (await create(client, beta)).status_code == 403
 
 
 @pytest.mark.asyncio
@@ -94,7 +92,7 @@ async def test_cursor_ties_pagination(client, db):
     me = await login(client)
     ids=[]
     for i in range(5):
-        ids.append((await create(client, me, str(i))).json()['data']['album']['id'])
+        ids.append((await seed_legacy_album(client, me))['id'])
     async with db() as s, s.begin():
         await s.execute(update(Album).values(created_at=datetime(2026,1,1,tzinfo=timezone.utc)))
     found=[]; cursor=None
@@ -111,7 +109,7 @@ async def test_cursor_ties_pagination(client, db):
 @pytest.mark.asyncio
 async def test_delete_version_access_outbox_and_fence(client, db):
     me = await login(client)
-    a = (await create(client, me)).json()['data']['album']['id']
+    a = (await seed_legacy_album(client, me))['id']
     async with db() as s, s.begin():
         page=Page(album_id=UUID(a)); s.add(page); await s.flush()
         run=Run(album_id=UUID(a),status='running'); s.add(run); await s.flush()
@@ -125,7 +123,7 @@ async def test_delete_version_access_outbox_and_fence(client, db):
     deleted=await client.delete('/api/v1/albums/'+a+'?expected_version=1', headers=headers(me))
     assert deleted.status_code == 202 and deleted.json()['data'] == {'album_id':a,'status':'deleted'}
     assert (await client.get('/api/v1/albums/'+a)).status_code == 404
-    assert (await create(client, me)).status_code == 404
+    assert (await create(client, me)).status_code == 403
     assert (await client.delete('/api/v1/albums/'+a+'?expected_version=1',headers=headers(me))).status_code == 404
     assert (await client.get('/api/v1/albums')).json()['data']['items'] == []
     async with db() as s:
@@ -150,39 +148,20 @@ async def test_logout_unauthorized(client):
 @pytest.mark.asyncio
 async def test_unknown_query_fields_rejected(client):
     me = await login(client)
-    a = (await create(client, me)).json()['data']['album']['id']
+    a = (await seed_legacy_album(client, me))['id']
     for path in ['/api/v1/albums?extra=1', '/api/v1/albums/'+a+'?extra=1']:
         assert (await client.get(path)).status_code == 422
     assert (await client.delete('/api/v1/albums/'+a+'?expected_version=1&extra=1',headers=headers(me))).status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_two_connections_key_convergence_and_concurrent_delete(client, db):
-    from sqlalchemy import text
-    from backend.albums.service import create_album
-    from backend.http.idempotency import request_hash
+async def test_concurrent_legacy_delete_preserves_fence(client, db):
     me = await login(client)
-    barrier=asyncio.Barrier(2)
-    async def contender():
-        async with db() as s, s.begin():
-            pid=await s.scalar(text('SELECT pg_backend_pid()'))
-            await barrier.wait()
-            result=await create_album(s, UUID(me['user']['id']), 'parallel', request_hash({}))
-            return pid, result
-    a,b=await asyncio.wait_for(asyncio.gather(contender(),contender()),10)
-    assert a[0] != b[0] and a[1] == b[1]
-    album_id=a[1][1]['album']['id']
+    album_id = (await seed_legacy_album(client, me))['id']
     async def delete():
         return await client.delete('/api/v1/albums/'+album_id+'?expected_version=1',headers=headers(me))
     deleted=await asyncio.wait_for(asyncio.gather(delete(),delete()),10)
     assert sorted(r.status_code for r in deleted)==[202,404]
-    # Deleted lookup must precede hash comparison as well as replay.
-    from backend.http.errors import APIError
-    async with db() as s, s.begin():
-        with pytest.raises(APIError) as exc:
-            await create_album(s, UUID(me['user']['id']), 'parallel', 'b'*64)
-        assert exc.value.status == 404
     async with db() as s:
         assert await s.scalar(select(func.count()).select_from(Album)) == 1
-        assert await s.scalar(select(func.count()).select_from(IdempotencyRecord)) == 1
         assert await s.scalar(select(func.count()).select_from(Outbox)) == 1

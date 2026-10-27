@@ -31,6 +31,7 @@ class User(Identity, Created, Base):
 
 class Album(Identity, Created, Base):
     __tablename__ = 'albums'
+    legacy_access: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     management_pending: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'))
     order_mode: Mapped[str] = mapped_column(String(10), server_default='date')

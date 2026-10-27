@@ -63,7 +63,7 @@ async def test_checkout_creates_and_connects_draft_without_legacy_or_paid_state(
         # Even a separate client request must not reassign the test album manually.
         assert (await client.put(f'/api/v1/goods/designs/{design_id}/album',
             json={'album_id':data['album_id'],'expected_version':1},
-            headers=headers(me,'link'))).status_code == 409
+            headers=headers(me,'link'))).status_code == 403
 
 
 @pytest.mark.asyncio

@@ -65,3 +65,14 @@ async def lock_runs_and_tasks(session, album_id):
 
 def cleanup_event(session, album_id):
     session.add(Outbox(event_type='album_cleanup', entity_id=album_id, payload={'album_id': str(album_id)}))
+
+
+async def has_purchase_access(session, album):
+    """Album-scoped purchase grant, also valid after an explicit gift registration."""
+    from sqlalchemy import or_, and_
+    from backend.models import GoodsTestPurchase
+    return await session.scalar(select(GoodsTestPurchase.id).where(
+        GoodsTestPurchase.album_id == album.id, GoodsTestPurchase.status == 'simulated',
+        or_(and_(GoodsTestPurchase.gift.is_(False), GoodsTestPurchase.owner_id == album.owner_id),
+            and_(GoodsTestPurchase.gift.is_(True), GoodsTestPurchase.claimed_by == album.owner_id)),
+    ).limit(1)) is not None

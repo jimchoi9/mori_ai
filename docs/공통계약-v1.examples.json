@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.12",
+  "contract_version": "1.13",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1827,5 +1827,14 @@
       "optimize": 1
     },
     "existing_four_snapshot_behavior": "Preserve image_concurrency=4; global admission cap=2; do not cancel existing running leases"
+  },
+  "purchase_required_error": {
+    "error": {
+      "code": "PURCHASE_REQUIRED",
+      "message": "굿즈를 구매하면 전용 사진첩이 만들어집니다.",
+      "retryable": false,
+      "details": {}
+    },
+    "request_id": "example-request"
   }
 }

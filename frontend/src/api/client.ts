@@ -28,7 +28,7 @@ export async function api<T>(path: string, options: {method?: string; body?: unk
     const payload = await response.json().catch(() => ({}));
     const code = payload.error?.code ?? 'HTTP_ERROR';
     if (response.status === 401) window.dispatchEvent(new Event('mori:unauthorized'));
-    throw new ApiError(response.status, code, (code === 'ACCESS_APPROVAL_REQUIRED' ? '관리자 승인 후 이용할 수 있습니다. 승인 상태를 확인해 주세요.' : messages[response.status] ?? '연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.'), payload.error?.details ?? {}, payload.error?.retryable ?? false, payload.request_id);
+    throw new ApiError(response.status, code, (code === 'PURCHASE_REQUIRED' ? '굿즈를 구매하면 전용 사진첩을 이용할 수 있어요.' : code === 'ACCESS_APPROVAL_REQUIRED' ? '관리자 승인 후 이용할 수 있습니다. 승인 상태를 확인해 주세요.' : messages[response.status] ?? '연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.'), payload.error?.details ?? {}, payload.error?.retryable ?? false, payload.request_id);
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()).data as T;

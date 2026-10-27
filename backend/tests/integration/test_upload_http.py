@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select, func
 from backend.models import Upload, Page, MediaAsset, Job
 from backend.tests.integration.test_auth_http import client, login, ORIGIN
-from backend.tests.integration.test_album_http import create, headers
+from backend.tests.integration.test_album_http import seed_legacy_album, headers
 
 
 def file(name='photo.png', size=100):
@@ -13,7 +13,7 @@ def file(name='photo.png', size=100):
 
 async def setup(client):
     me=await login(client)
-    album=(await create(client,me)).json()['data']['album']['id']
+    album=(await seed_legacy_album(client,me))['id']
     return me,album
 
 

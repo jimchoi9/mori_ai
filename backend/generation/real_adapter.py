@@ -47,6 +47,12 @@ class RealExecutor(FakeExecutor):
                 return False
             if not await allowed(session, self.settings, rows[0].owner_id):
                 raise RealExecutionError('ACCESS_APPROVAL_REQUIRED', safe_to_retry=True, dispatch_state='not_sent')
+            from backend.albums.access import require_album_access
+            from backend.http.errors import APIError
+            try:
+                await require_album_access(session, rows[0])
+            except APIError as error:
+                raise RealExecutionError(error.code, safe_to_retry=True, dispatch_state='not_sent') from None
             # A sibling unknown may pause new AI after this task was prepared.
             # None distinguishes an unsent, explicitly resumable pause from stale work.
             if rows[1].status == 'action_required':

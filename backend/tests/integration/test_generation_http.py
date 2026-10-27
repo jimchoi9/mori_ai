@@ -12,7 +12,7 @@ from backend.storage.local import storage_key
 from backend.main import create_app
 from backend.models import Album, Page, MediaAsset, Upload, Run, Task, Outbox, Consent
 from backend.tests.integration.test_auth_http import config, login, ORIGIN
-from backend.tests.integration.test_album_http import create, headers
+from backend.tests.integration.test_album_http import seed_legacy_album, headers
 from backend.tests.integration.test_upload_http import consent
 
 
@@ -24,11 +24,11 @@ async def client(db):
             yield c
 
 
-async def ready_album(client, db, *, count=1, agreed=True):
+async def ready_album(client, db, *, count=1, agreed=True, album_id=None):
     me = await login(client)
     if agreed:
         await consent(client, me)
-    album_id = UUID((await create(client, me, key=str(uuid4()))).json()['data']['album']['id'])
+    album_id = UUID(album_id or (await seed_legacy_album(client, me))['id'])
     async with db() as s, s.begin():
         album = await s.get(Album, album_id)
         for n in range(count):

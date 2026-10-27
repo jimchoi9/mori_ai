@@ -249,5 +249,14 @@
       "album_id": "00000000-0000-0000-0000-000000000022",
       "album_status": "draft"
     }
+  },
+  "purchase_required_error": {
+    "error": {
+      "code": "PURCHASE_REQUIRED",
+      "message": "굿즈를 구매하면 전용 사진첩이 만들어집니다.",
+      "retryable": false,
+      "details": {}
+    },
+    "request_id": "example-request"
   }
 }

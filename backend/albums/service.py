@@ -7,9 +7,6 @@ from uuid import UUID
 from sqlalchemy import select
 from backend.albums import repository as repo
 from backend.http.errors import APIError
-from backend.http.idempotency import replay
-
-CREATE_OPERATION = 'POST /api/v1/albums'
 
 
 def utc(value):
@@ -66,18 +63,9 @@ async def summary(session, album):
 
 
 async def create_album(session, user_id, key, hashed):
-    if await repo.lock_owner(session, user_id) is None:
-        not_found()
-    record = await repo.find_record(session, user_id, CREATE_OPERATION, key)
-    if record:
-        # Access checks precede even a hash conflict, so deleted resources never leak.
-        if await repo.find_album(session, user_id, record.resource_id, lock=True) is None:
-            not_found()
-        return replay(record, hashed)
-    album = await repo.insert_album(session, user_id)
-    data = {'album': await summary(session, album)}
-    await repo.save_record(session, user_id, CREATE_OPERATION, key, hashed, album.id, 201, data)
-    return 201, data
+    # Independent album creation is closed, including historical idempotency replays.
+    # Checkout creates its one album and receipt together in a single transaction.
+    raise APIError(403, 'PURCHASE_REQUIRED', '굿즈를 구매하면 전용 사진첩이 만들어집니다.')
 
 
 def encode_cursor(album):

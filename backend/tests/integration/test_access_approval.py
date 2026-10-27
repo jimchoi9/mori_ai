@@ -7,7 +7,7 @@ from backend.access.repository import set_approval
 from backend.models import User, Upload
 from backend.tests.integration.test_generation_pipeline import client
 from backend.tests.integration.test_auth_http import login
-from backend.tests.integration.test_album_http import create, headers
+from backend.tests.integration.test_album_http import seed_legacy_album, headers
 from backend.tests.integration.test_upload_http import reserve, consent
 
 async def approve(db, uid, value=True):
@@ -21,7 +21,7 @@ async def test_unapproved_upload_generation_goods_and_public_switch(client, db):
     me=await login(client)
     assert me['access']=={'mode':'approved_only','allowed':False}
     await consent(client,me)
-    album=(await create(client,me)).json()['data']['album']['id']
+    album=(await seed_legacy_album(client,me))['id']
     assert (await reserve(client,me,album)).json()['error']['code']=='ACCESS_APPROVAL_REQUIRED'
     for path,body in [(f'/albums/{album}/generation',{'expected_version':1}),
                       (f'/albums/{album}/generation/resume',{'expected_version':1,'run_id':str(uuid4())}),
@@ -44,7 +44,7 @@ async def test_unapproved_upload_generation_goods_and_public_switch(client, db):
 async def test_approval_revoke_existing_session_and_owner_isolation(client,db):
     client._transport.app.state.settings.access_mode='approved_only'
     me=await login(client);await consent(client,me)
-    album=(await create(client,me)).json()['data']['album']['id']
+    album=(await seed_legacy_album(client,me))['id']
     await approve(db,me['user']['id'])
     await approve(db,me['user']['id']) # idempotent
     assert (await client.get('/api/v1/me')).json()['data']['access']['allowed']

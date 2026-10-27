@@ -1,5 +1,12 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## 구매 기반 앨범 권한 — 2026-10-27
+
+- 작업 브랜치 `feat/goods-album-entitlement`, 공통계약v1.13·굿즈계약v1.17. 신규 독립 앨범/수동 연결 API는 PURCHASE_REQUIRED로 닫고 테스트 구매만 전용 앨범을 개설한다. 새 앨범 업로드/완료/생성/실제 AI dispatch는 해당 앨범 구매 권한을 확인한다.
+- migration0014는 기존 구매 미연결 앨범만 legacy_access=true로 보존한다. 신규 기본false, 일반 구매자/선물 명시 등록자만 해당 구매 앨범을 사용한다. 과거 예약/run snapshot은 유지하며 NFC·상품 정원·수량/재구매·실제 PG는 이번 범위 밖이다.
+- DB208·단위529/하위10·프론트12와 타입/빌드 통과. 승인된18187에 image `mori-ai:album-entitlement-local-20261027`/migration0014 적용, 기존 앨범2/구매1 유지. 비용USD0.99980095/상한2·이번 유료호출0. Resend키 런타임 반영·메일disabled, 실발송0. 상세와 실기기 미검증 범위는 개발운영 최신 절을 따른다.
+
+
 ## 구매 후 전달 구현 — 2026-10-26
 
 - 브랜치 `feat/goods-purchase-delivery`, 기준 `feat/goods-chat-entry`/`39ede55`. 굿즈 계약v1.16: 테스트 구매·전용앨범·outbox 원자성, 원화/배치/QR/PDF 자료와 구매 후 화면, 운영자 Resend 전달 이력을 추가했다. 실제 PG·제작 발주·운영 배포는 제외한다.

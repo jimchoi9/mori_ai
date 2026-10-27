@@ -1,4 +1,5 @@
 """Atomic reservation, immutable completion, and edit policies."""
+from backend.albums.access import require_album_access
 from backend.access.service import require_access
 import asyncio
 import hashlib
@@ -35,6 +36,7 @@ def config(settings):
 async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     await require_access(session, settings, owner)
     parent=await repo.album(session,owner,album_id)
+    await require_album_access(session, parent)
     operation=f'POST /api/v1/albums/{album_id}/uploads'
     record=await albums.find_record(session,owner,operation,key)
     if record: return replay(record,hashed)
@@ -141,6 +143,7 @@ async def order(session,owner,album_id,body):
 async def put_metadata(session,owner,upload_id,*,thumbnail=False):
     album_id=await repo.upload_album_id(session,upload_id)
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
+    await require_album_access(session, parent)
     repo.draft(parent)
     if u.status not in {'reserved','validating','ready'} or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary'):
         raise APIError(409,'STATE_CONFLICT')
@@ -155,6 +158,7 @@ async def put_metadata(session,owner,upload_id,*,thumbnail=False):
 
 async def accept_put(session,owner,album_id,upload_id):
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
+    await require_album_access(session, parent)
     if (u.status not in {'reserved','validating','ready'}
         or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary')
         or (u.status=='reserved' and (now()>=u.expires_at or parent.status!='draft'))):
@@ -172,6 +176,7 @@ def check_complete_hash(store,asset,expected_sha256):
 async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha256=None,thumbnail_sha256=None):
     async with sessions() as s,s.begin():
         parent,u,page,asset=await repo.upload(s,owner,album_id,upload_id)
+        await require_album_access(s, parent)
         await expire(s,parent,u)
         if u.status=='expired': return 200,view(parent,u)
         check_complete_hash(store,asset,expected_sha256)
@@ -202,6 +207,7 @@ async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha25
         raise
     async with sessions() as s,s.begin():
         parent,u,page,asset=await repo.upload(s,owner,album_id,upload_id)
+        await require_album_access(s, parent)
         await expire(s,parent,u)
         if u.status=='expired': return 200,view(parent,u)
         check_complete_hash(store,asset,expected_sha256)
@@ -227,6 +233,7 @@ async def complete_upload(sessions,store,owner,album_id,upload_id,expected_sha25
 
 async def upload_status(session,owner,album_id,upload_id):
     parent,u,page,asset=await repo.upload(session,owner,album_id,upload_id)
+    await require_album_access(session, parent)
     await expire(session,parent,u)
     return view(parent,u)
 

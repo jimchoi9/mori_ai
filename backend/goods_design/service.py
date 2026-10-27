@@ -105,13 +105,8 @@ async def complete(s,owner,id,revision_id,placement,product='keyring'):
     s.add(d);w.status='completed';await s.flush();return await design_view(s,d)
 
 async def link_album(s,owner,id,album_id,expected_version):
-    # Album before design is also the order used by future production admission.
-    album=await find_album(s,owner,album_id,lock=True)
+    # Keep owner scoping before rejecting retired manual linkage; existing links remain readable.
+    await design(s,owner,id)
+    album=await find_album(s,owner,album_id)
     if album is None:raise APIError(404,'RESOURCE_NOT_FOUND')
-    d=await design(s,owner,id,lock=True)
-    from backend.goods_design.checkout_repository import test_purchase
-    if await test_purchase(s,owner,id):raise APIError(409,'STATE_CONFLICT')
-    if d.production_started_at or d.version!=expected_version:raise APIError(409,'VERSION_CONFLICT')
-    if album.status!='published':raise APIError(422,'VALIDATION_ERROR')
-    d.album_id=album.id;d.version+=1
-    return await design_view(s,d)
+    raise APIError(403,'PURCHASE_REQUIRED','구매 시 전용 사진첩이 자동으로 연결됩니다.')

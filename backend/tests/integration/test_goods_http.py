@@ -62,7 +62,7 @@ async def test_discard_blocks_late_work_and_album_lock(db,tmp_path):
         d=GoodsDesign(owner_id=u.id,work_id=w.id,revision_id=r.id,placement={},production_started_at=datetime.now(timezone.utc));s.add(d)
         a=Album(owner_id=u.id,status='published',published_at=datetime.now(timezone.utc));s.add(a);await s.flush()
         with pytest.raises(APIError) as err:await link_album(s,u.id,d.id,a.id,1)
-        assert err.value.status==409
+        assert err.value.status==403 and err.value.code=='PURCHASE_REQUIRED'
         # No design for the second temporary work: discard invalidates its execution.
         w2=GoodsWork(owner_id=u.id,expires_at=datetime.now(timezone.utc)+timedelta(hours=1));s.add(w2);await s.flush()
         await discard(s,u.id,w2.id)
@@ -133,8 +133,8 @@ async def test_goods_album_ownership_version_and_source_preservation(db,tmp_path
             own_id,foreign_id=str(own.id),str(foreign.id)
         url=f'/api/v1/goods/designs/{d["id"]}/album'
         assert (await c.put(url,json={'album_id':foreign_id,'expected_version':1},headers=headers(me))).status_code==404
-        assert (await c.put(url,json={'album_id':own_id,'expected_version':1},headers=headers(me))).status_code==200
-        assert (await c.put(url,json={'album_id':own_id,'expected_version':1},headers=headers(me))).status_code==409
+        assert (await c.put(url,json={'album_id':own_id,'expected_version':1},headers=headers(me))).json()['error']['code']=='PURCHASE_REQUIRED'
+        assert (await c.put(url,json={'album_id':own_id,'expected_version':1},headers=headers(me))).status_code==403
         assert (await c.post('/api/v1/goods/work',json={})).status_code==403
 
 @pytest.mark.asyncio
