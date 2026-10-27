@@ -1,5 +1,13 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## NFC 감상과 관리 분리 — 2026-10-27
+
+- `feat/nfc-memory-viewer`, 공통계약v1.14/굿즈v1.18, migration0015. 새 구매 앨범은 익명 NFC 읽기 session과 로그인 관리 QR을 분리한다. owner viewer API는NFC_REQUIRED, legacy 뷰어는 유지한다. 초기 참고 Site/코드/라이선스 선별 이식은 재사용조사 최신 절을 따른다.
+- `/nfc/{tag_id}#key=...`→현재 탭 메모리2시간 session→`/nfc/view`. 쿠키/브라우저 영속 저장 금지, NFC로 관리/선물claim 불가. 일반 태그의 기록 주소 복사는 물리 접촉 증명이 아니다. 현재 사진형 책·BGM만 지원하며 영상/자동 publish/완성 후 사진 변경은 후속이다.
+- NFC writing secret은 운영자용 PDF/JSON bundle에만 둔다. 구매자 자료/receipt에 노출하거나 operator_* 다운로드를 열지 않는다. token·기록주소·본문을 로그에 출력하지 않는다. Source Site의 개인 미디어/키/환경파일을 복사하지 않는다.
+- 승인18187은 `mori-ai:nfc-memory-viewer-local-20261027`/migration0015, 기존 앨범2/구매1 보존. 사용/예약USD1.00161085·상한3·이번 AI0, 메일false. 실제NFC 접촉/기기 소리·50장 메모리 인수는 남아 있다. 검증 수·임시 QA 정리·제한은 개발운영 최신 절을 따른다.
+
+
 ## 로컬 AI 운용 상한 상향 — 2026-10-27
 
 - 사용자의 “올려줘” 승인으로 격리18187/project `mori-goods-ai-test-20261023` 운용 상한을 USD2→USD3으로 변경했다. 과거 절의 USD2는 당시 이력이다. web/worker 모두3 확인, 비용 이력·unknown 예약은 보존한다. 확인 당시 사용/예약USD1.00161085·잔여1.99838915·이미지1회 예약 가능, 이번 추가 AI호출0. 실제 이미지 재생성 성공을 검증한 것은 아니다. 메일false·기존 QA/운영 유지. 상세는 개발운영 최신 절.

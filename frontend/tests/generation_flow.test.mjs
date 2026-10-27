@@ -85,3 +85,8 @@ test('viewer arrows work without a focused photo but preserve text editing and m
  assert.equal(flow.keyboardOffset('ArrowLeft',true,false),0);
  assert.equal(flow.keyboardOffset('Enter',false,false),0);
 });
+
+test('purchased albums open management after publication, while legacy albums retain their viewer',()=>{
+ assert.equal(flow.albumPath({id:'goods',status:'published',nfc_required:true}),'/albums/goods/review');
+ assert.equal(flow.albumPath({id:'legacy',status:'published',nfc_required:false}),'/albums/legacy/view');
+});

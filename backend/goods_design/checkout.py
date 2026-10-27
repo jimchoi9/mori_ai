@@ -57,6 +57,8 @@ async def test_checkout(session, owner_id, design_id, expected_version, key, set
                 'coordinate_system': 'trimmed-artwork-normalized'})
         session.add(purchase)
         await session.flush()
+        from backend.nfc.service import ensure_tag
+        await ensure_tag(session,purchase)
         # A committed purchase never depends on storage or mail availability.
         session.add(GoodsPurchaseDelivery(purchase_id=purchase.id, status='pending'))
         await session.flush()

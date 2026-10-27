@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 
 from backend.models import Album, GoodsTestPurchase, GoodsPurchaseDelivery, GoodsRevision
 from backend.http.errors import APIError
-from .artifacts import FILES, packet
+from .artifacts import FILES, OPERATOR_FILES, packet
 
 
 def now():
@@ -18,7 +18,7 @@ def link_config(settings):
     expiry = settings.goods_delivery_origin_expires_at
     if not settings.goods_delivery_origin or expiry and expiry <= now():
         return None
-    return {'origin': settings.goods_delivery_origin, 'expires_at': expiry.isoformat() if expiry else None}
+    return {'packet_version': 3, 'origin': settings.goods_delivery_origin, 'expires_at': expiry.isoformat() if expiry else None}
 
 
 async def owned(session, owner_id, purchase_id):
@@ -64,15 +64,20 @@ async def ensure_bundle(sessions, store, settings, purchase_id):
         original = await asyncio.to_thread(store.read_bytes, snapshot['artwork_key'])
         url = (f"{config['origin']}/gifts/{purchase_id}#token={purchase.gift_token}" if purchase.gift
                else f"{config['origin']}/purchases/{purchase_id}/photos")
-        files = await asyncio.to_thread(packet, original, snapshot, str(purchase_id), url, config['expires_at'])
+        from backend.nfc.service import ensure_tag,writing_url
+        tag=await ensure_tag(s,purchase)
+        files = await asyncio.to_thread(packet, original, snapshot, str(purchase_id), url, config['expires_at'], writing_url(config['origin'],tag))
         bundle_id = uuid4()
         manifest = {'id': str(bundle_id), 'version': 1, 'link_config': config,
-                    'upload_url': url, 'created_at': now().isoformat(), 'files': {}}
+                    'upload_url': url, 'created_at': now().isoformat(), 'files': {}, 'operator_files': {}}
         for name, content in files.items():
-            filename, mime, role = FILES[name]
+            operator=name in OPERATOR_FILES
+            filename, mime, role = (OPERATOR_FILES if operator else FILES)[name]
             key = f'{purchase.owner_id}/{purchase.id}/{bundle_id}/{role}'
             await asyncio.to_thread(store.write, key, content)
-            manifest['files'][name] = {'key': key, 'sha256': hashlib.sha256(content).hexdigest(),
+            target=manifest['operator_files'] if operator else manifest['files']
+            label=name.removeprefix('operator_') if operator else name
+            target[label] = {'key': key, 'sha256': hashlib.sha256(content).hexdigest(),
                 'size': len(content), 'filename': filename, 'content_type': mime}
         delivery.manifest = manifest
         delivery.updated_at = now()

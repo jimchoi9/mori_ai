@@ -144,7 +144,7 @@ class DeliveryWorker:
     async def payload(self, pid, manifest):
         attachments = []
         for name in ('original', 'preview', 'sheet', 'spec'):
-            asset = manifest['files'][name]
+            asset = manifest.get('operator_files',{}).get(name) or manifest['files'][name]
             data = await asyncio.to_thread(self.store.read_bytes, asset['key'])
             if hashlib.sha256(data).hexdigest() != asset['sha256']:
                 raise ValueError('artifact checksum mismatch')

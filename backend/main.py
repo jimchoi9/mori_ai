@@ -53,6 +53,8 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
     app.include_router(oauth_router)
     from backend.albums.routes import router as albums_router
     app.include_router(albums_router)
+    from backend.nfc.routes import router as nfc_router
+    app.include_router(nfc_router)
     from backend.albums.music import router as music_router
     app.include_router(music_router)
     from backend.uploads.routes import router as uploads_router

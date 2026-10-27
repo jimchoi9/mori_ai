@@ -72,18 +72,18 @@ export function ReviewEditor({userId}:{userId:string}) {
   try{
    if(!requestIntents.peek(scope)){
     const latest=await api<Detail>(`/albums/${albumId}`,{signal:request.current.signal});
-    if(latest.detail.album.status==='published'){navigate(`/albums/${albumId}/view`);return;}
+    if(latest.detail.album.status==='published'){navigate(albumPath(latest.detail.album));return;}
     if(latest.detail.album.status!=='review_ready')throw new Error('모든 결과가 준비된 뒤 사진첩을 완성할 수 있습니다.');
     requestIntents.get(scope,{expected_version:latest.detail.album.version});
    }
    const intent=requestIntents.peek(scope)!;
    const result=await api<{album:Album}>(`/albums/${albumId}/publish`,{method:'POST',key:intent.key,body:intent.body,signal:request.current.signal});
    if(result.album.status!=='published')throw new Error('서버에서 사진첩 완성을 확인하지 못했습니다.');
-   requestIntents.finish(scope);await cache.invalidateQueries({queryKey:['albums',userId]});void cache.invalidateQueries({queryKey});navigate(`/albums/${albumId}/view`);
+   requestIntents.finish(scope);await cache.invalidateQueries({queryKey:['albums',userId]});void cache.invalidateQueries({queryKey});navigate(albumPath(result.album));
   }catch(e){
    if(request.current.signal.aborted)return;setError(errorText(e));
    try{const fresh=await api<Detail>(`/albums/${albumId}`,{signal:request.current.signal});cache.setQueryData(queryKey,fresh);
-    if(fresh.detail.album.status==='published'){requestIntents.finish(scope);await cache.invalidateQueries({queryKey:['albums',userId]});navigate(`/albums/${albumId}/view`);return;}
+    if(fresh.detail.album.status==='published'){requestIntents.finish(scope);await cache.invalidateQueries({queryKey:['albums',userId]});navigate(albumPath(fresh.detail.album));return;}
     if(e instanceof ApiError && e.status===409)setPublishRejected(true);
    }catch(fetchError){if(!request.current.signal.aborted)setError(`${errorText(e)} ${errorText(fetchError)}`);}
   }finally{publishing.current=false;if(!request.current.signal.aborted)setBusy(false);}
@@ -94,7 +94,7 @@ export function ReviewEditor({userId}:{userId:string}) {
  if(!['review_ready','published'].includes(album.status))return <p role="status">현재 사진첩 상태를 확인합니다…</p>;
  const page=activePage;const draft=page?drafts[page.id]:undefined;
  const value=captionValue(draft?.text??'');const asset=(page?.result??page?.thumbnail)?.asset_id;
- const finish=album.status==='published'?<Link className="button-link mori-button" to={`/albums/${albumId}/view`}>사진첩 감상</Link>:<GlassButton disabled={busy||dirty||saving||!!Object.values(drafts).find(d=>d.conflict)} onClick={()=>void publish()}>{busy?'완성 확인 중…':pending?'같은 완성 요청 다시 확인':'사진첩 완성'}</GlassButton>;
+ const finish=album.status==='published'?album.nfc_required?<p className="hint">굿즈의 NFC를 태그하면 추억책이 열려요.</p>:<Link className="button-link mori-button" to={`/albums/${albumId}/view`}>사진첩 감상</Link>:<GlassButton disabled={busy||dirty||saving||!!Object.values(drafts).find(d=>d.conflict)} onClick={()=>void publish()}>{busy?'완성 확인 중…':pending?'같은 완성 요청 다시 확인':'사진첩 완성'}</GlassButton>;
  return <section className="review-screen concept-review"><ScreenHeader title="사진첩 확인" leading={<Link className="mori-icon-button" to="/albums" aria-label="책장으로">‹</Link>} trailing={<span>{page?.position??0} / {pages.length}</span>}/>
 <DevAiNotice mode={detail.data?.detail.generation_mode ?? null}/><details className="review-help"><summary>글귀 편집 안내</summary><p className="hint">페이지마다 저장 버튼을 눌러 주세요. 빈 글귀도 저장할 수 있습니다. 한글 조합을 정리한 뒤 최대 80자입니다.</p></details>{dirty && <p className="notice" role="status">저장하지 않은 글귀가 있습니다. 각 페이지를 저장하거나 ‘입력 버리기’를 선택한 뒤 사진첩을 완성해 주세요.</p>}{saving && <p role="status">글귀를 저장하는 동안 완성할 수 없습니다.</p>}{error && <p role="alert">{error}</p>}{pending && !busy && <div className="notice"><p>완성 응답을 확인하지 못했습니다. 입력을 잠시 잠그고 보낸 키·버전으로 결과를 다시 확인합니다.</p>{publishRejected && <button className="secondary" onClick={()=>{requestIntents.finish(scope);setPublishRejected(false);setError('최신 서버 내용을 확인했습니다. 완성 버튼으로 새 요청을 준비할 수 있습니다.');}}>거절된 요청 닫고 최신 내용 확인</button>}</div>}{media.error && <p role="alert">{media.error} <button className="secondary" onClick={()=>void media.refresh()}>사진 주소 다시 받기</button></p>}
  {page&&draft?<div className="review-current"><PhotoFrame fit="cover"><SignedPhoto access={media.access.find(a=>a.asset_id===asset)} alt={`${page.position}번째 생성 사진`} onFailure={media.failed} retry={()=>asset&&void media.refresh([asset])}/></PhotoFrame><CaptionEditor value={draft.text} count={value.count} disabled={!!draft.saving||busy||!!pending} invalid={!value.valid} onChange={text=>change(page.id,text)} actions={<><GlassButton disabled={!isDirty(draft)||!value.valid||draft.saving||busy||!!pending||!!draft.conflict} onClick={()=>void save(page.id)}>{draft.saving?'저장 중…':'이 글귀 저장'}</GlassButton><button className="secondary" disabled={!isDirty(draft)&&!draft.conflict||draft.saving||busy||!!pending} onClick={()=>discard(page.id)}>입력 버리기</button></>} feedback={<>{draft.conflict && <div className="conflict" role="alert"><p>다른 변경이 반영되었습니다. 입력은 그대로 보존했습니다.</p><p>서버에 저장된 글귀: <q>{draft.conflict.page.caption_text || '(빈 글귀)'}</q></p><p>서버 페이지 버전: {String(draft.conflict.details.current_version??draft.conflict.page.version)}</p><button className="secondary" disabled={busy||!!pending} onClick={()=>setDrafts(old=>({...old,[page.id]:{...old[page.id],baseline:draft.conflict!.page.caption_text??'',version:draft.conflict!.page.version,conflict:undefined,message:'내 입력을 보존했습니다. 저장 버튼을 눌러 최신 버전에 저장하세요.'}}))}>내 입력 유지하고 최신 버전 사용</button></div>}{draft.message && <p role={draft.message==='저장 완료'?'status':'alert'}>{draft.message}</p>}</>}/></div>:<p role="status">검토할 사진을 준비하고 있어요.</p>}

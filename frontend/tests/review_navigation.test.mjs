@@ -29,3 +29,9 @@ test('switching photos preserves each draft and saving A never overwrites B',asy
  const publish=h.render().find(n=>n.props?.children==='사진첩 완성');assert.equal(publish.props.disabled,true,'hidden dirty draft blocks completion');
 });
 test.after(()=>unlink('review-check.mjs'));
+
+test('published goods has NFC guidance instead of an owner-viewer link',()=>{
+ const h=setup();detail.detail.album={...detail.detail.album,status:'published',nfc_required:true};
+ const tree=h.render();assert.ok(tree.some(n=>n.props?.children==='굿즈의 NFC를 태그하면 추억책이 열려요.'));
+ assert.ok(!tree.some(n=>n.props?.to==='/albums/album/view'));
+});

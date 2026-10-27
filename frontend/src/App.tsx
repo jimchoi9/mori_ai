@@ -1,3 +1,4 @@
+import {NfcExperience} from './features/nfc/NfcExperience';
 import {GiftRegistration,GiftTokenCapture} from './features/goods/GiftRegistration';
 import {PurchaseDetail,PurchasePhotos,PurchaseReturn} from './features/goods/PurchaseDetail';
 import {workspaceKey} from './features/goods/workflow';
@@ -18,6 +19,7 @@ function AlbumScreen({userId,Screen}:{userId:string;Screen:ComponentType<{userId
 export default function App(){
  const location=useLocation();const goods=location.pathname==='/'||location.pathname==='/goods';
  const [error,setError]=useState('');
+ if(location.pathname.startsWith('/nfc/'))return <NfcExperience/>;
  return <><GiftTokenCapture/><a className="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" className={goods?'goods-root':undefined} tabIndex={-1}>
   <AuthGate allowGuest={goods}>{(me,logout,agree,resume)=>{
    const account=me.guest?<Link className="goods-login-link" to="/login">로그인</Link>:<details className={goods?'goods-account':'app-account'}><summary aria-label={`${me.user.display_name} 계정 메뉴`}>{me.user.display_name.slice(0,1)}</summary><div><p>{me.user.display_name}님의 공간</p><nav aria-label="내 프로필 메뉴"><Link to="/goods">굿즈 만들기</Link><Link to="/designs">내 디자인</Link><Link to="/albums">내 책장</Link></nav><button className="text" onClick={()=>{if(window.dispatchEvent(new Event('mori:before-logout',{cancelable:true})))void logout().catch(e=>setError(errorText(e)));}}>로그아웃</button></div></details>;

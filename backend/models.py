@@ -351,3 +351,22 @@ class GoodsDeliveryAttempt(Identity, Created, Base):
         UniqueConstraint('purchase_id', 'number'),
         CheckConstraint("status IN ('sending','accepted','failed','unknown')", name='ck_goods_mail_attempt_status'),
     )
+
+
+class GoodsNfcTag(Identity, Created, Base):
+    __tablename__ = 'goods_nfc_tags'
+    purchase_id: Mapped[UUID] = mapped_column(ForeignKey('goods_test_purchases.id'), unique=True)
+    # The writing secret is retained for immutable manufacturing packets; never expose it in logs.
+    write_token: Mapped[str] = mapped_column(String(80))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text('true'))
+
+
+class NfcViewingSession(Created, Base):
+    __tablename__ = 'nfc_viewing_sessions'
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tag_id: Mapped[UUID] = mapped_column(ForeignKey('goods_nfc_tags.id'))
+    album_version: Mapped[int] = mapped_column(Integer)
+    asset_ids: Mapped[list] = mapped_column(JSONB)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))

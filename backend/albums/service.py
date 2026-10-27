@@ -58,7 +58,7 @@ async def summary(session, album):
     cover_page = pages[0] if pages else None
     cover = scoped_asset(assets, cover_page, 'thumbnail', album) if cover_page else None
     return {'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
-        'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
+        'nfc_required':not album.legacy_access, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}
 
 

@@ -1,7 +1,7 @@
 import type { Album, GenerationView, MediaAccess, ViewerPage } from '../../api/types';
 
-export function albumPath(album: Pick<Album,'id'|'status'>): string {
- const screen=album.status==='published'?'view':album.status==='review_ready'?'review':album.status==='processing'||album.status==='action_required'?'progress':'edit';
+export function albumPath(album: Pick<Album,'id'|'status'|'nfc_required'>): string {
+ const screen=album.status==='published'?(album.nfc_required?'review':'view'):album.status==='review_ready'?'review':album.status==='processing'||album.status==='action_required'?'progress':'edit';
  return `/albums/${album.id}/${screen}`;
 }
 export function pollInterval(view: Pick<GenerationView,'run_status'|'poll_after_ms'>|undefined, visible:boolean): number|false {

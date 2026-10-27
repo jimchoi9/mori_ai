@@ -3,7 +3,7 @@ import {ViewerNavigation} from './ViewerNavigation';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { api, errorText } from '../../api/client';
+import { api, ApiError, errorText } from '../../api/client';
 import type { Viewer } from '../../api/types';
 import { currentPageIndex, keyboardOffset, nextPageIndex, swipeOffset } from '../generation/flow';
 import { DevAiNotice } from '../generation/DevAiNotice';
@@ -26,6 +26,7 @@ export function AlbumViewer({userId}:{userId:string}) {
  },[pages]);
  function turn(offset:number){const target=pages[nextPageIndex(index,offset,pages.length)];if(target)setCurrentId(target.id);}
  if(viewer.isPending)return <p role="status">사진첩을 펼치는 중…</p>;
+ if(viewer.error instanceof ApiError&&viewer.error.code==='NFC_REQUIRED')return <section><h1>굿즈의 NFC로 추억책을 열어 주세요.</h1><p>사진과 글귀는 관리 화면에서 확인할 수 있어요.</p><Link to={`/albums/${albumId}/review`}>사진첩 관리</Link></section>;
  if(!data || !page)return <section><Link to="/albums">← 나의 책장</Link><p role="alert">{data?'감상할 사진이 없습니다.':errorText(viewer.error)}</p><p>완성된 사진첩만 감상할 수 있습니다.</p><Link to={`/albums/${albumId}/review`}>사진첩 결과 확인</Link><button className="secondary" onClick={()=>void viewer.refetch()}>다시 불러오기</button></section>;
  const access=media.access.find(a=>a.asset_id===page.image.asset_id);const adjacent=media.access.find(a=>a.asset_id===next?.image.asset_id);
  return <section className="album-viewer"><nav className="viewer-top" aria-label="사진첩 메뉴"><Link className="mori-icon-button" to="/albums" aria-label="책장으로">‹</Link><details className="viewer-options"><summary aria-label="사진첩 정보와 글귀 수정">···</summary><div><h1>{data.title}</h1><Link to={`/albums/${albumId}/review`}>글귀 수정</Link></div></details></nav><DevAiNotice mode={data.generation_mode}/><div className="viewer-frame"><div className="viewer-stage" tabIndex={0} aria-label={`${index+1}번째 사진. 좌우 방향키로 넘기기`} onPointerDown={event=>{if((event.target as HTMLElement).closest('button,a'))return;pointer.current={x:event.clientX,y:event.clientY};}} onPointerCancel={()=>{pointer.current=null;}} onPointerUp={event=>{

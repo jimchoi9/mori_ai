@@ -1,5 +1,29 @@
 <!doctype html>
 <html lang="ko">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Mori AI</title></head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf9f6" />
+    <title>Mori AI</title>
+    <script>
+      if(location.pathname.startsWith('/nfc/')){
+        document.documentElement.dataset.nfc='true';
+        document.querySelector('meta[name="theme-color"]').content='#ead8bb';
+      }
+    </script>
+    <style>
+      html[data-nfc],html[data-nfc] body{margin:0;background:#ead8bb}
+      #nfc-bootstrap{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 44%,#f6eddd,#ead8bb 75%);color:#796751;text-align:center;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+      #nfc-bootstrap[hidden]{display:none}
+      #nfc-bootstrap>div{position:absolute;left:20px;right:20px;top:43%}
+      #nfc-bootstrap small{font-size:10px;letter-spacing:.24em;opacity:.7}
+      #nfc-bootstrap h1{font:400 32px/1.3 Georgia,"Songti SC",serif;letter-spacing:-.05em;margin:20px 0 13px}
+      #nfc-bootstrap p{font-size:12px;opacity:.7}
+    </style>
+  </head>
+  <body>
+    <section id="nfc-bootstrap" aria-label="추억 속으로 들어가는 중" hidden><div><small>THE MOMENTS WE KEEP</small><h1>그날의 온기로.</h1><p>함께한 시간 속으로 들어갑니다</p></div></section>
+    <script>if(document.documentElement.dataset.nfc)document.getElementById('nfc-bootstrap').hidden=false;</script>
+    <div id="root"></div><script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

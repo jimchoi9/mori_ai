@@ -34,7 +34,7 @@ async def test_legacy_serialization_and_new_creation_closed(client, db):
     detail = await client.get('/api/v1/albums/' + album['id'])
     assert detail.status_code == 200
     assert detail.json()['data']['detail']['album'] == album
-    assert set(album) == {'id','title','status','version','page_count','cover','created_at','updated_at','published_at'}
+    assert set(album) == {'id','title','status','version','nfc_required','page_count','cover','created_at','updated_at','published_at'}
     # Existing albums and even old idempotency records do not mint a new grant.
     async with db() as s, s.begin():
         s.add(IdempotencyRecord(owner_id=UUID(me['user']['id']), operation='POST /api/v1/albums',

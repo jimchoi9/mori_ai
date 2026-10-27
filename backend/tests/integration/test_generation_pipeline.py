@@ -23,11 +23,11 @@ async def client(db,tmp_path):
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url=ORIGIN) as c:yield c
 
 
-async def pipeline(client,db,tmp_path,count=2,*,production_schedule=False, legacy=True, first_size=None):
+async def pipeline(client,db,tmp_path,count=2,*,production_schedule=False, legacy=True, first_size=None, album_id=None):
     from backend.storage.local import LocalStorage,storage_key
     from backend.generation.fake_adapter import FakeExecutor
     from backend.worker.runner import Runner,ResultStore
-    me,album=await ready_album(client,db,count=count)
+    me,album=await ready_album(client,db,count=count,album_id=album_id)
     store=LocalStorage(tmp_path/'private')
     async with db() as s,s.begin():
         pages=(await s.scalars(select(Page).where(Page.album_id==UUID(album)).order_by(Page.position))).all()

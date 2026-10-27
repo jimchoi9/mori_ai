@@ -27,6 +27,8 @@ async def ready_pages(session,album):
 async def get_viewer(session,owner_id,album_id):
     album=await repo.find_album(session,owner_id,album_id,lock=True)
     if album is None:not_found()
+    if not album.legacy_access:
+        raise APIError(403,'NFC_REQUIRED','실물 굿즈의 NFC를 태그해 감상해 주세요.')
     if album.status!='published':raise APIError(409,'STATE_CONFLICT')
     rows=await ready_pages(session,album)
     pages=[{'id':str(page.id),'position':page.position,'image':media_ref(asset),'caption_text':page.caption_text} for page,asset in rows]
