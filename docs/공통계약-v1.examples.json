@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.15",
+  "contract_version": "1.16",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -27,7 +27,11 @@
         ".heif",
         ".heic"
       ],
-      "auth_providers": []
+      "auth_providers": [],
+      "easy_upload": {
+        "enabled": false,
+        "max_photos": 20
+      }
     },
     "request_id": "req-example"
   },
@@ -1879,5 +1883,30 @@
         "code": "NFC_REQUIRED"
       }
     }
+  },
+  "easy_upload_internal_validation": {
+    "settings": {
+      "EASY_UPLOAD_ENABLED": true,
+      "EASY_UPLOAD_MAX_PHOTOS": 20
+    },
+    "finish": "saved_photos_in_management_only",
+    "excluded": [
+      "automatic_selection",
+      "automatic_caption",
+      "automatic_publish",
+      "ai_aspect_ratio_regeneration",
+      "video"
+    ],
+    "states": [
+      "selected",
+      "preparing",
+      "waiting",
+      "sending",
+      "checking",
+      "saved",
+      "failed"
+    ],
+    "failure_keeps_selection": true,
+    "original_upload_fallback": false
   }
 }

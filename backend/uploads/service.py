@@ -43,7 +43,10 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     if not await repo.consent(session,owner,settings.consent_policy_version): raise APIError(403,'CONSENT_REQUIRED')
     repo.draft(parent,body.expected_version)
     pages=await active_pages(session,album_id)
-    if len(pages)+len(body.files)>50: raise APIError(422,'PHOTO_COUNT_EXCEEDED')
+    limit=settings.easy_upload_max_photos if settings.easy_upload_enabled else 50
+    if len(pages)+len(body.files)>limit: raise APIError(422,'PHOTO_COUNT_EXCEEDED')
+    if settings.easy_upload_enabled and any(f.preprocessing is None or f.mime!='image/webp' or f.bytes>1_000_000 for f in body.files):
+        raise APIError(422,'UPLOAD_OPTIMIZATION_REQUIRED')
     uploads=list((await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.album_id==album_id,Page.removed_at.is_(None)))).all())
     stamp=now()
     for u in uploads:

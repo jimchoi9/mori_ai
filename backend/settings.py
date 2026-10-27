@@ -81,6 +81,14 @@ class Settings(BaseSettings):
         if self.goods_mail_to and not re.fullmatch(r'[^\s,;<>@]+@[^\s,;<>@]+\.[^\s,;<>@]+', self.goods_mail_to):
             raise ValueError('exactly one operator recipient is required')
         return self
+    easy_upload_enabled: bool = False
+    easy_upload_max_photos: Literal[20, 50] = 20
+
+    @field_validator('easy_upload_max_photos', mode='before')
+    @classmethod
+    def parse_easy_upload_limit(cls, value):
+        return int(value) if isinstance(value,str) and value in {'20','50'} else value
+
     goods_guest_enabled: bool = True
     goods_suggestions_enabled: bool = False
     goods_suggestions_model: Literal['gpt-6-luna'] = 'gpt-6-luna'

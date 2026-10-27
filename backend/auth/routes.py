@@ -37,7 +37,9 @@ async def login(request: Request, body: DevLogin):
 @router.get('/api/v1/client-config')
 async def client_config(request: Request):
     return envelope(request, {**CLIENT_CONFIG, 'auth_providers': request.app.state.settings.auth_providers,
-                              'goods_checkout_mode': request.app.state.settings.goods_checkout_mode})
+                              'goods_checkout_mode': request.app.state.settings.goods_checkout_mode,
+                              'easy_upload': {'enabled': request.app.state.settings.easy_upload_enabled,
+                                              'max_photos': request.app.state.settings.easy_upload_max_photos}})
 
 
 @router.get('/api/v1/me')

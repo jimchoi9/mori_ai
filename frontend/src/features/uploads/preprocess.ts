@@ -37,6 +37,22 @@ function exif(bytes:Uint8Array, info:ImageInfo) {
  }
  ifd(u32(4));
 }
+/** Extract capture hints independently of the optional strict legacy codec fast path. */
+export function captureHints(bytes:Uint8Array,mime:string) {
+ const info:ImageInfo={width:0,height:0,orientation:1,date:null,timezone:null,omit:[]};
+ try {
+  if(mime==='image/jpeg') {
+   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let p=2;
+   while(p+4<=bytes.length&&bytes[p++]===255){
+    while(bytes[p]===255)p++;const marker=bytes[p++];if(marker===218||marker===217)break;
+    const size=view.getUint16(p);if(size<2||p+size>bytes.length)break;
+    if(marker===225&&ascii(bytes.subarray(p+2,p+8))==='Exif\0\0'){exif(bytes.subarray(p+8,p+size),info);break;}
+    p+=size;
+   }
+  }
+ } catch { /* Invalid metadata is never trusted over decoded pixels. */ }
+ return {date:info.date,timezone:info.timezone};
+}
 export function inspectImage(bytes:Uint8Array,mime:string,maxPixels=12_000_000):ImageInfo|null {
  try {
   const info:ImageInfo={width:0,height:0,orientation:1,date:null,timezone:null,omit:[]};
