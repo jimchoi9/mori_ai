@@ -1,16 +1,18 @@
 body.nfc-mode{margin:0;overflow:hidden;background:#ead8bb;color:#443629;color-scheme:light}
 .nfc-experience{max-width:none;margin:0;padding:0;min-height:0;width:100%;height:100dvh;position:fixed;inset:0;overflow:hidden;background:#ead8bb;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;isolation:isolate}
 .nfc-experience *{box-sizing:border-box}
-.nfc-loading{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 44%,#f6eddd,#ead8bb 75%)}
+.nfc-loading{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 44%,#f6eddd,#ead8bb 75%);transition:opacity .8s,visibility .8s}
+.nfc-loading-leaving{opacity:0;visibility:hidden}
 .nfc-loading canvas,.nfc-memories{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .nfc-intro{position:absolute;left:20px;right:20px;top:43%;text-align:center;color:#796751;pointer-events:none}
 .nfc-intro small,.nfc-message small{font-size:10px;letter-spacing:.24em;opacity:.7}
 .nfc-intro h1,.nfc-message h1{font:400 32px/1.3 Georgia,"Songti SC",serif;letter-spacing:-.05em;margin:20px 0 13px}
 .nfc-intro p{font-size:12px;opacity:.7}
 .nfc-memories img{position:absolute;width:85px;max-height:115px;object-fit:contain;border:3px solid #fff9ea;opacity:0;box-shadow:0 10px 25px #79654b16;animation:nfc-reveal 2s .1s forwards,nfc-drift 8s ease-in-out infinite alternate}
-.nfc-memories img:nth-child(1){left:13%;top:19%;transform:rotate(-9deg)}.nfc-memories img:nth-child(2){right:12%;top:23%;transform:rotate(8deg);animation-delay:.3s}.nfc-memories img:nth-child(3){left:9%;bottom:20%;transform:rotate(7deg);animation-delay:.6s}.nfc-memories img:nth-child(4){right:13%;bottom:17%;transform:rotate(-6deg);animation-delay:.9s}
+.nfc-memories img[data-slot="0"]{left:13%;top:19%;transform:rotate(-9deg)}.nfc-memories img[data-slot="1"]{right:12%;top:23%;transform:rotate(8deg);animation-delay:.3s}.nfc-memories img[data-slot="2"]{left:9%;bottom:20%;transform:rotate(7deg);animation-delay:.6s}.nfc-memories img[data-slot="3"]{right:13%;bottom:17%;transform:rotate(-6deg);animation-delay:.9s}
 @keyframes nfc-reveal{to{opacity:.52}}@keyframes nfc-drift{to{translate:0 -14px}}
-.nfc-book-open,.nfc-reader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#ead8bb;animation:nfc-open .8s both}
+.nfc-book-open,.nfc-reader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#ead8bb}
+.nfc-book-open{animation:nfc-open .8s both}
 .nfc-book-hidden{visibility:hidden}
 @keyframes nfc-open{from{opacity:0}to{opacity:1}}
 .nfc-experience #book-frame,.nfc-experience #opening-book,.nfc-experience .stf__block{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}

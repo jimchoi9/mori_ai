@@ -1,7 +1,8 @@
 import {useEffect,useRef} from 'react';
-export function LoadingScene({previews}:{previews:string[]}) {
+export function LoadingScene({previews,leaving=false,loaded=0,total=0}:{previews:(string|null)[];leaving?:boolean;loaded?:number;total?:number}) {
  const canvas=useRef<HTMLCanvasElement>(null);
  useEffect(()=>{
+  if(leaving)return;
   const surface=canvas.current,ctx=surface?.getContext('2d');if(!surface||!ctx)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let frame=0,width=0,height=0,last=0;
@@ -11,6 +12,6 @@ export function LoadingScene({previews}:{previews:string[]}) {
   const visibility=()=>{cancelAnimationFrame(frame);last=0;if(!document.hidden)frame=requestAnimationFrame(draw);};
   resize();frame=requestAnimationFrame(draw);addEventListener('resize',resize);document.addEventListener('visibilitychange',visibility);
   return()=>{cancelAnimationFrame(frame);removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);};
- },[]);
- return <section className="nfc-loading" aria-label="추억 속으로 들어가는 중"><canvas ref={canvas} aria-hidden="true"/><div className="nfc-memories" aria-hidden="true">{previews.map((src,i)=><img key={i} src={src} alt=""/>)}</div><div className="nfc-intro"><small>THE MOMENTS WE KEEP</small><h1>그날의 온기로.</h1><p>함께한 시간 속으로 들어갑니다</p></div></section>;
+ },[leaving]);
+ return <section className={`nfc-loading${leaving?' nfc-loading-leaving':''}`} data-loaded={loaded} data-total={total} aria-label="추억 속으로 들어가는 중"><canvas ref={canvas} aria-hidden="true"/><div className="nfc-memories" aria-hidden="true">{previews.map((src,i)=>src&&<img key={i} data-slot={i} src={src} alt=""/>)}</div><div className="nfc-intro"><small>THE MOMENTS WE KEEP</small><h1>그날의 온기로.</h1><p>함께한 시간 속으로 들어갑니다</p></div></section>;
 }

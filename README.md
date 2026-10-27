@@ -188,7 +188,7 @@ MORI_VERIFY_TEST_IMAGE=mori-ai:verify-tests bash scripts/verify-db.sh backend/te
 | 문서 | 내용 |
 |---|---|
 | [기능요구명세서](docs/기능요구명세서.md) | 제품 목적·기능·제외 범위·사용자 테스트와 제출 조건 |
-| [공통계약 v1.14](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류·미디어 정책 |
+| [공통계약 v1.15](docs/공통계약-v1.md) · [샘플](docs/공통계약-v1.examples.json) | 현재 API·DTO·상태·오류·미디어 정책 |
 | [굿즈 계약](docs/굿즈-공통계약-v1.md) | 굿즈 생성·수정·저장과 앨범 연결 |
 | [초기 기획과 현행 구현 차이](docs/초기기획-현행구현-차이분석.md) | TASK-002·후속 결정과 현재 코드의 36개 비교 항목, 구현·미구현·미정 구분 |
 | [설계](docs/설계.md) | 화면·시스템 구조·worker·복구 설계 |

@@ -43,11 +43,12 @@ async def enter(session,tag_id,token):
     await repo.clear_expired(session,now())
     raw=secrets.token_urlsafe(32);expiry=now()+timedelta(seconds=SESSION_SECONDS)
     grant=NfcViewingSession(token_hash=hashed(raw),tag_id=tag.id,album_version=album.version,
-        asset_ids=[str(asset.id) for _,asset in rows],expires_at=expiry)
+        asset_ids=list(dict.fromkeys(str(identity) for page,asset in rows for identity in (asset.id,page.thumbnail_asset_id) if identity)),expires_at=expiry)
     session.add(grant);await session.flush()
     return {'state':'ready','session_token':raw,'expires_at':expiry.isoformat(timespec='seconds'),
         'album_title':album.title,'pages':[{'id':str(page.id),'text':page.caption_text,
-            'src':f'/api/v1/nfc/media/{asset.id}'} for page,asset in rows],
+            'src':f'/api/v1/nfc/media/{asset.id}',
+            'thumb':f'/api/v1/nfc/media/{page.thumbnail_asset_id}'} for page,asset in rows],
         'music_url':'/api/v1/nfc/music' if viewer_music() else None}
 
 

@@ -1,5 +1,9 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## NFC 로딩 보완 — 2026-10-27
+
+- `fix/nfc-loading-memories`, 공통계약v1.15. NFC 감상 세션에 같은 페이지의 썸네일을 추가하고 첫4개를 먼저 표시, 전체 사진8장 완료마다 교체,0.8초 책 전환/900ms 로딩 정리를 적용한다. optional 썸네일 실패는 전체 사진 fallback, 늦은 썸네일 덮어쓰기 금지. 실제 서비스에 인위적 대기 없음. 굿즈v1.18·migration0015·구매/QR/메일 정책 유지. 승인18187 web은 `mori-ai:nfc-loading-memories-20261027`, worker는 이전 NFC 이미지 유지. 비용/메일/구매 보존. 실행 결과는 개발운영 최신 절을 따른다.
+
 ## NFC 감상과 관리 분리 — 2026-10-27
 
 - `feat/nfc-memory-viewer`, 공통계약v1.14/굿즈v1.18, migration0015. 새 구매 앨범은 익명 NFC 읽기 session과 로그인 관리 QR을 분리한다. owner viewer API는NFC_REQUIRED, legacy 뷰어는 유지한다. 초기 참고 Site/코드/라이선스 선별 이식은 재사용조사 최신 절을 따른다.

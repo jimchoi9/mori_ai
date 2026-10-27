@@ -1,5 +1,5 @@
 export interface Entry {id:string;key:string}
-export interface NfcBook {state:'ready';session_token:string;expires_at:string;album_title:string;pages:{id:string;text:string;src:string}[];music_url:string|null}
+export interface NfcBook {state:'ready';session_token:string;expires_at:string;album_title:string;pages:{id:string;text:string;src:string;thumb?:string}[];music_url:string|null}
 export function captureEntry():Entry|null {
  const id=location.pathname.match(/^\/nfc\/([0-9a-f-]{36})$/i)?.[1];
  const key=new URLSearchParams(location.hash.slice(1)).get('key');

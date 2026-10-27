@@ -47,6 +47,9 @@ async def test_anonymous_reader_and_owner_management_are_separate(client,db,tmp_
     h={'X-Mori-Viewer-Token':data['session_token']}
     media=await client.get(data['pages'][0]['src'],headers=h)
     assert media.status_code==200 and media.headers['content-type']=='image/webp'
+    thumbnail=await client.get(data['pages'][0]['thumb'],headers=h)
+    assert thumbnail.status_code==200 and thumbnail.headers['content-type']=='image/webp'
+    assert (await client.get(data['pages'][0]['thumb'])).status_code==401
     assert media.headers['cache-control']=='private, no-store'
     assert (await client.get(data['pages'][0]['src'])).status_code==401
     assert (await client.get(f"/api/v1/albums/{p['album_id']}",headers=h)).status_code==401

@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.14",
+  "contract_version": "1.15",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1859,7 +1859,8 @@
         {
           "id": "33333333-3333-4333-8333-333333333333",
           "text": "그날의 바람이 다시 떠오른다.",
-          "src": "/api/v1/nfc/media/44444444-4444-4444-8444-444444444444"
+          "src": "/api/v1/nfc/media/44444444-4444-4444-8444-444444444444",
+          "thumb": "/api/v1/nfc/media/55555555-5555-4555-8555-555555555555"
         }
       ],
       "music_url": "/api/v1/nfc/music"
