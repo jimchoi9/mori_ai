@@ -31,8 +31,33 @@ export function previewPhoto(file:File,signal:AbortSignal):Promise<Blob>{
  }),signal,0);
 }
 
-export function canvasBlob(canvas:HTMLCanvasElement,quality:number,signal:AbortSignal):Promise<Blob|null>{
+let nativeWebp:boolean|undefined;
+let software:Promise<(data:ImageData,options?:{quality:number})=>Promise<ArrayBuffer>>|undefined;
+function encoder(){
+ if(!software)software=import('@jsquash/webp/encode.js').then(async module=>{await module.init();return module.default;}).catch(error=>{software=undefined;throw error;});
+ return software;
+}
+function abortable<T>(job:Promise<T>,signal:AbortSignal):Promise<T>{
  return new Promise((resolve,reject)=>{
+  const clean=()=>{clearTimeout(timer);signal.removeEventListener('abort',cancel);};
+  const cancel=()=>{clean();reject(signal.reason);};
+  const timer=setTimeout(()=>{clean();reject(new Error('사진 압축 도구를 준비하지 못했어요. 연결을 확인해 주세요.'));},30000);
+  signal.addEventListener('abort',cancel,{once:true});
+  job.then(value=>{clean();resolve(value);},error=>{clean();reject(error);});if(signal.aborted)cancel();
+ });
+}
+async function softwareBlob(canvas:HTMLCanvasElement,quality:number,signal:AbortSignal){
+ const encode=await abortable(encoder(),signal);signal.throwIfAborted();
+ const context=canvas.getContext('2d');if(!context)throw new Error('사진 준비 공간을 만들지 못했어요.');
+ // Read only the already resized surface, never the full-resolution source.
+ const pixels=context.getImageData(0,0,canvas.width,canvas.height);
+ const bytes=await encode(pixels,{quality:quality*100});signal.throwIfAborted();
+ return new Blob([bytes],{type:'image/webp'});
+}
+export async function canvasBlob(canvas:HTMLCanvasElement,quality:number,signal:AbortSignal):Promise<Blob|null>{
+ signal.throwIfAborted();
+ if(nativeWebp===false)return softwareBlob(canvas,quality,signal);
+ const blob=await new Promise<Blob|null>((resolve,reject)=>{
   const clean=()=>{clearTimeout(timer);signal.removeEventListener('abort',cancel);};
   const cancel=()=>{clean();reject(signal.reason);};
   const timer=setTimeout(()=>{clean();reject(new Error('사진 준비 시간이 초과됐어요.'));},10000);
@@ -40,4 +65,7 @@ export function canvasBlob(canvas:HTMLCanvasElement,quality:number,signal:AbortS
   try{canvas.toBlob(blob=>{clean();if(signal.aborted)reject(signal.reason);else resolve(blob);},'image/webp',quality);}catch(error){clean();reject(error);}
   if(signal.aborted)cancel();
  });
+ if(blob?.type==='image/webp'){nativeWebp=true;return blob;}
+ if(blob){nativeWebp=false;return softwareBlob(canvas,quality,signal);}
+ return blob;
 }

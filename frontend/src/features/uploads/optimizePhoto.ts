@@ -34,13 +34,13 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
  const parts:BlobPart[]=[];let offset=0;
  for(const [from,to] of info?.omit??[]){parts.push(file.slice(offset,from));offset=to;}parts.push(file.slice(offset));
  const blob=new Blob(parts,{type:mime||file.type});
- let lastError:unknown;
+ let lastError:unknown,stage='decode';
  // Fresh surfaces retry transient failures. Safe JPEG/PNG use bitmap first;
  // HTMLImageElement also covers HEIC where the browser's native decoder supports it.
  for(let attempt=0;attempt<3;attempt++){
   let image:ImageBitmap|HTMLImageElement|undefined,canvas:HTMLCanvasElement|undefined;
   try{
-   signal.throwIfAborted();if(attempt)await pause(signal);
+   signal.throwIfAborted();stage='decode';if(attempt)await pause(signal);
    image=typeof createImageBitmap==='function'&&(info?attempt<2:attempt===2)?await createImageBitmap(blob):await imageElement(blob,signal);
    signal.throwIfAborted();
    const width='naturalWidth' in image?image.naturalWidth:image.width,height='naturalHeight' in image?image.naturalHeight:image.height;
@@ -64,6 +64,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
      return result;
     }finally{canvas.width=0;canvas.height=0;canvas=undefined;}
    }
+   stage='encode';
    let edge=Math.min(2048,Math.max(originalWidth,originalHeight));const minimum=Math.min(1024,edge);
    let body=await encode(edge,.85);
    while(body.size>1_000_000&&edge>minimum){edge=Math.max(minimum,Math.floor(edge*.8));body=await encode(edge,.85);}
@@ -75,7 +76,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
   }catch(error){signal.throwIfAborted();lastError=error;}
   finally{if(image){if('close' in image)image.close();else image.removeAttribute('src');}if(canvas){canvas.width=0;canvas.height=0;}}
  }
- throw new Error(lastError instanceof Error&&lastError.message.includes('유지')?lastError.message:'사진을 준비하지 못했어요. 다른 사진은 계속 보내고 이 사진은 남겨 두었어요.');
+ throw new Error(lastError instanceof Error&&lastError.message.includes('유지')?lastError.message:stage==='encode'?'사진을 압축하지 못했어요. 선택한 사진은 남겨 두었어요. (E1)':'사진을 읽지 못했어요. 선택한 사진은 남겨 두었어요. (D1)');
 }
 
 export function optimizePhoto(file:File,signal:AbortSignal){return photoTask(()=>optimize(file,signal),signal);}

@@ -1,5 +1,10 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## 아이폰 사진 압축 호환 보완 — 2026-10-28
+
+- `fix/iphone-photo-preparation`: 기본 Canvas WebP 미지원 시 PNG가 돌아오는 조건의 실패를 재현하고 로컬WASM 인코더 `@jsquash/webp@1.5.0`를 지연 로드하도록 보완했다. 원본fallback/서버형식/20장/예산/메일 정책 유지, 출력은 실제WebP. D1(읽기)/E1(압축) 안내를 구분한다. 실제 사용자iPhone의 확정 원인은 기기probe/재시도 답변 대기이며 재현조건 수정을 기기인수 완료로 확대하지 않는다.
+- frontend205·실제WASM encode/decode·서버Pillow·브라우저인코더/자산 확인. 승인18187 web `mori-ai:iphone-photo-codec-20261027`, worker는기존easy-upload 유지. 라이선스고지 `/notices/jsquash-webp.txt`; 상세는개발운영 최신절.
+
 ## 20장 간편 업로드 — 2026-10-27
 
 - `feat/easy-photo-upload`, 공통계약v1.16/굿즈v1.18 유지. 사용자 확정은 사진 저장·관리목록까지만, 기본20/확장50 중20장부터 내부설정으로 검증. 구매상품 선택·선별·글/앨범자동완성·AI3:4·영상·완성후사진수정은 후속이다.
