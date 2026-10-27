@@ -45,3 +45,14 @@ test('save intent preserves magnet choice and reads legacy intents as keyrings',
  rememberGoodsSave(value);assert.equal(goodsSaveIntent().product,'keyring');
  rememberGoodsSave({...value,product:'other'});assert.equal(goodsSaveIntent(),null);delete globalThis.sessionStorage;
 });
+
+test('budget refusal explains the test limit without presenting a generic AI failure',()=>{
+ const html=render(h(RevisionHistory,{items:[{id:'budget',label:'시안',status:'failed',error_code:'AI_BUDGET_EXCEEDED'}],selectedId:null,onSelect(){}}));
+ assert.match(html,/테스트 생성 한도/);assert.match(html,/운영자/);
+ assert.doesNotMatch(html,/시안을 생성하지 못했어요/);assert.doesNotMatch(html,/<button/);
+});
+test('an unknown result still prevents duplicate dispatch instead of suggesting a retry',()=>{
+ const html=render(h(RevisionHistory,{items:[{id:'unknown',label:'시안',status:'failed',unknown:true,error_code:'AI_RESULT_UNKNOWN'}],selectedId:null,onSelect(){}}));
+ assert.match(html,/중복 생성을 막기 위해 다시 전송하지 않습니다/);
+ assert.doesNotMatch(html,/테스트 생성 한도/);assert.doesNotMatch(html,/<button/);
+});
