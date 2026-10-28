@@ -30,7 +30,7 @@ def scoped_asset(assets,page,role,album,run=None):
         return asset if valid_output_pair(album,page,run,asset,assets.get(page.thumbnail_asset_id)) else None
     if (asset is None or asset.role!=role or asset.owner_id!=album.owner_id or asset.album_id!=album.id
         or asset.page_id!=page.id or page.removed_at is not None
-        or (role=='normalized' and album.status not in {'draft','processing','action_required'})):
+        or (role=='normalized' and not album.content_enabled and album.status not in {'draft','processing','action_required'})):
         return None
     return asset
 
@@ -53,11 +53,15 @@ async def access_entries(session,refs,owner):
 
 
 async def summary(session, album):
-    pages = await repo.album_pages(session, album.id)
+    if album.content_enabled:
+        from backend.album_content.service import visible_pages
+        pages=await visible_pages(session,album)
+    else:pages = await repo.album_pages(session, album.id)
     assets = {a.id: a for a in await repo.ready_assets(session, album.id)}
     cover_page = pages[0] if pages else None
     cover = scoped_asset(assets, cover_page, 'thumbnail', album) if cover_page else None
     return {'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
+        **({'content_enabled':True,'content_ready':bool(album.content_manifest)} if album.content_enabled else {}),
         'nfc_required':not album.legacy_access, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}
 
@@ -108,6 +112,7 @@ def page_dto(page,album,assets,upload=None,run=None):
         'source':media_ref(scoped_asset(assets,page,'normalized',album)),
         'result':media_ref(scoped_asset(assets,page,'result',album,run)),
         'thumbnail':media_ref(scoped_asset(assets,page,'thumbnail',album)),
+        **({'caption_edited':page.caption_edited_at is not None} if album.content_enabled else {}),
         'caption_text':page.caption_text,'sort_date':page.sort_date,'sort_date_source':page.sort_date_source}
 
 
@@ -129,9 +134,20 @@ async def get_album_detail(session, user_id, album_id):
     from backend.generation.output_policy import output_run
     run=await output_run(session,album)
     pages = []
-    for p in await repo.album_pages(session, album_id):
+    selected_pages=await repo.album_pages(session,album_id)
+    caption_jobs={}
+    if album.content_enabled:
+        from backend.album_content.service import visible_pages
+        from backend.models import AlbumCaptionJob
+        selected_pages=await visible_pages(session,album)
+        caption_jobs={j.page_id:j for j in (await session.scalars(select(AlbumCaptionJob).where(AlbumCaptionJob.album_id==album_id))).all()}
+    for p in selected_pages:
         upload = uploads.get(p.id)
-        pages.append(page_dto(p,album,assets,upload,run))
+        item=page_dto(p,album,assets,upload,run)
+        if album.content_enabled:
+            job=caption_jobs.get(p.id)
+            item['caption_status']='ready' if p.caption_text is not None else job.status if job else 'waiting'
+        pages.append(item)
     refs=[(album_id,p['thumbnail'] or p['source']) for p in pages if p['thumbnail'] or p['source']]
     return {'detail': {'album': await summary(session, album), 'order_mode': album.order_mode,
         'pages': pages, 'generation_mode': await generation_mode(session, album_id), 'active_run_id': str(album.active_run_id) if album.active_run_id else None}, 'media_access': await access_entries(session,refs,user_id)}

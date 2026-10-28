@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.16",
+  "contract_version": "1.19",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -31,7 +31,8 @@
       "easy_upload": {
         "enabled": false,
         "max_photos": 20
-      }
+      },
+      "album_content_enabled": false
     },
     "request_id": "req-example"
   },
@@ -1908,5 +1909,40 @@
     ],
     "failure_keeps_selection": true,
     "original_upload_fallback": false
+  },
+  "album_content": {
+    "new_luna_job_snapshot_fields": {
+      "caption_model": "gpt-6-luna",
+      "caption_analysis_profile": "webp-fit-1024-q80-v1",
+      "caption_pricing_profile": "luna-standard-2026-10-28-v1",
+      "caption_prompt_version": "album-memory-short-v1"
+    },
+    "enable": {
+      "method": "POST",
+      "path": "/api/v1/albums/00000000-0000-4000-8000-000000000001/content",
+      "body": {}
+    },
+    "album_fields": {
+      "content_enabled": true,
+      "content_ready": true
+    },
+    "page_fields": {
+      "caption_status": "ready",
+      "caption_edited": true
+    },
+    "replacement_reservation_optional_fields": {
+      "replaces_page_id": "00000000-0000-4000-8000-000000000002"
+    },
+    "publication": "automatic_when_current_visible_pages_are_ready",
+    "editing_period_limit": null,
+    "replacement_caption": "preserve_without_ai",
+    "nfc_session": "pinned_to_issued_asset_ids_2h_in_tab_memory",
+    "worker_policy": {
+      "caption_lanes_per_worker": 2,
+      "caption_global_limit_including_legacy": 4,
+      "validation_lanes_per_worker": 1,
+      "drain_after_success": true,
+      "idle_and_failure_poll_seconds": "unchanged"
+    }
   }
 }

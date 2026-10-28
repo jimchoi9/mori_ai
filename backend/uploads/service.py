@@ -41,10 +41,24 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
     record=await albums.find_record(session,owner,operation,key)
     if record: return replay(record,hashed)
     if not await repo.consent(session,owner,settings.consent_policy_version): raise APIError(403,'CONSENT_REQUIRED')
+    if parent.version!=body.expected_version:repo.draft(parent,body.expected_version)
+    if settings.album_content_enabled and not parent.content_enabled and parent.status=='draft':
+        from backend.album_content.service import enable
+        await enable(session,owner,album_id,settings)
+        # Activation changes metadata, not admission's caller version.
+        body=body.model_copy(update={'expected_version':parent.version})
     repo.draft(parent,body.expected_version)
     pages=await active_pages(session,album_id)
-    limit=settings.easy_upload_max_photos if settings.easy_upload_enabled else 50
-    if len(pages)+len(body.files)>limit: raise APIError(422,'PHOTO_COUNT_EXCEEDED')
+    limit=settings.easy_upload_max_photos if (settings.easy_upload_enabled or parent.content_enabled) else 50
+    replacement=body.replaces_page_id
+    pending=(await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.album_id==album_id,Page.removed_at.is_(None),Upload.replaces_page_id.is_not(None),Upload.status!='ready'))).all() if parent.content_enabled else []
+    hidden={u.page_id for u in pending}
+    if replacement:
+        target=next((p for p in pages if p.id==replacement and p.id not in hidden),None)
+        prior=await session.scalar(select(Upload).where(Upload.page_id==replacement,Upload.status=='ready'))
+        if not parent.content_enabled or len(body.files)!=1 or target is None or prior is None:raise APIError(422,'VALIDATION_ERROR')
+        if any(u.replaces_page_id==replacement and (u.status=='validating' or u.status=='reserved' and u.expires_at>now()) for u in pending):raise APIError(409,'STATE_CONFLICT')
+    if len([p for p in pages if p.id not in hidden])+len(body.files)-(1 if replacement else 0)>limit: raise APIError(422,'PHOTO_COUNT_EXCEEDED')
     if settings.easy_upload_enabled and any(f.preprocessing is None or f.mime!='image/webp' or f.bytes>1_000_000 for f in body.files):
         raise APIError(422,'UPLOAD_OPTIMIZATION_REQUIRED')
     uploads=list((await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.album_id==album_id,Page.removed_at.is_(None)))).all())
@@ -73,7 +87,7 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         mime=MIMES[PurePath(f.filename).suffix.lower()]
         asset=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='source',storage_key=storage_key(owner,album_id,page.id,'source'),mime=mime,status='pending')
         session.add(asset); await session.flush(); page.source_asset_id=asset.id
-        u=Upload(id=uuid4(),album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode,'source_lifetime':'temporary',
+        u=Upload(id=uuid4(),replaces_page_id=replacement,album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode,'source_lifetime':'temporary',
             **({'preprocessing':f.preprocessing.model_dump()} if f.preprocessing is not None else {})},created_at=stamp)
         if f.thumbnail is not None:
             if mime != 'image/webp': raise APIError(422,'VALIDATION_ERROR')
@@ -114,8 +128,11 @@ async def expire(session,parent,u):
 async def remove_page(session,owner,album_id,page_id,expected):
     parent=await repo.album(session,owner,album_id)
     repo.draft(parent,expected)
+    if parent.content_enabled:await require_album_access(session,parent)
     page=await session.get(Page,page_id)
     if page is None or page.album_id!=album_id or page.removed_at is not None: raise APIError(404,'RESOURCE_NOT_FOUND')
+    if parent.content_enabled and await session.scalar(select(Upload.id).join(Page,Page.id==Upload.page_id).where(Page.removed_at.is_(None),Upload.replaces_page_id==page_id,Upload.status.in_(('reserved','validating'))).limit(1)):
+        raise APIError(409,'STATE_CONFLICT','사진 교체가 끝난 뒤 다시 정리해주세요.')
     page.removed_at=now()
     bump_version(session, page)
     assets=(await session.scalars(select(MediaAsset).where(MediaAsset.page_id==page_id,MediaAsset.album_id==album_id,MediaAsset.owner_id==owner))).all()
@@ -127,19 +144,31 @@ async def remove_page(session,owner,album_id,page_id,expected):
     if upload is None or not await finish_batch(session, parent, upload.batch_id):
         await reorder(session, parent, await active_pages(session, album_id))
     touch(session, parent)
+    if parent.content_enabled:
+        from backend.album_content.service import refresh_manifest
+        await refresh_manifest(session,parent)
     return await get_album_detail(session,owner,album_id)
 
 
 async def order(session,owner,album_id,body):
     parent=await repo.album(session,owner,album_id); repo.draft(parent,body.expected_version)
-    pages=await active_pages(session,album_id); by_id={p.id:p for p in pages}
+    if parent.content_enabled:await require_album_access(session,parent)
+    pages=await active_pages(session,album_id)
+    hidden=[]
+    if parent.content_enabled:
+        from backend.album_content.service import visible_pages
+        shown=await visible_pages(session,parent);shown_ids={p.id for p in shown};hidden=[p for p in pages if p.id not in shown_ids];pages=shown
+    by_id={p.id:p for p in pages}
     if len(body.page_ids)!=len(pages) or set(body.page_ids)!=set(by_id): raise APIError(422,'VALIDATION_ERROR')
-    changed = await reorder(session,parent,[by_id[p] for p in body.page_ids])
+    changed = await reorder(session,parent,[by_id[p] for p in body.page_ids]+hidden)
     if parent.order_mode != 'manual':
         parent.order_mode = 'manual'
         changed = True
     if changed:
         touch(session, parent)
+    if parent.content_enabled:
+        from backend.album_content.service import refresh_manifest
+        await refresh_manifest(session,parent)
     return await get_album_detail(session,owner,album_id)
 
 
@@ -164,7 +193,7 @@ async def accept_put(session,owner,album_id,upload_id):
     await require_album_access(session, parent)
     if (u.status not in {'reserved','validating','ready'}
         or (u.status=='ready' and (u.validation_config or {}).get('source_lifetime')=='temporary')
-        or (u.status=='reserved' and (now()>=u.expires_at or parent.status!='draft'))):
+        or (u.status=='reserved' and (now()>=u.expires_at or parent.status!='draft' and not(parent.content_enabled and parent.status=='published')))):
         raise APIError(409,'STATE_CONFLICT')
 
 

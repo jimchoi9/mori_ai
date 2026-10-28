@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError, errorText } from '../../api/client';
-import type { Album, Detail, Page } from '../../api/types';
+import type { Album, Detail, Page, Config } from '../../api/types';
 import { albumPath, captionValue, isDirty, requestIntents, savedDraft, type CaptionDraft } from '../generation/flow';
 import { DevAiNotice } from '../generation/DevAiNotice';
 import { usePrivateRequest } from '../generation/usePrivateRequest';
@@ -20,6 +20,8 @@ interface PageEdit extends CaptionDraft { saving?:boolean; message?:string; conf
 const emptyAccess:Detail['media_access']=[];
 export function ReviewEditor({userId}:{userId:string}) {
  const {albumId=''}=useParams();const navigate=useNavigate();const cache=useQueryClient();const request=usePrivateRequest();
+ const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
+ useEffect(()=>{if(config.data?.album_content_enabled)navigate(`/albums/${albumId}/manage`,{replace:true});},[config.data?.album_content_enabled,albumId,navigate]);
  const queryKey=['album',userId,albumId];
  const detail=useQuery({queryKey,queryFn:({signal})=>api<Detail>(`/albums/${albumId}`,{signal}),retry:false,refetchOnWindowFocus:false});
  const [drafts,setDrafts]=useState<Record<string,PageEdit>>(()=>reviewDrafts.restore(userId,albumId));const draftsRef=useRef(drafts);draftsRef.current=drafts;

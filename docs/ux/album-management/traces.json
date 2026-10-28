@@ -1,0 +1,3443 @@
+[
+  {
+    "strategy": "upload_first",
+    "case": "first_1",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "first_12",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "first_20",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "send_only",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "cancel_selection",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "cancel",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "over_21",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "over",
+        "view": "upload"
+      },
+      {
+        "event": "deselect",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "offline",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "offline",
+        "view": "upload"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "one_failed",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "retry_one",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "unsent_open_manage",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "select",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "return_upload",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 3,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_unsent",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_uploading",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_read",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_caption_edit",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_order",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "reorder",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_add_twice",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 3,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_delete",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "delete",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "return_after_restart",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "caption_pending",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_pending",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "caption_failure",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_error",
+        "view": "manage"
+      },
+      {
+        "event": "retry_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "caption_unsaved_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 3,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "delete_last",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "delete_last",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 3,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "two_tabs_conflict",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "conflict",
+        "view": "manage"
+      },
+      {
+        "event": "resolve",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "logout",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "logout",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "nfc_during_prepare",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "tag_nfc_preparing",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "upload_first",
+    "case": "published_return",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "first_1",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "first_12",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "first_20",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "send_only",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "cancel_selection",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "cancel",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "over_21",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "over",
+        "view": "upload"
+      },
+      {
+        "event": "deselect",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "offline",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "offline",
+        "view": "upload"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "one_failed",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "retry_one",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "unsent_open_manage",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "select",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "return_upload",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 4,
+    "empty_manage_first": true,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_unsent",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_uploading",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_read",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_caption_edit",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_order",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "reorder",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_add_twice",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 4,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_delete",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "delete",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "return_after_restart",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "caption_pending",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_pending",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "caption_failure",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_error",
+        "view": "manage"
+      },
+      {
+        "event": "retry_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "caption_unsaved_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "delete_last",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "delete_last",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "two_tabs_conflict",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "conflict",
+        "view": "manage"
+      },
+      {
+        "event": "resolve",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "logout",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "logout",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "nfc_during_prepare",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "tag_nfc_preparing",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "manage_first",
+    "case": "published_return",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "first_1",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "first_12",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "first_20",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "send_only",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "cancel_selection",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "cancel",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "over_21",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "over",
+        "view": "combined"
+      },
+      {
+        "event": "deselect",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "offline",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send_partial",
+        "view": "combined"
+      },
+      {
+        "event": "offline",
+        "view": "combined"
+      },
+      {
+        "event": "resume",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "one_failed",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send_partial",
+        "view": "combined"
+      },
+      {
+        "event": "retry_one",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "unsent_open_manage",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "select",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "return_upload",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_unsent",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_uploading",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "resume",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_read",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_caption_edit",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "edit_caption",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_order",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "reorder",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "add",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_add_twice",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "add",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "add",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_delete",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "delete",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "return_after_restart",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "caption_pending",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "caption_pending",
+        "view": "combined"
+      },
+      {
+        "event": "edit_caption",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "caption_failure",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "caption_error",
+        "view": "combined"
+      },
+      {
+        "event": "retry_caption",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "caption_unsaved_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "edit_caption",
+        "view": "combined"
+      },
+      {
+        "event": "add",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "delete_last",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "delete_last",
+        "view": "combined"
+      },
+      {
+        "event": "add",
+        "view": "combined"
+      },
+      {
+        "event": "send",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "two_tabs_conflict",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "edit_caption",
+        "view": "combined"
+      },
+      {
+        "event": "conflict",
+        "view": "combined"
+      },
+      {
+        "event": "resolve",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "logout",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "logout",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "nfc_during_prepare",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      },
+      {
+        "event": "tag_nfc_preparing",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "mixed",
+    "case": "published_return",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "combined"
+      },
+      {
+        "event": "inspect",
+        "view": "combined"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send",
+      "ordered_photos",
+      "captions",
+      "finish"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "first_1",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "first_12",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "first_20",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "send_only",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "cancel_selection",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "cancel",
+        "view": "upload"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "over_21",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "over",
+        "view": "upload"
+      },
+      {
+        "event": "deselect",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "offline",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "offline",
+        "view": "upload"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "one_failed",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send_partial",
+        "view": "upload"
+      },
+      {
+        "event": "retry_one",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "unsent_open_manage",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "select",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "return_upload",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 3,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "attachments",
+      "send"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_unsent",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_uploading",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "upload"
+      },
+      {
+        "event": "resume",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 1,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_read",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_caption_edit",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_order",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "reorder",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_add_twice",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 4,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_delete",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "delete",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "return_after_restart",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "caption_pending",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_pending",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "caption_failure",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "caption_error",
+        "view": "manage"
+      },
+      {
+        "event": "retry_caption",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "caption_unsaved_add",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "delete_last",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "delete_last",
+        "view": "manage"
+      },
+      {
+        "event": "add",
+        "view": "upload"
+      },
+      {
+        "event": "send",
+        "view": "upload"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 2,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "two_tabs_conflict",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "edit_caption",
+        "view": "manage"
+      },
+      {
+        "event": "conflict",
+        "view": "manage"
+      },
+      {
+        "event": "resolve",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "logout",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "logout",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "nfc_during_prepare",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      },
+      {
+        "event": "tag_nfc_preparing",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  },
+  {
+    "strategy": "adaptive",
+    "case": "published_return",
+    "trace": [
+      {
+        "event": "enter",
+        "view": "manage"
+      },
+      {
+        "event": "inspect",
+        "view": "manage"
+      }
+    ],
+    "view_switches": 0,
+    "empty_manage_first": false,
+    "simultaneous_primary_tools": [
+      "ordered_photos",
+      "captions",
+      "add"
+    ],
+    "guards": {
+      "no_switch_during_active_transfer": true,
+      "keep_unsent_files_in_tab": true,
+      "caption_edits_saved_or_guarded_before_leave": true,
+      "publication_not_simulated": true
+    }
+  }
+]

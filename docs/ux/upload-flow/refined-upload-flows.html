@@ -1,0 +1,230 @@
+<div id="mori-upload-refined">
+  <div class="viz-controls" id="mori-comparison-controls">
+    <label class="form-label">같은 상황으로 비교<select class="form-select" id="mori-common-scenario"><option value="normal">사진 12장</option><option value="twenty">사진 20장</option><option value="existing">기존 8장 + 새 사진 12장</option><option value="excess">21장 초과 선택</option><option value="offline">연결 끊김</option><option value="bad">사진 1장 실패</option></select></label>
+    <label class="form-label">같은 단계 바로 보기<select class="form-select" id="mori-common-stage"><option value="entry">진입 · 직접 체험</option><option value="selected">사진 선택 직후</option><option value="sending">전송 중</option><option value="done">최종 상태</option></select></label>
+  </div>
+  <div class="text-small text-muted" id="mori-phase-note" role="status" aria-live="polite"></div>
+  <div class="viz-carousel viz-dotted-background" aria-label="Mori 업로드 흐름 비교" data-previous-label="이전 안" data-next-label="다음 안">
+    <section data-variant="간결한 카카오톡식" aria-label="간결하게 다듬은 카카오톡식 전송">
+      <div class="mori-demo" data-mode="chat_refined"></div>
+    </section>
+    <section data-variant="선택 즉시 전송" aria-label="사진 선택 후 자동 전송" hidden>
+      <div class="mori-demo" data-mode="automatic"></div>
+    </section>
+    <section data-variant="카카오톡식 · 묶음 전송" aria-label="이전 제안의 카카오톡식 사진 묶음 전송" hidden>
+      <div class="mori-demo" data-mode="chat_batch"></div>
+    </section>
+  </div>
+</div>
+<style>
+#mori-upload-refined [data-preset][hidden]{display:none!important}
+#mori-upload-refined [data-play][hidden]{display:none!important}
+#mori-upload-refined [data-connect][hidden]{display:none!important}
+#mori-upload-refined .mori-phone{min-height:480px;min-height:clamp(340px,calc(100svh - 300px),580px)}
+#mori-upload-refined .mori-refined .mori-art span{display:none}
+#mori-upload-refined .mori-refined .mori-top{padding:20px;min-height:64px;color:var(--m-ink);font-size:16px}
+#mori-upload-refined .mori-refined .mori-top small{font-size:12px;color:var(--m-muted)}
+#mori-upload-refined .mori-refined .mori-content{padding-top:0}
+#mori-upload-refined .mori-refined .mori-footer{border-top:0;padding-top:8px}
+#mori-upload-refined .mori-refined .mori-compose-send{font-size:15px;padding:10px 16px;border-radius:24px}
+#mori-upload-refined .mori-refined .mori-start-photo{min-height:48px;padding:10px 16px;border-radius:24px;background:var(--m-surface);color:var(--m-green);font-size:16px}
+#mori-upload-refined .mori-refined .mori-compose-add{border:0;background:var(--m-surface)}
+#mori-upload-refined .mori-refined .mori-composer{grid-template-columns:44px minmax(0,1fr) auto}
+#mori-upload-refined .mori-refined .mori-composer .mori-compose-send{grid-column:3}
+#mori-upload-refined .mori-refined .mori-attachment{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 12px;max-width:260px}
+#mori-upload-refined .mori-refined .mori-image-control{position:relative;display:block;width:100%;aspect-ratio:1;min-height:0;border-radius:10px;overflow:hidden}
+#mori-upload-refined .mori-refined .mori-overflow-count{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:#263b2ba6;font-size:20px;font-weight:500}
+#mori-upload-refined .mori-refined .mori-chat-log{gap:20px}
+#mori-upload-refined .mori-refined .mori-chat-batch{padding:0;width:88%;background:transparent}
+#mori-upload-refined .mori-refined .mori-chat-batch .mori-grid{gap:3px;border-radius:14px;overflow:hidden;margin:0 0 8px}
+#mori-upload-refined .mori-refined .mori-chat-batch .mori-image-control{border-radius:0}
+#mori-upload-refined .mori-refined .mori-chat-batch .mori-track{margin:8px 0}
+#mori-upload-refined .mori-refined .mori-status{font-size:13px;color:var(--m-muted);text-align:right}
+#mori-upload-refined .mori-refined .mori-close-row{display:flex;justify-content:flex-end}
+#mori-upload-refined .mori-refined .mori-close{width:44px;min-height:44px;font-size:24px}
+#mori-upload-refined .mori-refined .mori-chat-batch .mori-link{font-size:13px}
+#mori-upload-refined .mori-experiment .form-label{display:none}
+#mori-upload-refined .mori-chat-log{display:flex;flex-direction:column;gap:16px;align-items:flex-end;margin:20px 0}
+#mori-upload-refined .mori-chat-batch{width:90%;background:var(--m-surface);padding:12px;border-radius:16px 3px 16px 16px}
+#mori-upload-refined .mori-chat-batch .mori-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:8px 0}
+#mori-upload-refined .mori-chat-batch p{margin:6px 0 0;font-size:13px}
+#mori-upload-refined .mori-composer{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:8px}
+#mori-upload-refined .mori-phone .mori-compose-add{border:1px solid var(--m-line);border-radius:50%;width:44px;height:44px;color:var(--m-green);font-size:24px}
+#mori-upload-refined .mori-phone .mori-compose-send{min-height:44px;padding:8px 12px;background:var(--m-green);color:var(--m-on-green);border-radius:12px}
+#mori-upload-refined .mori-attachment{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 8px}
+#mori-upload-refined .mori-compose-label{font-size:14px;color:var(--m-muted)}
+#mori-upload-refined .mori-demo{padding:16px 0 24px;min-height:820px}
+#mori-upload-refined .mori-experiment{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:center;margin:0 auto 14px;max-width:390px}
+#mori-upload-refined .mori-note{margin:10px auto;color:var(--muted-foreground);text-align:center;max-width:390px}
+#mori-upload-refined .mori-phone{--m-bg:light-dark(#faf9f6,#20251f);--m-ink:light-dark(#293b2c,#e6eadf);--m-muted:light-dark(#647060,#b9c2b0);--m-surface:light-dark(#efefe7,#30382d);--m-line:light-dark(#d7ddcd,#56614e);--m-green:light-dark(#46613d,#b6cba4);--m-on-green:light-dark(#fffef9,#1c3017);--m-fail:light-dark(#963b28,#ffba9f);box-sizing:border-box;max-width:360px;width:100%;margin:auto;min-height:680px;display:flex;flex-direction:column;background:var(--m-bg);color:var(--m-ink);border:1px solid var(--m-line);border-radius:24px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overflow-wrap:anywhere}
+#mori-upload-refined .mori-phone *{box-sizing:border-box}
+#mori-upload-refined .mori-top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 4px;gap:8px;color:var(--m-muted);font-size:13px}
+#mori-upload-refined .mori-wordmark{font:500 21px/1 Georgia,serif;letter-spacing:-.6px;color:var(--m-green)}
+#mori-upload-refined .mori-content{padding:16px 20px 12px;flex:1}
+#mori-upload-refined .mori-phone h2{margin:0 0 6px;font-weight:500;font-size:24px;line-height:1.4;letter-spacing:-.8px;color:var(--m-ink)}
+#mori-upload-refined .mori-phone p{margin:0 0 20px;font-size:14px;color:var(--m-muted)}
+#mori-upload-refined .mori-phone button{font:inherit;border:0;color:var(--m-ink);background:transparent;padding:0;min-height:44px;touch-action:manipulation}
+#mori-upload-refined .mori-phone .mori-link{color:var(--m-green);text-decoration:underline;text-underline-offset:4px;font-size:14px}
+#mori-upload-refined .mori-phone .mori-main{display:block;width:100%;min-height:52px;background:var(--m-green);color:var(--m-on-green);border-radius:15px;padding:12px;font-weight:500}
+#mori-upload-refined .mori-phone button:disabled{opacity:.45}
+#mori-upload-refined .mori-footer{padding:14px 20px 22px;border-top:1px solid var(--m-line);margin-top:auto}
+#mori-upload-refined .mori-footer p{font-size:12px;text-align:center;margin:10px 0 0}
+#mori-upload-refined .mori-grid{display:grid;grid-template-columns:repeat(var(--m-columns,3),minmax(0,1fr));gap:8px;margin:16px 0}
+#mori-upload-refined .mori-tile{position:relative;min-width:0;border-radius:10px;background:var(--m-surface);aspect-ratio:1;overflow:hidden;isolation:isolate}
+#mori-upload-refined .mori-art{display:flex;align-items:end;justify-content:start;position:absolute;inset:0;padding:7px;isolation:isolate;background:var(--photo-bg);color:#243b32;font-size:12px}
+#mori-upload-refined .mori-art::before{content:"";position:absolute;width:110%;height:60%;bottom:-17%;left:-35%;border-radius:70% 70% 0 0;background:var(--photo-land);transform:rotate(-20deg);z-index:-1}
+#mori-upload-refined .mori-art::after{content:"";position:absolute;width:25%;height:25%;top:14%;right:15%;border-radius:50%;background:#fff8d2;z-index:-1}
+#mori-upload-refined .mori-art span{background:#fffdf5e8;padding:1px 5px;border-radius:4px}
+#mori-upload-refined .mori-phone .mori-remove{position:absolute;right:0;top:0;width:44px;min-height:44px;display:grid;place-items:center;z-index:1}
+#mori-upload-refined .mori-remove b{display:grid;place-items:center;background:#fffdf5;color:#243b32;border-radius:50%;width:24px;height:24px;font:500 19px/1 sans-serif}
+#mori-upload-refined .mori-mark{position:absolute;right:7px;bottom:7px;display:grid;place-items:center;min-width:24px;min-height:24px;padding:2px 5px;border-radius:20px;background:var(--m-green);color:var(--m-on-green);font-size:13px}
+#mori-upload-refined .mori-tile.is-attention{outline:2px solid var(--m-fail);outline-offset:-2px}
+#mori-upload-refined .mori-phone .mori-picker-photo{display:block;position:relative;min-height:0;width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden}
+#mori-upload-refined .mori-picker-photo[aria-pressed=true]{outline:3px solid var(--m-green);outline-offset:-3px}
+#mori-upload-refined .mori-caption{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--m-muted);font-size:13px;margin:8px 0}
+#mori-upload-refined .mori-destination{padding:14px 0;color:var(--m-muted);font-size:13px;border-bottom:1px solid var(--m-line)}
+#mori-upload-refined .mori-quiet{margin:26px 0 0;display:flex;gap:8px;align-items:start;color:var(--m-muted);font-size:13px}
+#mori-upload-refined .mori-empty-grid{margin:24px 0 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#mori-upload-refined .mori-empty-grid div{aspect-ratio:1;border-radius:10px;background:var(--m-surface)}
+#mori-upload-refined .mori-empty-grid div:nth-child(n+4){opacity:.45}
+#mori-upload-refined .mori-status{display:block;font-size:14px;margin-bottom:8px}
+#mori-upload-refined .mori-track{height:5px;border-radius:5px;background:var(--m-surface);overflow:hidden}
+#mori-upload-refined .mori-track div{height:100%;background:var(--m-green)}
+#mori-upload-refined .mori-warning{color:var(--m-fail)!important}
+#mori-upload-refined .mori-banner{padding:12px 0;border-top:1px solid var(--m-line);border-bottom:1px solid var(--m-line);margin:16px 0;font-size:14px}
+#mori-upload-refined .mori-step{font-size:12px;letter-spacing:.02em;color:var(--m-muted);margin:0 0 20px}
+#mori-upload-refined .mori-hero{padding:28px 12px;border-radius:18px;background:var(--m-surface);margin:20px 0;text-align:center}
+#mori-upload-refined .mori-chat{padding:14px;background:var(--m-surface);border-radius:2px 16px 16px;margin:20px 0}
+#mori-upload-refined .mori-source-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#mori-upload-refined .mori-source-row button{border:1px solid var(--m-line);border-radius:10px}
+#mori-upload-refined .mori-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}
+#mori-upload-refined .mori-list{display:grid;gap:8px;margin:16px 0}
+#mori-upload-refined .mori-list .mori-tile{aspect-ratio:auto;height:70px;padding-left:78px;display:flex;align-items:center;font-size:13px}
+#mori-upload-refined .mori-list .mori-art{width:70px}
+#mori-upload-refined .mori-atlas{margin-top:24px}
+#mori-upload-refined .mori-atlas summary{min-height:44px}
+#mori-upload-refined .mori-illustration-label{margin:4px auto 0;text-align:center;font-size:12px;color:var(--muted-foreground)}
+@media(max-width:380px){#mori-upload-refined .mori-content{padding:16px 14px 12px}#mori-upload-refined .mori-footer{padding:14px}#mori-upload-refined .mori-top{padding:16px 14px 4px}#mori-upload-refined .mori-experiment{justify-content:start}}
+</style>
+<script>
+(() => {
+ const root=document.getElementById('mori-upload-refined');
+ const scenarios={normal:'사진 12장',twenty:'사진 20장',excess:'21장 초과 선택',offline:'연결 끊김',bad:'사진 1장 실패',existing:'기존 8장 + 새 사진 12장'};
+ const defaults={entry:'direct',selection:'grid',send:'one_send',progress:'in_place',completion:'same_gallery',recovery:'per_file'};
+ const demos=[];
+ const shared={columns:3,scenario:"normal",stage:"selected"};
+ const prior=window.openai?.widgetState;
+ function persist(){window.openai?.setWidgetState?.({modelContent:{comparison:['간결한 카카오톡식','선택 즉시 전송','이전 카카오톡식'],scenario:shared.scenario},privateContent:{schema:'mori-refined-flows-v1',scenario:shared.scenario,stage:shared.stage}})?.catch(()=>{});}
+ function applySaved(s){const p=s?.privateContent??s;if(p?.schema!=='mori-refined-flows-v1')return;if(scenarios[p.scenario]&&['entry','selected','sending','done'].includes(p.stage)&&(shared.scenario!==p.scenario||shared.stage!==p.stage)){shared.scenario=p.scenario;shared.stage=p.stage;showStage();}}
+ const photoColors=[['#d5e6df','#6e8f72'],['#e3d6c4','#a78a68'],['#c7deeb','#648c9d'],['#e9d3cb','#aa7867'],['#d8dfbc','#83905c'],['#dcd6e7','#9180a6']];
+ function art(i){const c=photoColors[(i-1)%photoColors.length];return '<div class="mori-art" style="--photo-bg:'+c[0]+';--photo-land:'+c[1]+'"><span>사진 '+String(i).padStart(2,'0')+'</span></div>';}
+ class Demo {
+  constructor(el){this.el=el;this.mode=el.dataset.mode;this.scenario='normal';this.timer=null;this.el.innerHTML='<div class="mori-experiment"><label class="form-label">시험 상황<select class="form-select" data-scenario>'+Object.entries(scenarios).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></label><button class="btn btn-ghost" type="button" data-reset>처음부터</button><button class="btn btn-ghost" type="button" data-preset hidden>예시 전체 선택</button><button class="btn" type="button" data-play hidden>전송 재생</button><button class="btn" type="button" data-connect hidden>연결 복귀 재현</button></div><div class="mori-phone" aria-label="Mori 사진 업로드 제안 화면"></div><div class="mori-illustration-label">화면 비교용 합성 이미지 · 전송은 모의 동작</div>';this.phone=this.el.querySelector('.mori-phone');this.el.querySelector('[data-scenario]').onchange=e=>{this.scenario=e.target.value;this.reset();persist();};this.el.querySelector('[data-connect]').onclick=()=>{this.act('online');};this.el.querySelector('[data-play]').onclick=()=>{this.start();};this.el.querySelector('[data-preset]').onclick=()=>{this.picked=Array.from(this.phone.querySelectorAll('[data-action=toggle]'),b=>Number(b.dataset.photo));this.render();};this.el.querySelector('[data-reset]').onclick=()=>{this.scenario=shared.scenario;this.reset();persist();};this.phone.onclick=e=>{const b=e.target.closest('[data-action]');if(b&&!b.disabled){this.act(b.dataset.action,Number(b.dataset.photo));persist();}};this.reset();}
+  get config(){return {...defaults,send:['chat_batch','chat_refined'].includes(this.mode)?'one_send':this.mode};}
+  reset(render=true){clearInterval(this.timer);this.timer=null;this.state='entry';this.picked=[];this.saved=this.scenario==='existing'?8:0;this.startSaved=this.saved;this.ready=0;this.batch=[];this.exhausted=false;this.reconnected=false;this.chatInspect=false;this.paused=false;this.introStep=0;this.stripPage=0;if(this.scenario==='restart'){this.saved=8;this.startSaved=8;this.state='restart';}this.el.querySelector('[data-scenario]').value=this.scenario;if(render)this.render();}
+  button(text,action,primary=false,disabled=false){return '<button type="button" class="'+(primary?'mori-main':'mori-link')+' cursor-interaction" data-action="'+action+'"'+(disabled?' disabled':'')+'>'+text+'</button>';}
+  grid(ids,kind='selected'){let cls=this.config.selection==='list'?'mori-list':this.config.selection==='strip'?'mori-strip':'mori-grid';let shown=this.config.selection==='strip'?ids.slice(this.stripPage*3,this.stripPage*3+3):ids;return '<div class="'+cls+'">'+shown.map((i,idx)=>{const ready=kind==='saved'||(['progress','failure'].includes(kind)&&idx<this.ready);const failed=kind==='failure'&&idx===ids.length-1;return '<div class="mori-tile'+(failed?' is-attention':'')+'">'+art(i)+(this.config.selection==='list'?'<span>사진 '+i+'</span>':'')+((kind==='selected')?'<button type="button" class="mori-remove cursor-interaction" data-action="remove" data-photo="'+i+'" aria-label="사진 '+i+' 선택 해제"><b aria-hidden="true">×</b></button>':ready?'<span class="mori-mark" aria-label="저장 완료">✓</span>':failed?'<span class="mori-mark">확인</span>':'')+'</div>';}).join('')+'</div>'+(shown.length<ids.length?'<div class="mori-caption"><span>'+(this.stripPage*3+1)+'–'+Math.min(ids.length,this.stripPage*3+3)+' / '+ids.length+'장</span>'+this.button('다음 사진','strip-next')+'</div>':'');}
+  openPicker(){clearInterval(this.timer);this.pickerReturn=this.state;if(['done','gallery','restart'].includes(this.state)){this.batch=[];this.startSaved=this.saved;}this.state='picker';this.picked=[];this.render();}
+  start(){if(this.saved+this.batch.length>20){this.state='selected';this.render();return;}this.paused=false;this.state='sending';this.ready=0;this.render();clearInterval(this.timer);this.timer=setInterval(()=>{if(this.scenario==='offline'&&this.ready===4&&!this.reconnected){clearInterval(this.timer);this.timer=null;this.state='offline';this.render();return;}const limit=this.scenario==='bad'&&!this.exhausted?this.batch.length-1:this.batch.length;if(this.ready<limit)this.ready++;if(this.ready>=limit){clearInterval(this.timer);this.timer=null;if(this.scenario==='bad'&&!this.exhausted){this.state='failure';this.render();return;}this.saved=this.startSaved+this.batch.length;this.state='done';}this.render();},260);}
+  act(a,id){if(a==='inspect'){this.chatInspect=!this.chatInspect;this.render();}else if(a==='strip-next'){this.stripPage=(this.stripPage+1)%Math.ceil(this.batch.length/3||this.saved/3||1);this.render();}else if(a==='choose'){if(['intro','wizard','chat','source_choice'].includes(this.config.entry)&&this.introStep<(this.config.entry==='wizard'?2:1)){this.introStep++;this.render();}else this.openPicker();}else if(a==='toggle'){this.picked=this.picked.includes(id)?this.picked.filter(x=>x!==id):[...this.picked,id];this.render();}else if(a==='picker-done'){this.batch=[...this.batch,...this.picked];this.state='selected';if(this.config.send==='automatic'&&this.saved+this.batch.length<=20)this.start();else this.render();}else if(a==='cancel'){this.state=this.batch.length?'selected':this.saved?'done':'entry';this.render();}else if(a==='remove'){this.batch=this.batch.filter(x=>x!==id);if(!this.batch.length)this.state=this.saved?'done':'entry';this.render();}else if(a==='send'){if(this.config.send==='review_then_send'&&this.state!=='review'){this.state='review';this.render();}else this.start();}else if(a==='retry'){if(this.config.recovery==='restart_batch'){this.saved=this.startSaved+this.ready;this.startSaved=this.saved;this.batch=[];this.openPicker();}else{this.exhausted=true;this.state='sending';this.render();this.timer=setTimeout(()=>{this.ready=this.batch.length;this.saved=this.startSaved+this.batch.length;this.state='done';this.render();},600);}}else if(a==='online'){this.reconnected=true;if(this.config.recovery==='restart_batch'){this.saved=this.startSaved+this.ready;this.startSaved=this.saved;this.openPicker();}else{this.state='sending';this.render();this.timer=setInterval(()=>{this.ready++;if(this.ready>=this.batch.length){clearInterval(this.timer);this.timer=null;this.saved=this.startSaved+this.batch.length;this.state='done';}this.render();},260);}}else if(a==='gallery'){this.state='gallery';this.render();}else if(a==='preview'){this.state='selected';this.render();}else if(a==='restart-choose'){this.batch=[];this.startSaved=this.saved;this.openPicker();}}
+  renderRefined(){
+   const n=this.batch.length;
+   const selected=this.state==='selected';
+   const active=['sending','offline','failure'].includes(this.state);
+   const done=['done','gallery'].includes(this.state);
+   const over=this.startSaved+n>20;
+   const imageButton=(i,extra=0,label='사진 보기')=>'<button type="button" class="mori-image-control cursor-interaction" data-action="inspect" aria-label="'+label+'">'+art(i)+(extra?'<span class="mori-overflow-count">+'+extra+'</span>':'')+'</button>';
+   const group=(ids,allSaved=false)=>{
+    const shown=this.chatInspect?ids:ids.slice(0,4);
+    const photos=shown.map((i,idx)=>imageButton(i,idx===shown.length-1?ids.length-shown.length:0,ids.length+'장 사진 묶음 보기')).join('');
+    let status=allSaved?ids.length+'장 저장 완료':this.state==='offline'?'연결 대기 · '+this.ready+'/'+ids.length+' 저장':this.state==='failure'?this.ready+'장 저장 · 1장 실패':this.ready+'/'+ids.length+' 저장';
+    const progress=!allSaved&&this.state==='sending'?'<div class="mori-track" role="progressbar" aria-label="저장된 사진" aria-valuenow="'+this.ready+'" aria-valuemin="0" aria-valuemax="'+ids.length+'"><div style="width:'+(100*this.ready/Math.max(1,ids.length))+'%"></div></div>':'';
+    const retry=!allSaved&&this.state==='failure'?this.button('1장 다시 보내기','retry'):'';
+    return '<div class="mori-chat-batch"><div class="mori-grid">'+photos+'</div>'+progress+'<div class="mori-status" role="status">'+status+'</div>'+retry+'</div>';
+   };
+   let body='<div class="mori-chat-log">';
+   if(this.startSaved)body+=group(Array.from({length:this.startSaved},(_,i)=>i+1),true);
+   if(active||done){if(n)body+=group(this.batch,done);}
+   else if(selected&&this.chatInspect)body+='<div style="width:100%"><div class="mori-close-row"><button type="button" class="mori-close cursor-interaction" data-action="inspect" aria-label="선택 사진 접기">×</button></div>'+this.grid(this.batch)+'</div>';
+   body+='</div>';
+   let footer='';
+   if(selected){
+    const shown=this.batch.slice(0,3);
+    const preview=shown.map((i,idx)=>imageButton(i,idx===shown.length-1?n-shown.length:0,'선택한 '+n+'장 보기')).join('');
+    footer='<div class="mori-attachment">'+preview+'</div>'+(over?'<p class="mori-warning" role="alert">20장까지 · '+(this.startSaved+n-20)+'장 빼주세요</p>':'')+'<div class="mori-composer"><button type="button" class="mori-compose-add cursor-interaction" data-action="choose" aria-label="사진 더 고르기">＋</button><button type="button" class="mori-compose-send cursor-interaction" data-action="send"'+(over?' disabled':'')+'>'+n+'장 보내기</button></div>';
+   }else if(active){footer='<p>저장이 끝날 때까지 열어두세요</p>';}
+   else if(this.saved<20){footer='<button type="button" class="mori-start-photo cursor-interaction" data-action="choose" aria-label="사진 고르기">＋ 사진</button>';}
+   this.phone.innerHTML='<div class="mori-top"><span>나의 추억</span><small>최대 20장</small></div><div class="mori-content">'+body+'</div>'+(footer?'<div class="mori-footer">'+footer+'</div>':'');
+  }
+  renderChat(){
+   const n=this.batch.length;
+   const active=['sending','offline','failure'].includes(this.state);
+   const done=['done','gallery'].includes(this.state);
+   const selected=this.state==='selected';
+   const over=this.startSaved+n>20;
+   const savedNow=active?this.startSaved+this.ready:this.saved;
+   const bubble=(ids,allSaved=false)=>{
+    const shown=this.chatInspect?ids:ids.slice(0,4);
+    const cells=shown.map((i,idx)=>{
+     const isSaved=allSaved||idx<this.ready;
+     return '<div class="mori-tile">'+art(i)+(isSaved?'<span class="mori-mark" aria-label="저장 완료">✓</span>':'')+'</div>';
+    }).join('');
+    return '<div class="mori-chat-batch"><span>사진 '+ids.length+'장</span><div class="mori-grid">'+cells+'</div>'+(shown.length<ids.length?'<p>외 '+(ids.length-shown.length)+'장</p>':'')+this.button(this.chatInspect?'묶음 접기':'묶음 사진 보기','inspect')+(allSaved?'<p>저장 완료</p>':'')+'</div>';
+   };
+   let body='<div class="mori-chat-log">';
+   if(this.startSaved)body+=bubble(Array.from({length:this.startSaved},(_,i)=>i+1),true);
+   if(active||done){if(n)body+=bubble(this.batch,done);}
+   else if(selected&&this.chatInspect)body+='<div style="width:100%">'+this.grid(this.batch)+this.button('미리보기 접기','inspect')+'</div>';
+   else if(!this.startSaved)body+='<div class="mori-chat">이 앨범에 담을 사진을 골라 보내주세요.</div>';
+   body+='</div>';
+   let footer='';
+   if(selected){
+    const preview=this.batch.slice(0,3).map(i=>'<div class="mori-tile">'+art(i)+'</div>').join('');
+    footer='<div class="mori-caption"><span>'+n+'장 선택</span>'+this.button('선택한 사진 보기','inspect')+'</div><div class="mori-attachment">'+preview+'</div>'+(over?'<p class="mori-warning" role="alert">20장까지 담을 수 있어요. '+(this.startSaved+n-20)+'장만 빼주세요.</p>':'')+'<div class="mori-composer"><button type="button" class="mori-compose-add cursor-interaction" data-action="choose" aria-label="사진 더 고르기">＋</button><span class="mori-compose-label">사진 '+n+'장</span><button type="button" class="mori-compose-send cursor-interaction" data-action="send" aria-label="'+n+'장 보내기"'+(over?' disabled':'')+'>보내기</button></div><p>전송이 끝날 때까지 화면을 열어주세요.</p>';
+   }else if(active){
+    footer='<div class="mori-status" role="status">'+this.ready+' / '+n+'장 저장</div>';
+    if(this.state==='offline')footer+='<p>연결되면 남은 사진을 이어서 보내요.</p>'+this.button('연결 복귀 재현','online',true);
+    else if(this.state==='failure')footer+='<p class="mori-warning">1장 확인이 필요해요. 다른 사진은 저장됐어요.</p>'+this.button('남은 1장 다시 시도','retry',true);
+    else footer+='<div class="mori-track" role="progressbar" aria-label="저장된 사진" aria-valuenow="'+this.ready+'" aria-valuemin="0" aria-valuemax="'+n+'"><div style="width:'+(this.ready/Math.max(1,n)*100)+'%"></div></div><p>저장이 끝날 때까지 화면을 열어주세요.</p>';
+   }else if(this.saved>=20){footer='<p>사진 20장이 모두 저장됐어요.</p>';}
+   else footer='<div class="mori-composer"><button type="button" class="mori-compose-add cursor-interaction" data-action="choose" aria-label="사진 고르기">＋</button><span class="mori-compose-label">사진을 추가해 보세요</span></div><p>최대 20장 · 화질은 자동으로 준비해요.</p>';
+   const heading=done?this.saved+'장 저장했어요':this.state==='failure'?(this.startSaved+this.ready)+'장 저장 · 1장 확인 필요':this.state==='offline'?'연결을 기다리고 있어요':active?'사진을 보내고 있어요':'사진을 보내주세요';
+   this.phone.innerHTML='<div class="mori-top"><span class="mori-wordmark">mori</span><span>나의 추억 앨범 · 사진 '+savedNow+'/20</span></div><div class="mori-content"><h2>'+heading+'</h2><p>'+(done?'이제 화면을 닫아도 괜찮아요.':'보낸 사진이 묶음으로 남아요.')+'</p>'+body+'</div><div class="mori-footer">'+footer+'</div>';
+  }
+  render(){this.el.querySelector('[data-connect]').hidden=this.state!=='offline';this.el.querySelector('[data-play]').hidden=!this.paused||this.state!=='sending';this.el.querySelector('[data-preset]').hidden=this.state!=='picker';const c=this.config;this.phone.style.setProperty('--m-columns',shared.columns);this.phone.classList.toggle('mori-refined',this.mode==='chat_refined');this.el.querySelector('[data-reset]').textContent='이 안 처음부터 체험';let title='',sub='',body='',foot='';const selected=this.batch.length;const intro=c.entry!=='direct'&&this.introStep<(c.entry==='wizard'?2:1);const total=this.saved+selected;
+   if(this.state==='picker'){title='사진 선택';sub='휴대폰 사진 선택기 · 동작 예시';const n=this.scenario==='twenty'?20:this.scenario==='excess'?21:this.scenario==='existing'?12:12;body='<div class="mori-caption">'+this.button('취소','cancel')+'<span>'+this.picked.length+'장 선택</span></div><div class="mori-grid">'+Array.from({length:n},(_,idx)=>{const i=this.saved+this.batch.length+idx+1;return '<button type="button" class="mori-picker-photo cursor-interaction" data-action="toggle" data-photo="'+i+'" aria-pressed="'+this.picked.includes(i)+'" aria-label="사진 '+i+' 선택">'+art(i)+(this.picked.includes(i)?'<span class="mori-mark">'+(this.picked.indexOf(i)+1)+'</span>':'')+'</button>';}).join('')+'</div>';foot=this.button('추가'+(this.picked.length?' ('+this.picked.length+'장)':''),'picker-done',true,!this.picked.length);}
+   else if(this.state==='entry'){title=this.saved?'사진 '+this.saved+'장이 담겨 있어요':'사진을 담아주세요';sub=this.saved?'원할 때 더 담을 수 있어요.':'좋아하는 순간을 한 번에 골라주세요.';if(c.entry==='intro'&&intro)body='<div class="mori-hero">사진을 고르면<br>편하게 보관할 수 있어요</div>';else if(c.entry==='wizard'&&intro)body='<div class="mori-step">시작 → 사진 선택 → 검토 → 전송</div><p>사진을 골라 추억을 담아보세요.</p>';else if(c.entry==='chat'&&intro)body='<div class="mori-chat">어떤 추억을 담아볼까요?<br>사진을 먼저 보내주세요.</div>';else if(c.entry==='source_choice'&&this.introStep===1)body='<div class="mori-source-row">'+this.button('휴대폰 사진','choose')+this.button('파일에서','choose')+'</div>';else if(c.entry==='auto_picker')body='<div class="mori-banner">자동으로 선택기 열기 요청<br>브라우저가 막으면 아래 버튼 사용</div>';else if(this.saved)body=this.grid(Array.from({length:this.saved},(_,i)=>i+1),'saved');else body='<div class="mori-destination">이 굿즈와 연결된 앨범에 저장돼요.</div><div class="mori-quiet">화질과 크기는 알아서 준비해요.</div>';foot=(c.entry==='source_choice'&&this.introStep===1)?'':this.button(intro?(c.entry==='wizard'?'다음':c.entry==='chat'?'사진 보낼게요':c.entry==='source_choice'?'사진 가져오기':'시작하기'):(c.send==='automatic'?'사진 고르고 바로 보내기':'사진 고르기'),'choose',true)+'<p>최대 20장'+(c.send==='automatic'?' · 선택하면 바로 전송돼요':'')+'</p>';}
+   else if(['selected','review'].includes(this.state)){title=selected+'장 선택했어요';sub=total>20?'최대 20장까지 담을 수 있어요. '+(total-20)+'장만 빼주세요.':this.state==='review'?'이 사진들을 보낼까요?':'보내기 전까지 자유롭게 바꿀 수 있어요.';body=(total>20?'<div class="mori-banner mori-warning" role="alert">선택한 사진은 모두 그대로 있어요.</div>':'')+'<div class="mori-caption"><span>'+selected+'장 · 아직 보내지 않았어요</span>'+this.button('더 고르기','choose')+'</div>'+this.grid(this.batch);foot=this.button(total>20?(total-20)+'장 선택 해제 후 보내기':c.send==='review_then_send'&&this.state!=='review'?'다음':selected+'장 보내기','send',true,total>20)+'<p>전송이 끝날 때까지 화면을 열어주세요.</p>';}
+   else if(['sending','offline','failure'].includes(this.state)){title=this.state==='offline'?'연결을 기다리고 있어요':this.state==='failure'?(this.startSaved+this.ready)+'장 저장 · 1장 확인 필요':'사진을 담고 있어요';sub=this.state==='offline'?'연결되면 남은 사진을 이어서 보내요.':this.state==='failure'?'다른 사진은 안전하게 저장됐어요.':'저장된 사진부터 표시할게요.';body=(c.progress==='blocking'?'<div class="mori-hero">전송 중</div>':this.grid(this.batch,this.state==='failure'?'failure':'progress'));if(this.state==='offline')foot='<div class="mori-status" role="status">'+this.ready+' / '+selected+'장 저장</div>'+this.button('연결 복귀 재현','online',true);else if(this.state==='failure')foot=this.button(c.recovery==='per_file'?'남은 1장 다시 시도':'사진 다시 고르기','retry',true);else foot='<div class="mori-status" role="status">'+this.ready+' / '+selected+'장 저장'+(this.ready===0?' · 사진 준비 중':'')+'</div><div class="mori-track" role="progressbar" aria-label="저장된 사진" aria-valuenow="'+this.ready+'" aria-valuemin="0" aria-valuemax="'+selected+'"><div style="width:'+(this.ready/Math.max(1,selected)*100)+'%"></div></div><p>저장이 끝날 때까지 화면을 열어주세요.</p>';}
+   else if(this.state==='restart'){title='사진 8장이 저장돼 있어요';sub='전송하지 못한 사진은 다시 골라주세요.';body=this.grid(Array.from({length:8},(_,i)=>i+1),'saved')+'<div class="mori-banner">화면을 닫기 전의 미전송 사진은 보관되지 않았어요.</div>';foot=this.button('남은 사진 고르기','restart-choose',true);}
+   else{title=this.saved+'장 저장했어요';sub='이제 화면을 닫아도 괜찮아요.';if(c.completion==='separate_done'&&this.state!=='gallery'){body='<div class="mori-hero">사진 저장 완료</div>';foot=this.button('사진 목록으로','gallery',true);}else{body=this.grid(Array.from({length:this.saved},(_,i)=>i+1),'saved');foot=this.saved<20?this.button('사진 더 담기','choose',false):'<p>사진 20장이 모두 저장됐어요.</p>';}}
+   const headerSaved=['sending','offline','failure'].includes(this.state)?this.startSaved+this.ready:this.saved;this.phone.innerHTML='<div class="mori-top"><span class="mori-wordmark">mori</span><span>나의 추억 앨범 · 사진 '+headerSaved+'/20</span></div><div class="mori-content">'+(c.send==='review_then_send'&&this.state!=='picker'?'<div class="mori-step">사진 선택 → 검토 → 전송</div>':'')+'<h2>'+title+'</h2><p>'+sub+'</p>'+body+'</div><div class="mori-footer">'+foot+'</div>';if(this.mode==='chat_batch'&&this.state!=='picker')this.renderChat();if(this.mode==='chat_refined'&&this.state!=='picker')this.renderRefined();
+  }
+ }
+ for(const el of root.querySelectorAll('.mori-demo'))demos.push(new Demo(el));
+ const scenarioControl=root.querySelector('#mori-common-scenario');
+ const stageControl=root.querySelector('#mori-common-stage');
+ function showStage(){
+  scenarioControl.value=shared.scenario;stageControl.value=shared.stage;
+  root.querySelector('#mori-phase-note').textContent=shared.stage==='entry'?'':'비교용 정지 화면 · 전송 재생은 모의 동작';
+  for(const d of demos){d.scenario=shared.scenario;d.reset(false);
+   if(shared.stage!=='entry'){
+    const n=shared.scenario==='twenty'?20:shared.scenario==='excess'?21:12;
+    d.batch=Array.from({length:n},(_,i)=>d.startSaved+i+1);
+    if(d.saved+n>20){d.state='selected';}
+    else if(shared.stage==='selected'){d.state=d.mode==='automatic'?'sending':'selected';d.paused=d.state==='sending';}
+    else if(shared.stage==='sending'){d.ready=shared.scenario==='offline'?4:shared.scenario==='bad'?n-1:Math.floor(n/2);d.state=shared.scenario==='offline'?'offline':shared.scenario==='bad'?'failure':'sending';d.paused=d.state==='sending';}
+    else if(shared.scenario==='offline'){d.ready=4;d.state='offline';}
+    else if(shared.scenario==='bad'){d.ready=n-1;d.state='failure';}
+    else{d.saved=d.startSaved+n;d.ready=n;d.state='done';}
+   }
+   d.render();
+  }
+ }
+ scenarioControl.onchange=()=>{shared.scenario=scenarioControl.value;showStage();persist();};
+ stageControl.onchange=()=>{shared.stage=stageControl.value;showStage();persist();};
+ applySaved(prior);showStage();
+ window.addEventListener('openai:set_globals',e=>{if(e.detail?.globals?.widgetState)applySaved(e.detail.globals.widgetState);});
+ if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>demos.forEach(d=>d.render())});tweak.addSelect(shared,'columns',{label:'격자 열 수',options:[{label:'3열',value:3},{label:'4열',value:4}]});}
+})();
+</script>

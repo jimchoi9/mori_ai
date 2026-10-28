@@ -37,8 +37,28 @@ async def enter(session,tag_id,token):
     if found is None or not hmac.compare_digest(found[0].token_hash,hashed(token)):
         raise APIError(404,'RESOURCE_NOT_FOUND')
     tag,purchase,album=found
-    if album.status!='published' or album.management_pending:
-        return {'state':'preparing'}
+    if album.management_pending:return {'state':'preparing'}
+    if album.content_enabled:
+        from backend.models import Album
+        from sqlalchemy import select
+        album=await session.scalar(select(Album).where(Album.id==album.id).with_for_update().execution_options(populate_existing=True))
+        if album.deleted_at is not None or album.management_pending:return {'state':'preparing'}
+        if not album.content_manifest:return {'state':'preparing'}
+        from backend.models import MediaAsset
+        from uuid import UUID
+        entries=album.content_manifest
+        for item in entries:
+            for key in ('asset_id','thumbnail_id'):
+                asset=await session.get(MediaAsset,UUID(item[key]))
+                if asset is None or asset.album_id!=album.id or asset.owner_id!=album.owner_id or asset.status!='ready' or asset.deleted_at is not None:return {'state':'preparing'}
+        raw=secrets.token_urlsafe(32);expiry=now()+timedelta(seconds=SESSION_SECONDS)
+        grant=NfcViewingSession(token_hash=hashed(raw),tag_id=tag.id,album_version=album.version,pinned=True,
+            asset_ids=list(dict.fromkeys(item[key] for item in entries for key in ('asset_id','thumbnail_id'))),expires_at=expiry)
+        await repo.clear_expired(session,now());session.add(grant);await session.flush()
+        return {'state':'ready','session_token':raw,'expires_at':expiry.isoformat(timespec='seconds'),
+            'album_title':album.title,'pages':[{'id':item['id'],'text':item['text'],'src':f"/api/v1/nfc/media/{item['asset_id']}",'thumb':f"/api/v1/nfc/media/{item['thumbnail_id']}"} for item in entries],
+            'music_url':'/api/v1/nfc/music' if viewer_music() else None}
+    if album.status!='published':return {'state':'preparing'}
     rows=await ready_pages(session,album)
     await repo.clear_expired(session,now())
     raw=secrets.token_urlsafe(32);expiry=now()+timedelta(seconds=SESSION_SECONDS)

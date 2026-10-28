@@ -80,6 +80,13 @@ async def test_main_keeps_jobs_running_with_independent_bounded_sweep(db,monkeyp
         def __init__(self,*args):pass
         async def maintenance(self):pass
     monkeypatch.setattr(goods_module,'GoodsWorker',Goods)
+    # Keep every unrelated DB lane outside this globally patched Event test.
+    import backend.goods_design.delivery.worker as delivery_module
+    class Delivery:
+        def __init__(self,*args):pass
+        async def run_once(self):pass
+        async def aclose(self):pass
+    monkeypatch.setattr(delivery_module,'DeliveryWorker',Delivery)
     import backend.storage.factory as factory
     monkeypatch.setattr(factory,'result_store',lambda _:None)
     await asyncio.wait_for(worker_main.main(),timeout=3)

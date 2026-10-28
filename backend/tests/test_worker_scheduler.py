@@ -97,3 +97,61 @@ async def test_parent_cancellation_drains_maintenance_and_storage():
     work.cancel()
     with pytest.raises(asyncio.CancelledError): await work
     assert not active
+
+
+@pytest.mark.asyncio
+async def test_ready_work_drains_but_idle_waits_at_original_interval():
+    from backend.worker.scheduler import _poll
+    stop = asyncio.Event(); idle = asyncio.Event(); calls = 0
+    async def operation():
+        nonlocal calls
+        calls += 1
+        if calls < 4: return True
+        idle.set()
+        return False
+    task = asyncio.create_task(_poll(operation,stop,60,'test',drain_ready=True))
+    try:
+        await asyncio.wait_for(idle.wait(),1)
+        await asyncio.sleep(.02)
+        assert calls == 4  # no 60s sleeps between work, no busy loop while idle
+    finally:
+        stop.set(); await asyncio.wait_for(task,1)
+
+
+@pytest.mark.asyncio
+async def test_ready_drain_failure_still_backs_off():
+    from backend.worker.scheduler import _poll
+    stop = asyncio.Event(); entered = asyncio.Event(); calls = 0
+    async def operation():
+        nonlocal calls
+        calls += 1; entered.set()
+        raise RuntimeError('private provider detail')
+    task = asyncio.create_task(_poll(operation,stop,60,'test',drain_ready=True))
+    try:
+        await asyncio.wait_for(entered.wait(),1); await asyncio.sleep(.02)
+        assert calls == 1
+    finally:
+        stop.set(); await asyncio.wait_for(task,1)
+
+
+@pytest.mark.asyncio
+async def test_two_independent_content_lanes_overlap_and_shutdown_drains():
+    from backend.worker.scheduler import run_worker
+    stop=asyncio.Event(); entered=asyncio.Event(); active=set()
+    async def operation(name):
+        active.add(name)
+        if len(active)==2: entered.set()
+        try: await asyncio.Event().wait()
+        finally: active.remove(name)
+    class Validation:
+        async def run_once(self): return False
+        async def scan_incomplete_uploads(self,*args,**kw): pass
+    class Runner:
+        async def maintenance(self): pass
+    task=asyncio.create_task(run_worker(Validation(),Runner(),stop,poll_seconds=60,
+        generation_enabled=False,content_operations=(lambda:operation('a'),lambda:operation('b'))))
+    try:
+        await asyncio.wait_for(entered.wait(),1); assert active=={'a','b'}
+    finally:
+        stop.set(); await asyncio.wait_for(task,1)
+    assert not active

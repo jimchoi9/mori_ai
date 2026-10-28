@@ -1,5 +1,5 @@
 """NFC persistence; callers own transactions. Lock purchase before minting a tag."""
-from sqlalchemy import select
+from sqlalchemy import select,or_,and_
 from backend.models import GoodsNfcTag, NfcViewingSession, GoodsTestPurchase, Album, MediaAsset
 
 
@@ -23,8 +23,8 @@ async def find_session(session, token_hash, stamp):
         .where(NfcViewingSession.token_hash==token_hash,NfcViewingSession.revoked.is_(False),
                NfcViewingSession.expires_at>stamp,GoodsNfcTag.active.is_(True),
                GoodsTestPurchase.status=='simulated',Album.deleted_at.is_(None),
-               Album.status=='published',Album.management_pending.is_(False),
-               Album.version==NfcViewingSession.album_version))).first()
+               Album.management_pending.is_(False),
+               or_(and_(NfcViewingSession.pinned.is_(True),Album.content_enabled.is_(True)),and_(NfcViewingSession.pinned.is_(False),Album.status=='published',Album.version==NfcViewingSession.album_version))))).first()
 
 
 async def asset(session, album, asset_id):

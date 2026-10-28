@@ -1,0 +1,47 @@
+{
+  "kind": "deterministic_design_walkthrough_not_user_research",
+  "variant_count": 432,
+  "composed_states": 2592,
+  "scenario_count": 12,
+  "walkthrough_count": 5184,
+  "gates": [
+    {
+      "name": "all",
+      "count": 432
+    },
+    {
+      "name": "no_unnecessary_entry",
+      "count": 72
+    },
+    {
+      "name": "keep_saved_on_failure",
+      "count": 36
+    },
+    {
+      "name": "stay_in_context",
+      "count": 18
+    },
+    {
+      "name": "no_done_gate",
+      "count": 9
+    }
+  ],
+  "recommended": "U009",
+  "final_nine": [
+    "U001",
+    "U009",
+    "U017",
+    "U025",
+    "U033",
+    "U041",
+    "U049",
+    "U057",
+    "U065"
+  ],
+  "caution": [
+    "색상만 바꾼 432개가 아닌 구조 축 조합. 432개 모두를 사람이 실사용한 결과가 아님.",
+    "격자 슬롯 9/띠 3/목록 4는 모델의 화면 예산 가정이며 기기 측정값이 아님.",
+    "정성 점수, 완료 시간, 성공률을 생성하지 않음. 선택한 설계 기준으로 후보를 거른 것.",
+    "브라우저 종료/대량 업로드/코덱 안정성은 화면 탐색으로 입증 불가."
+  ]
+}

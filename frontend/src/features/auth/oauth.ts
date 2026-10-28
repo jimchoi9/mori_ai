@@ -7,7 +7,7 @@ export function oauthProviders(value: unknown): AuthProvider[] {
 
 export function oauthLoginUrl(provider: AuthProvider, returnTo = '/goods'): string {
   if (provider !== 'google' && provider !== 'kakao') throw new Error('Unsupported login provider');
-  const albumPath = /^\/albums\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(edit|progress|review|view)$/i;
+  const albumPath = /^\/albums\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(edit|manage|progress|review|view)$/i;
   const designPath = /^\/designs\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const purchasePath = /^\/purchases\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/photos)?$/i;
   const giftPath = /^\/gifts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -207,6 +207,10 @@ class ValidationWorker:
                 touch(s, album)
                 job.status='succeeded'; job.lease_until=None; job.finished_at=now()
                 await s.flush(); await finish_batch(s,album,u.batch_id)
+                if album.content_enabled:
+                    from backend.album_content.service import activate_replacement,refresh_manifest
+                    await activate_replacement(s,album,u,page)
+                    await refresh_manifest(s,album)
                 if (u.validation_config or {}).get('source_lifetime')=='temporary':
                     await enqueue_job(s,'cleanup_asset',asset.id)
                     if u.thumbnail_asset_id:
@@ -320,6 +324,9 @@ class ValidationWorker:
         if expected not in canonical_asset_keys(album.owner_id, album.id, page.id, asset.role):
             return ()
         deleted = album.deleted_at is not None or page.removed_at is not None
+        if page.removed_at is not None and album.deleted_at is None and album.content_enabled:
+            from backend.album_content.service import retained_page
+            if await retained_page(session,album,page):return ()
         if not deleted and asset.role=='upload_thumbnail':
             upload=await session.scalar(select(Upload).where(Upload.thumbnail_asset_id==asset.id,Upload.page_id==page.id,Upload.album_id==album.id))
             validation=await session.scalar(select(Job).where(Job.kind=='validate_upload',Job.target_id==upload.id)) if upload else None

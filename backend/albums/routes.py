@@ -88,3 +88,13 @@ async def viewer(request:Request,album_id:UUID,context:AuthContext=Depends(requi
     async with request.app.state.session_factory() as session,session.begin():
         data=await get_viewer(session,context.user_id,album_id)
     return envelope(request,data)
+
+
+@router.post('/{album_id}/content')
+async def content(request:Request,album_id:UUID,body:EmptyBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    from backend.album_content.service import enable
+    async with request.app.state.session_factory() as session,session.begin():
+        await enable(session,context.user_id,album_id,request.app.state.settings)
+        data=await service.get_album_detail(session,context.user_id,album_id)
+    return envelope(request,data)

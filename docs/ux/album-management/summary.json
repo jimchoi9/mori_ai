@@ -1,0 +1,39 @@
+{
+  "kind": "scripted_navigation_model_not_user_research",
+  "strategies": 4,
+  "cases": 26,
+  "traces": 104,
+  "comparison": {
+    "upload_first": {
+      "first_send_only_switches": 0,
+      "first_send_inspect_switches": 1,
+      "return_read_switches": 1,
+      "return_add_inspect_switches": 1
+    },
+    "manage_first": {
+      "first_send_only_switches": 1,
+      "first_send_inspect_switches": 2,
+      "return_read_switches": 0,
+      "return_add_inspect_switches": 2
+    },
+    "mixed": {
+      "first_send_only_switches": 0,
+      "first_send_inspect_switches": 0,
+      "return_read_switches": 0,
+      "return_add_inspect_switches": 0
+    },
+    "adaptive": {
+      "first_send_only_switches": 0,
+      "first_send_inspect_switches": 1,
+      "return_read_switches": 0,
+      "return_add_inspect_switches": 2
+    }
+  },
+  "recommendation": "adaptive",
+  "limitations": [
+    "Event traces are designed assumptions, not observed user actions.",
+    "One combined view has fewer view switches; this model does not measure cognitive load or claim a statistical winner.",
+    "No timings, preference proportions, upload capacity or real-device performance are inferred.",
+    "Publication is automatic and editing is allowed without a period limit by the later user decision; this navigation model does not test either server policy."
+  ]
+}

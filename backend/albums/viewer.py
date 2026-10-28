@@ -30,6 +30,18 @@ async def get_viewer(session,owner_id,album_id):
     if not album.legacy_access:
         raise APIError(403,'NFC_REQUIRED','실물 굿즈의 NFC를 태그해 감상해 주세요.')
     if album.status!='published':raise APIError(409,'STATE_CONFLICT')
+    if album.content_enabled:
+        from uuid import UUID
+        from backend.models import MediaAsset
+        entries=album.content_manifest
+        if not entries:raise APIError(409,'STATE_CONFLICT')
+        pages=[]
+        for item in entries:
+            asset=await session.get(MediaAsset,UUID(item['asset_id']))
+            if asset is None or asset.owner_id!=owner_id or asset.album_id!=album.id or asset.status!='ready' or asset.deleted_at is not None:raise APIError(409,'STATE_CONFLICT')
+            pages.append({'id':item['id'],'position':item['position'],'image':media_ref(asset),'caption_text':item['text']})
+        return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),
+            'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':viewer_music()}
     rows=await ready_pages(session,album)
     pages=[{'id':str(page.id),'position':page.position,'image':media_ref(asset),'caption_text':page.caption_text} for page,asset in rows]
     return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),

@@ -38,6 +38,7 @@ async def login(request: Request, body: DevLogin):
 async def client_config(request: Request):
     return envelope(request, {**CLIENT_CONFIG, 'auth_providers': request.app.state.settings.auth_providers,
                               'goods_checkout_mode': request.app.state.settings.goods_checkout_mode,
+                              'album_content_enabled': request.app.state.settings.album_content_enabled,
                               'easy_upload': {'enabled': request.app.state.settings.easy_upload_enabled,
                                               'max_photos': request.app.state.settings.easy_upload_max_photos}})
 

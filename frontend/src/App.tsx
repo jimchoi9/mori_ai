@@ -1,3 +1,6 @@
+import {lazy,Suspense} from 'react';
+const ContentManager=lazy(()=>import('./features/content/ContentManager').then(m=>({default:m.ContentManager})));
+
 import {NfcExperience} from './features/nfc/NfcExperience';
 import {GiftRegistration,GiftTokenCapture} from './features/goods/GiftRegistration';
 import {PurchaseDetail,PurchasePhotos,PurchaseReturn} from './features/goods/PurchaseDetail';
@@ -32,6 +35,7 @@ export default function App(){
      <Route path="/designs" element={<Designs userId={me.user.id}/>}/>
      <Route path="/designs/:designId" element={<DesignDetail key={me.user.id} userId={me.user.id}/>}/>
      <Route path="/albums" element={<Bookshelf userId={me.user.id}/>}/>
+     <Route path="/albums/:albumId/manage" element={<Suspense fallback={<p role="status">사진·글귀를 불러오는 중…</p>}><AlbumScreen Screen={ContentManager} userId={me.user.id}/></Suspense>}/>
      <Route path="/albums/:albumId/edit" element={<AlbumScreen Screen={AlbumEditor} userId={me.user.id}/>}/>
      <Route path="/albums/:albumId/progress" element={<AlbumScreen Screen={GenerationProgress} userId={me.user.id}/>}/>
      <Route path="/albums/:albumId/review" element={<AlbumScreen Screen={ReviewEditor} userId={me.user.id}/>}/>

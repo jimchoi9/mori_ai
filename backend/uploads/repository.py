@@ -14,7 +14,7 @@ async def album(session,owner,album_id,*,lock=True):
 def draft(row,expected=None):
     if expected is not None and row.version!=expected:
         raise APIError(409,'VERSION_CONFLICT',details={'resource_type':'album','resource_id':str(row.id),'current_version':row.version})
-    if row.status!='draft': raise APIError(409,'STATE_CONFLICT')
+    if row.status!='draft' and not(row.content_enabled and row.status=='published'): raise APIError(409,'STATE_CONFLICT')
 
 
 async def upload(session,owner,album_id,upload_id,*,lock=True):
@@ -47,7 +47,7 @@ async def visible_asset(session,owner,album_id,asset_id):
         or page is None or page.album_id!=album_id or page.removed_at is not None
         or asset.role not in {'normalized','thumbnail','result'}
         or asset.id!=getattr(page,asset.role+'_asset_id')
-        or (asset.role=='normalized' and parent.status not in {'draft','processing','action_required'} and not result_allowed)):
+        or (asset.role=='normalized' and parent.status not in {'draft','processing','action_required'} and not parent.content_enabled and not result_allowed)):
         raise APIError(404,'RESOURCE_NOT_FOUND')
     return asset
 

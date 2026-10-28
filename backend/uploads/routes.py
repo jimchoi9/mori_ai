@@ -40,6 +40,7 @@ class FileBody(StrictBody):
 
 
 class ReservationBody(StrictBody):
+    replaces_page_id: UUID|None=None
     expected_version: StrictInt=Field(ge=1)
     files: list[FileBody]=Field(min_length=1,max_length=50)
 
@@ -77,6 +78,7 @@ async def private_user(request: Request):
 async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(default=None)):
     require_csrf(request,context); validate_query(request,())
     identity=body.model_dump(mode='json')
+    if identity.get('replaces_page_id') is None:identity.pop('replaces_page_id',None)
     # Adding an optional field must not invalidate reservations made by older clients.
     for entry in identity['files']:
         for optional in ('preprocessing','thumbnail'):

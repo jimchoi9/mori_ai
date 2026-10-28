@@ -1,7 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {Link, Navigate, useLocation, useParams} from 'react-router';
 import {api,errorText} from '../../api/client';
-import type {AlbumStatus} from '../../api/types';
+import type {AlbumStatus,Config} from '../../api/types';
 import {ScreenHeader} from '../../components/layout/ScreenHeader';
 import './goods.css';
 
@@ -18,6 +18,7 @@ function usePurchase(id:string,userId:string){
 }
 export function PurchaseDetail({userId}:{userId:string}){
  const {purchaseId=''}=useParams();const query=usePurchase(purchaseId,userId),p=query.data;
+ const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  if(!p)return <section className="purchase-detail"><ScreenHeader title="구매 자료"/>{query.isError?<p role="alert">{errorText(query.error)} <button onClick={()=>void query.refetch()}>다시 불러오기</button></p>:<p role="status">구매 자료를 불러오고 있어요…</p>}<Link to="/designs">내 디자인</Link></section>;
  const deleted=p.album_status==='deleted';
  return <section className="purchase-detail">
@@ -28,7 +29,7 @@ export function PurchaseDetail({userId}:{userId:string}){
    p.gift&&!p.can_manage?<p className="notice">{p.gift_registered?'선물받은 분의 앨범으로 등록되었어요.':'선물 QR을 전달해 주세요. 받는 분이 로그인 후 내 앨범 등록을 확정하면 사진을 채울 수 있어요.'}</p>:
    p.album_status==='draft'?<Link className="button-link purchase-primary" to={`/purchases/${p.id}/photos`}>사진 추가하기</Link>:
    ['processing','action_required'].includes(p.album_status)?<Link className="button-link purchase-primary" to={`/albums/${p.album_id}/progress`}>사진첩 준비 현황 보기</Link>:
-   p.album_status==='review_ready'?<Link className="button-link purchase-primary" to={`/albums/${p.album_id}/review`}>사진 확인 이어가기</Link>:<p className="notice">사진첩이 완성되었어요. 확정 자료와 QR은 여기서 다시 확인할 수 있어요.</p>}
+   config.data?.album_content_enabled&&p.can_manage?<Link className="button-link purchase-primary" to={`/albums/${p.album_id}/manage`}>사진·글귀 확인</Link>:p.album_status==='review_ready'?<Link className="button-link purchase-primary" to={`/albums/${p.album_id}/review`}>사진 확인 이어가기</Link>:<p className="notice">사진첩이 완성되었어요. 확정 자료와 QR은 여기서 다시 확인할 수 있어요.</p>}
   {!deleted&&<details className="purchase-panel"><summary>{p.gift?'선물 등록 QR':'다른 휴대폰에서 사진 채우기'}</summary>
    {p.upload_url?<><img className="purchase-qr" src={p.files.qr} alt="사진 추가용 QR · 앨범 관리계정 로그인 필요"/>
     <p>{p.gift?'QR을 열고 로그인한 뒤 내 앨범 만들기를 확정해 주세요. 최초 확정 계정에 등록됩니다.':'QR을 열고 앨범 관리계정으로 로그인해 주세요.'}</p><p className="hint">감상용 NFC와는 다른 사진 관리 주소예요.</p>
@@ -47,6 +48,9 @@ export function PurchaseDetail({userId}:{userId:string}){
 }
 export function PurchasePhotos({userId}:{userId:string}){
  const {purchaseId=''}=useParams();const query=usePurchase(purchaseId,userId),p=query.data;
+ const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
+ if(config.isPending)return <p role="status">내 사진첩으로 이동하고 있어요…</p>;
+ if(p?.can_manage&&config.data?.album_content_enabled&&p.album_status!=='deleted'&&!['processing','action_required'].includes(p.album_status))return <Navigate to={`/albums/${p.album_id}/manage`} replace/>;
  if(p?.album_status==='draft'&&p.can_manage)return <Navigate to={`/albums/${p.album_id}/edit`} replace/>;
  if(p)return <Navigate to={`/purchases/${p.id}`} replace/>;
  return <section className="purchase-detail">{query.isError?<p role="alert">{errorText(query.error)} <button onClick={()=>void query.refetch()}>다시 불러오기</button></p>:<p role="status">내 사진첩으로 이동하고 있어요…</p>}</section>;

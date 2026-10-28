@@ -31,6 +31,8 @@ class User(Identity, Created, Base):
 
 class Album(Identity, Created, Base):
     __tablename__ = 'albums'
+    content_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
+    content_manifest: Mapped[list] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"))
     legacy_access: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     management_pending: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'))
@@ -91,6 +93,7 @@ class Upload(Identity, Created, Base):
     album_id: Mapped[UUID] = mapped_column(ForeignKey('albums.id'))
     page_id: Mapped[UUID] = mapped_column(ForeignKey('album_pages.id'))
     asset_id: Mapped[UUID] = mapped_column(ForeignKey('media_assets.id'))
+    replaces_page_id: Mapped[UUID | None] = mapped_column(ForeignKey('album_pages.id'))
     batch_id: Mapped[UUID]
     client_file_id: Mapped[UUID]
     status: Mapped[str] = mapped_column(String(30), default='reserved')
@@ -366,7 +369,28 @@ class NfcViewingSession(Created, Base):
     __tablename__ = 'nfc_viewing_sessions'
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     tag_id: Mapped[UUID] = mapped_column(ForeignKey('goods_nfc_tags.id'))
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
     album_version: Mapped[int] = mapped_column(Integer)
     asset_ids: Mapped[list] = mapped_column(JSONB)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
+
+
+class AlbumCaptionJob(Identity, Created, Base):
+    """One caption admission per immutable photo; financial attempt IDs never replay."""
+    __tablename__ = 'album_caption_jobs'
+    album_id: Mapped[UUID] = mapped_column(ForeignKey('albums.id'), index=True)
+    page_id: Mapped[UUID] = mapped_column(ForeignKey('album_pages.id'), unique=True)
+    normalized_asset_id: Mapped[UUID] = mapped_column(ForeignKey('media_assets.id'))
+    input_sha256: Mapped[str] = mapped_column(String(64))
+    config_snapshot: Mapped[dict] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(20), default='queued', index=True)
+    dispatch_state: Mapped[str] = mapped_column(String(20), default='not_sent')
+    attempt_id: Mapped[UUID | None] = mapped_column()
+    attempt_count: Mapped[int] = mapped_column(default=0)
+    attempts: Mapped[list] = mapped_column(JSONB, default=list)
+    fence_version: Mapped[int] = mapped_column(default=0)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(50))
+    __table_args__ = (CheckConstraint("status IN ('queued','running','succeeded','failed','unknown','cancelled')"),)

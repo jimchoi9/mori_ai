@@ -24,8 +24,12 @@ async def save_caption(session,owner_id,album_id,page_id,expected_version,captio
     album=await owned_album(session,owner_id,album_id)
     page=await session.scalar(select(Page).where(Page.id==page_id,Page.album_id==album_id,Page.removed_at.is_(None)).with_for_update())
     if page is None:not_found()
-    if album.status not in {'review_ready','published'}:raise APIError(409,'STATE_CONFLICT')
-    require_version(page,expected_version,'page')
+    if album.status not in {'review_ready','published'} and not album.content_enabled:raise APIError(409,'STATE_CONFLICT')
+    if album.content_enabled:
+        from backend.albums.access import require_album_access
+        await require_album_access(session,album)
+    if not(album.content_enabled and page.ai_caption is not None and page.caption_edited_at is None and expected_version<page.version):
+        require_version(page,expected_version,'page')
     if not isinstance(caption_text,str):raise APIError(422,'VALIDATION_ERROR')
     normalized=unicodedata.normalize('NFC',caption_text)
     if '\x00' in normalized or any(0xD800<=ord(char)<=0xDFFF for char in normalized):
@@ -36,6 +40,9 @@ async def save_caption(session,owner_id,album_id,page_id,expected_version,captio
         stamp=datetime.now(timezone.utc)
         page.caption_text=normalized;page.caption_edited_at=stamp;page.version+=1
         album.version+=1;album.updated_at=stamp
+    if album.content_enabled:
+        from backend.album_content.service import refresh_manifest
+        await refresh_manifest(session,album)
     assets={a.id:a for a in await repo.ready_assets(session,album_id)}
     uploads={u.page_id:u for u in await repo.page_uploads(session,album_id)}
     from backend.generation.output_policy import output_run

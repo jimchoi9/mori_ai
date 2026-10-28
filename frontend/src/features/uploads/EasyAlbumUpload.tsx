@@ -1,66 +1,119 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {api,errorText} from '../../api/client';
-import type {Detail,Page,MediaAccess} from '../../api/types';
-import {ScreenHeader} from '../../components/layout/ScreenHeader';
+import type {Detail} from '../../api/types';
 import {albumPath} from '../generation/flow';
 import {useEasyUploads} from './useEasyUploads';
-import type {TransferItem} from './easyTransport';
-import {previewPhoto} from './photoDecoder';
+import {UploadPhoto} from './UploadPhoto';
+import {UploadInspector} from './UploadInspector';
+import {photoFailed,photoReady,uploadMessages,type UploadPhotoEntry} from './uploadMessages';
 import './easyUpload.css';
 
-const stateText={selected:'선택됨',preparing:'사진 준비 중',waiting:'보낼 차례를 기다려요',sending:'보내는 중',checking:'저장 확인 중',saved:'저장 완료',failed:'다시 확인할 사진'};
-function SelectedPhoto({item,remove,disabled}:{item:TransferItem;remove:()=>void;disabled:boolean}){
- const [url,setUrl]=useState('');
- useEffect(()=>{const controller=new AbortController();let url='';void previewPhoto(item.file,controller.signal).then(blob=>{if(!controller.signal.aborted){url=URL.createObjectURL(blob);setUrl(url);}}).catch(()=>undefined);return()=>{controller.abort();if(url)URL.revokeObjectURL(url);};},[item.file]);
- return <li className={`easy-photo easy-photo--${item.state}`}><div className="easy-photo-image">{url?<img src={url} alt={item.file.name}/>:<div className="easy-photo-placeholder">사진</div>}<span>{stateText[item.state]}</span><button type="button" className="easy-photo-remove" disabled={disabled} aria-label={`${item.file.name} 선택 해제`} onClick={remove}>×</button></div>{item.error&&<p className="easy-photo-error">{item.error}</p>}</li>;
-}
-function SavedPhoto({page,access,reload}:{page:Page;access?:MediaAccess;reload:()=>void}){
- const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[access?.url]);
- return <div className="easy-photo"><div className="easy-photo-image">{access&&!failed?<img src={access.url} alt={`${page.position}번째 저장한 사진`} loading="lazy" onError={()=>{setFailed(true);reload();}}/>:<div className="easy-photo-placeholder">사진</div>}<span>{page.upload_status==='ready'?'저장 완료':page.upload_status==='validating'?'저장 확인 중':page.upload_status==='reserved'?'전송 대기':'저장 확인 필요'}</span></div></div>;
-}
 export function EasyAlbumUpload({userId,maxPhotos}:{userId:string;maxPhotos:20|50}){
  const {albumId=''}=useParams(),navigate=useNavigate(),cache=useQueryClient();
  const detail=useQuery({queryKey:['album',userId,albumId],queryFn:({signal})=>api<Detail>(`/albums/${albumId}`,{signal}),
-  refetchInterval:q=>!document.hidden&&q.state.data?.detail.pages.some(p=>['reserved','validating'].includes(p.upload_status))?1800:false,refetchIntervalInBackground:false});
- const upload=useEasyUploads(albumId,userId,async()=>{await detail.refetch();await cache.invalidateQueries({queryKey:['albums',userId]});},maxPhotos,detail.data?.detail.pages.map(page=>page.id)??[]);
- const [error,setError]=useState('');
- const album=detail.data?.detail.album;
- useEffect(()=>{if(album&&album.status!=='draft')navigate(albumPath(album),{replace:true});},[album?.status,albumId,navigate]);
- if(detail.isPending)return <p role="status">사진첩을 불러오는 중…</p>;
- if(!detail.data)return <section><p role="alert">{errorText(detail.error)}</p><button onClick={()=>void detail.refetch()}>다시 불러오기</button></section>;
- if(album?.status!=='draft')return <p role="status">사진첩으로 이동하고 있어요…</p>;
- const data=detail.data,pages=data.detail.pages;
+  refetchInterval:query=>!document.hidden&&query.state.data?.detail.pages.some(page=>['reserved','validating'].includes(page.upload_status))?1800:false,
+  refetchIntervalInBackground:false});
+ const refresh=async()=>{await detail.refetch();await cache.invalidateQueries({queryKey:['albums',userId]});};
+ const upload=useEasyUploads(albumId,userId,refresh,maxPhotos,detail.data?.detail.pages.map(page=>page.id)??[]);
+ const [inspector,setInspector]=useState<string|null>(null),[error,setError]=useState(''),[removing,setRemoving]=useState(false);
+ const [online,setOnline]=useState(navigator.onLine);
+ const pendingScroll=useRef(false),logEnd=useRef<HTMLDivElement>(null);
+ const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<{album_content_enabled?:boolean}>('/client-config',{signal})});
+ const album=detail.data?.detail.album,pages=detail.data?.detail.pages??[];
+ const {messages,attached}=uploadMessages(pages,upload.items.filter(item=>!item.replacesPageId),upload.batches);
+ const inspected=inspector==='attached'?attached:messages.find(message=>message.id===inspector)?.photos??[];
  const pageIds=new Set(pages.map(page=>page.id));
- const staged=upload.items.filter(item=>item.state!=='saved'||!item.pageId||!pageIds.has(item.pageId));
- const pending=staged.filter(item=>item.state!=='saved');
- const count=pages.length+staged.filter(item=>!item.pageId||!pageIds.has(item.pageId)).length;
- const remaining=Math.max(0,maxPhotos-count);
- const stagedIds=new Set(staged.map(item=>item.pageId));
- const saved=pages.filter(page=>!stagedIds.has(page.id));
- const ready=pages.filter(page=>page.upload_status==='ready').length+staged.filter(item=>item.state==='saved').length;
- const failures=staged.filter(item=>item.state==='failed').length;
- const sent=upload.items.filter(item=>item.transferred||item.state==='saved').length;
- async function removeSaved(page:Page){
-  setError('');try{const fresh=await api<Detail>(`/albums/${albumId}`);await api(`/albums/${albumId}/pages/${page.id}?expected_version=${fresh.detail.album.version}`,{method:'DELETE'});await detail.refetch();}catch(e){setError(errorText(e));}
+ const count=pages.length+upload.items.filter(item=>!item.replacesPageId&&(!item.pageId||!pageIds.has(item.pageId))).length;
+ const remaining=Math.max(0,maxPhotos-count),over=Math.max(0,count-maxPhotos);
+ const locked=upload.busy||removing;
+ const uploadError=error||(!over?upload.error:'');
+ const media=(photo:UploadPhotoEntry)=>detail.data?.media_access.find(access=>access.asset_id===(photo.page?.thumbnail??photo.page?.source)?.asset_id);
+ const reload=()=>{void detail.refetch();};
+ useEffect(()=>{if(album&&!album.content_enabled&&album.status!=='draft')navigate(albumPath(album),{replace:true});},[album?.status,albumId,navigate]);
+ useEffect(()=>{
+  const connection=()=>setOnline(navigator.onLine),clear=()=>{setInspector(null);setError('');};
+  window.addEventListener('online',connection);window.addEventListener('offline',connection);
+  window.addEventListener('mori:logout',clear);window.addEventListener('mori:clear-private-memory',clear);
+  return()=>{window.removeEventListener('online',connection);window.removeEventListener('offline',connection);window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:clear-private-memory',clear);};
+ },[]);
+ useEffect(()=>{setInspector(null);setError('');},[albumId,userId]);
+ useEffect(()=>{if(inspector&&!inspected.length)setInspector(null);},[inspector,inspected.length]);
+ useEffect(()=>{
+  if(!pendingScroll.current||!messages.length)return;
+  pendingScroll.current=false;
+  logEnd.current?.scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ },[messages.length]);
+
+ async function send(ids:string[]){
+  setError('');pendingScroll.current=true;await upload.send(ids);
  }
- return <section className="easy-upload-screen">
-  <Link className="easy-upload-back" to="/albums">‹ 내 사진첩</Link>
-  <ScreenHeader title="추억을 담아 주세요" subtitle="사진을 고르고 보내면, 알아서 준비할게요."/>
-  <div className="easy-upload-heading"><strong>사진 {count} / {maxPhotos}장</strong><span>{ready>0?`${ready}장 저장됨`:'좋아하는 순간을 골라 주세요'}</span></div>
-  {count===0&&<div className="easy-upload-empty"><span aria-hidden="true">▧</span><h2>함께한 순간을 담아 보세요</h2><p>여러 장을 한 번에 골라도 괜찮아요.</p></div>}
-  <ul className="easy-photo-grid" aria-label="앨범 사진과 보낼 사진">
-   {saved.map(page=><li className="easy-saved-wrapper" key={page.id}><SavedPhoto page={page} access={data.media_access.find(a=>a.asset_id===(page.thumbnail??page.source)?.asset_id)} reload={()=>void detail.refetch()}/><button type="button" disabled={upload.busy} className="easy-saved-remove" aria-label={`${page.position}번째 저장한 사진 삭제`} onClick={()=>{if(window.confirm('이 사진을 앨범에서 삭제할까요?'))void removeSaved(page);}}>×</button></li>)}
-   {staged.map(item=><SelectedPhoto key={item.id} item={item} disabled={upload.busy} remove={()=>void upload.remove(item)}/>)}
-  </ul>
-  {(upload.error||error)&&<p role="alert">{upload.error||error}</p>}
-  <div className="easy-upload-actions">
-   {upload.busy?<div role="status" aria-live="polite"><strong>{staged.some(item=>item.state==='checking')?'사진 저장을 확인하고 있어요':'사진을 보내고 있어요'}</strong><p>{upload.items.length}장 중 {sent}장 전송 · {upload.items.filter(item=>item.state==='saved').length}장 저장 확인</p><progress max={Math.max(1,upload.items.length)} value={upload.items.filter(item=>item.state==='saved').length}/></div>:
-    pending.length?<button type="button" className="mori-button mori-button--primary" disabled={count>maxPhotos} onClick={()=>void upload.send()}>{failures===pending.length?'남은 사진 다시 보내기':`${pending.length}장 보내기`}</button>:
-    ready>0?<p className="easy-upload-complete" role="status">{ready}장의 사진을 저장했어요.</p>:null}
-   <label className={`easy-upload-add${upload.busy||!remaining?' disabled':''}`}>＋ 사진 고르기<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" disabled={upload.busy||!remaining} onChange={event=>{const files=Array.from(event.target.files??[]);event.target.value='';upload.select(files,remaining);}}/></label>
-   <p className="easy-upload-hint">사진 화질과 크기는 자동으로 준비해요. 전송이 끝날 때까지 이 화면을 열어 두세요.</p>
+ async function remove(photo:UploadPhotoEntry){
+  if(locked)return;
+  if((photoReady(photo)||photo.page)&&!window.confirm('이 사진을 앨범에서 삭제할까요?'))return;
+  setRemoving(true);setError('');
+  try{
+   if(photo.item)await upload.remove(photo.item);
+   else if(photo.page){
+    const fresh=await api<Detail>(`/albums/${albumId}`);
+    await api(`/albums/${albumId}/pages/${photo.page.id}?expected_version=${fresh.detail.album.version}`,{method:'DELETE'});
+    await refresh();
+   }
+  }catch(reason){setError(errorText(reason));}
+  finally{setRemoving(false);}
+ }
+ if(detail.isPending)return <p role="status">사진첩을 불러오는 중…</p>;
+ if(!detail.data)return <section><p role="alert">{errorText(detail.error)}</p><button type="button" onClick={reload}>다시 불러오기</button></section>;
+ if(album?.status!=='draft'&&!album?.content_enabled)return <p role="status">사진첩으로 이동하고 있어요…</p>;
+ return <section className="easy-upload-screen" aria-label="사진 보내기">
+  <header className="easy-upload-heading">
+   <Link className="easy-upload-back" to="/albums" aria-label="내 사진첩으로">‹</Link>
+   <h1>{album.title}</h1><span>최대 {maxPhotos}장</span>
+  </header>
+  <div className="easy-message-log" aria-label="앨범 사진과 보낸 사진">
+   {!pages.length&&!messages.length&&<div className="easy-guide" role="note">이 앨범에 사진을 골라 보내주세요.</div>}
+   {messages.map(message=>{
+    const ready=message.photos.filter(photoReady).length,failed=message.photos.filter(photoFailed).length;
+    const retry=message.photos.filter(photo=>photo.item&&!photoReady(photo)).map(photo=>photo.item!.id);
+    const waiting=ready<message.photos.length;
+    const progress=waiting&&upload.busy&&retry.some(id=>upload.activeIds.includes(id));
+    const transferring=message.photos.some(photo=>photo.item&&['selected','preparing','waiting','sending'].includes(photo.item.state)&&!photoReady(photo));
+    const status=!waiting?`${ready}장 저장 완료`:!online?`연결 대기 · ${ready}/${message.photos.length} 저장`:
+     failed?`${ready}장 저장 · ${message.photos.length-ready}장 확인 필요`:
+     progress&&ready===0&&transferring?'사진 준비 중':progress&&transferring?`${ready}/${message.photos.length} 저장`:`저장 확인 중 · ${ready}/${message.photos.length}`;
+    return <article className="easy-message" key={message.id} aria-label={`사진 ${message.photos.length}장 묶음`}>
+     <div className="easy-message-mosaic">
+      {message.photos.slice(0,4).map((photo,index)=><UploadPhoto key={photo.id} photo={photo} access={media(photo)} reload={reload}
+       label={`사진 ${message.photos.length}장 묶음 확인`} onOpen={()=>setInspector(message.id)} overflow={index===3?message.photos.length-4:0}/>)}
+     </div>
+     {progress&&<progress aria-label="저장된 사진" value={ready} max={message.photos.length}/>}
+     <p className="easy-message-status" role="status" aria-live="polite">{status}</p>
+     {waiting&&!upload.busy&&retry.length>0&&<button type="button" className="easy-retry" disabled={removing} onClick={()=>void send(retry)}>{retry.length}장 다시 보내기</button>}
+     {waiting&&!retry.length&&failed>0&&<p className="easy-photo-error">사진을 눌러 확인해주세요.</p>}
+    </article>;
+   })}
+   <div ref={logEnd}/>
   </div>
+  {uploadError&&!inspector&&<p className="easy-upload-error" role="alert">{uploadError}</p>}
+  {(upload.busy||attached.length>0||remaining>0)&&<div className="easy-upload-actions">
+   {attached.length>0&&<div className="easy-attachment-preview" aria-label={`선택한 사진 ${attached.length}장`}>
+    {attached.slice(0,3).map((photo,index)=><UploadPhoto key={photo.id} photo={photo} reload={reload}
+     label={`선택한 사진 ${attached.length}장 확인`} onOpen={()=>setInspector('attached')} overflow={index===2?attached.length-3:0}/>)}
+   </div>}
+   {over>0&&<p className="easy-upload-error" role="alert">{maxPhotos}장까지 · {over}장 빼주세요.</p>}
+   {upload.busy?<p className="easy-upload-hint">저장이 끝날 때까지 열어두세요.</p>:<div className="easy-upload-composer">
+    {remaining>0&&<label className={`easy-upload-add${locked?' disabled':''}${attached.length?' easy-upload-add--compact':''}`}>
+     <span aria-hidden="true">＋</span>{!attached.length&&' 사진'}
+     <input type="file" className="easy-upload-file" aria-label={attached.length?'사진 더 고르기':'사진 고르기'} multiple
+      accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" disabled={locked}
+      onChange={event=>{const files=Array.from(event.target.files??[]);event.target.value='';if(files.length)upload.select(files,remaining);}}/>
+    </label>}
+    {attached.length>0&&<button type="button" className="easy-upload-send" disabled={locked||over>0} onClick={()=>void send(attached.map(photo=>photo.item!.id))}>{attached.length}장 보내기</button>}
+   </div>}
+  </div>}
+  {(album.content_enabled||config.data?.album_content_enabled)&&pages.length>0&&!upload.busy&&<Link className="content-review-link" to={`/albums/${albumId}/manage`}>사진·글귀 확인</Link>}
+  <UploadInspector open={inspector!==null&&inspected.length>0} photos={inspected} onClose={()=>setInspector(null)} onRemove={photo=>void remove(photo)}
+   disabled={locked} error={uploadError} media={media} reload={reload}/>
  </section>;
 }

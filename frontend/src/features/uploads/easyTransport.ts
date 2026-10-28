@@ -4,6 +4,10 @@ import {completionBody,uploadStep} from './putFile';
 import type {SendItem} from './easyQueue';
 
 export interface TransferItem extends SendItem {
+ /** Private, tab-memory presentation and explicit-send consent; never sent in the API body. */
+ replacesPageId?:string;
+ submitted?:boolean;
+ batchId?:string;
  intent?:{key:string;body:unknown;reservation?:Reservation;put:Set<string>;complete:Set<string>;sha256:string;thumbnail_sha256?:string};
 }
 export const wait=(ms:number,signal:AbortSignal)=>new Promise<void>((resolve,reject)=>{
@@ -26,7 +30,7 @@ export async function transferPhoto(albumId:string,item:TransferItem,signal:Abor
   const thumbnail_sha256=prepared.thumbnail?(await completionBody(prepared.thumbnail,{'If-None-Match':'*'})).sha256:undefined;
   const detail=await retry(()=>api<Detail>(`/albums/${albumId}`,{signal}),signal);
   item.intent={key:crypto.randomUUID(),put:new Set(),complete:new Set(),sha256,thumbnail_sha256,
-   body:{expected_version:detail.detail.album.version,files:[{client_file_id:item.id,filename:prepared.file.name,mime:'image/webp',bytes:prepared.file.size,file_last_modified_at:new Date(prepared.file.lastModified).toISOString(),preprocessing:prepared.preprocessing,
+   body:{expected_version:detail.detail.album.version,...(item.replacesPageId?{replaces_page_id:item.replacesPageId}:{}),files:[{client_file_id:item.id,filename:prepared.file.name,mime:'image/webp',bytes:prepared.file.size,file_last_modified_at:new Date(prepared.file.lastModified).toISOString(),preprocessing:prepared.preprocessing,
     ...(prepared.thumbnail?{thumbnail:{bytes:prepared.thumbnail.size,mime:'image/webp',sha256:thumbnail_sha256}}:{})}]}};
  }
  const intent=item.intent;

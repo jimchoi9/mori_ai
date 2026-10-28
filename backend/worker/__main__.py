@@ -31,6 +31,13 @@ async def main() -> None:
     goods = GoodsWorker(sessions, validation.store, settings)
     from backend.goods_design.delivery.worker import DeliveryWorker
     delivery = DeliveryWorker(sessions, validation.store, settings)
+    contents=[]
+    if settings.album_content_enabled:
+        from backend.album_content.worker import ContentWorker
+        # Separate recovery cursors per lane; DB claims still share the global
+        # four-caption limit with legacy generation and other worker processes.
+        contents=[ContentWorker(sessions,settings,validation.store,
+            executor.provider if settings.ai_real_calls_enabled and executor else None) for _ in range(2)]
     stopped = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -47,7 +54,7 @@ async def main() -> None:
                          poll_seconds=settings.worker_poll_seconds,
                          generation_enabled=executor is not None,
                          oauth_cleanup=oauth_cleanup, goods_operation=goods.run_once if executor else goods.maintenance,
-                         delivery_operation=delivery.run_once)
+                         delivery_operation=delivery.run_once, content_operations=tuple(c.run_once for c in contents))
     finally:
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.remove_signal_handler(sig)

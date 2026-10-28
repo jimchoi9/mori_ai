@@ -137,6 +137,7 @@ async def create_generation(session, owner_id, album_id, expected_version, key, 
     existing = await session.scalar(select(Run.id).where(Run.album_id == album_id, Run.status != 'cancelled').limit(1))
     if existing is not None:
         raise APIError(409, 'GENERATION_ALREADY_EXISTS')
+    if album.content_enabled:raise APIError(409,'STATE_CONFLICT','사진·글귀 관리에서는 사진을 다시 생성하지 않습니다.')
     if album.status != 'draft':
         raise APIError(409, 'STATE_CONFLICT')
     await check_concurrency(session, owner_id)

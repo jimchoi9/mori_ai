@@ -1,0 +1,433 @@
+id,entry,selection,send,progress,completion,recovery,normal_site_actions,before_send_review,offline_reselect,readable_photo_slots,label
+U001,direct,grid,automatic,in_place,same_gallery,per_file,1,False,0,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U002,direct,grid,automatic,in_place,same_gallery,restart_batch,1,False,20,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U003,direct,grid,automatic,in_place,separate_done,per_file,2,False,0,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U004,direct,grid,automatic,in_place,separate_done,restart_batch,2,False,20,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U005,direct,grid,automatic,blocking,same_gallery,per_file,1,False,0,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U006,direct,grid,automatic,blocking,same_gallery,restart_batch,1,False,20,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U007,direct,grid,automatic,blocking,separate_done,per_file,2,False,0,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U008,direct,grid,automatic,blocking,separate_done,restart_batch,2,False,20,9,바로 사진 추가 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U009,direct,grid,one_send,in_place,same_gallery,per_file,2,True,0,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U010,direct,grid,one_send,in_place,same_gallery,restart_batch,2,True,20,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U011,direct,grid,one_send,in_place,separate_done,per_file,3,True,0,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U012,direct,grid,one_send,in_place,separate_done,restart_batch,3,True,20,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U013,direct,grid,one_send,blocking,same_gallery,per_file,2,True,0,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U014,direct,grid,one_send,blocking,same_gallery,restart_batch,2,True,20,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U015,direct,grid,one_send,blocking,separate_done,per_file,3,True,0,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U016,direct,grid,one_send,blocking,separate_done,restart_batch,3,True,20,9,바로 사진 추가 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U017,direct,grid,review_then_send,in_place,same_gallery,per_file,3,True,0,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U018,direct,grid,review_then_send,in_place,same_gallery,restart_batch,3,True,20,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U019,direct,grid,review_then_send,in_place,separate_done,per_file,4,True,0,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U020,direct,grid,review_then_send,in_place,separate_done,restart_batch,4,True,20,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U021,direct,grid,review_then_send,blocking,same_gallery,per_file,3,True,0,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U022,direct,grid,review_then_send,blocking,same_gallery,restart_batch,3,True,20,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U023,direct,grid,review_then_send,blocking,separate_done,per_file,4,True,0,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U024,direct,grid,review_then_send,blocking,separate_done,restart_batch,4,True,20,9,바로 사진 추가 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U025,direct,strip,automatic,in_place,same_gallery,per_file,1,False,0,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U026,direct,strip,automatic,in_place,same_gallery,restart_batch,1,False,20,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U027,direct,strip,automatic,in_place,separate_done,per_file,2,False,0,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U028,direct,strip,automatic,in_place,separate_done,restart_batch,2,False,20,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U029,direct,strip,automatic,blocking,same_gallery,per_file,1,False,0,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U030,direct,strip,automatic,blocking,same_gallery,restart_batch,1,False,20,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U031,direct,strip,automatic,blocking,separate_done,per_file,2,False,0,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U032,direct,strip,automatic,blocking,separate_done,restart_batch,2,False,20,3,바로 사진 추가 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U033,direct,strip,one_send,in_place,same_gallery,per_file,2,True,0,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U034,direct,strip,one_send,in_place,same_gallery,restart_batch,2,True,20,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U035,direct,strip,one_send,in_place,separate_done,per_file,3,True,0,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U036,direct,strip,one_send,in_place,separate_done,restart_batch,3,True,20,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U037,direct,strip,one_send,blocking,same_gallery,per_file,2,True,0,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U038,direct,strip,one_send,blocking,same_gallery,restart_batch,2,True,20,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U039,direct,strip,one_send,blocking,separate_done,per_file,3,True,0,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U040,direct,strip,one_send,blocking,separate_done,restart_batch,3,True,20,3,바로 사진 추가 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U041,direct,strip,review_then_send,in_place,same_gallery,per_file,3,True,0,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U042,direct,strip,review_then_send,in_place,same_gallery,restart_batch,3,True,20,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U043,direct,strip,review_then_send,in_place,separate_done,per_file,4,True,0,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U044,direct,strip,review_then_send,in_place,separate_done,restart_batch,4,True,20,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U045,direct,strip,review_then_send,blocking,same_gallery,per_file,3,True,0,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U046,direct,strip,review_then_send,blocking,same_gallery,restart_batch,3,True,20,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U047,direct,strip,review_then_send,blocking,separate_done,per_file,4,True,0,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U048,direct,strip,review_then_send,blocking,separate_done,restart_batch,4,True,20,3,바로 사진 추가 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U049,direct,list,automatic,in_place,same_gallery,per_file,1,False,0,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U050,direct,list,automatic,in_place,same_gallery,restart_batch,1,False,20,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U051,direct,list,automatic,in_place,separate_done,per_file,2,False,0,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U052,direct,list,automatic,in_place,separate_done,restart_batch,2,False,20,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U053,direct,list,automatic,blocking,same_gallery,per_file,1,False,0,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U054,direct,list,automatic,blocking,same_gallery,restart_batch,1,False,20,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U055,direct,list,automatic,blocking,separate_done,per_file,2,False,0,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U056,direct,list,automatic,blocking,separate_done,restart_batch,2,False,20,4,바로 사진 추가 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U057,direct,list,one_send,in_place,same_gallery,per_file,2,True,0,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U058,direct,list,one_send,in_place,same_gallery,restart_batch,2,True,20,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U059,direct,list,one_send,in_place,separate_done,per_file,3,True,0,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U060,direct,list,one_send,in_place,separate_done,restart_batch,3,True,20,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U061,direct,list,one_send,blocking,same_gallery,per_file,2,True,0,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U062,direct,list,one_send,blocking,same_gallery,restart_batch,2,True,20,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U063,direct,list,one_send,blocking,separate_done,per_file,3,True,0,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U064,direct,list,one_send,blocking,separate_done,restart_batch,3,True,20,4,바로 사진 추가 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U065,direct,list,review_then_send,in_place,same_gallery,per_file,3,True,0,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U066,direct,list,review_then_send,in_place,same_gallery,restart_batch,3,True,20,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U067,direct,list,review_then_send,in_place,separate_done,per_file,4,True,0,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U068,direct,list,review_then_send,in_place,separate_done,restart_batch,4,True,20,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U069,direct,list,review_then_send,blocking,same_gallery,per_file,3,True,0,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U070,direct,list,review_then_send,blocking,same_gallery,restart_batch,3,True,20,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U071,direct,list,review_then_send,blocking,separate_done,per_file,4,True,0,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U072,direct,list,review_then_send,blocking,separate_done,restart_batch,4,True,20,4,바로 사진 추가 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U073,intro,grid,automatic,in_place,same_gallery,per_file,2,False,0,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U074,intro,grid,automatic,in_place,same_gallery,restart_batch,2,False,20,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U075,intro,grid,automatic,in_place,separate_done,per_file,3,False,0,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U076,intro,grid,automatic,in_place,separate_done,restart_batch,3,False,20,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U077,intro,grid,automatic,blocking,same_gallery,per_file,2,False,0,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U078,intro,grid,automatic,blocking,same_gallery,restart_batch,2,False,20,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U079,intro,grid,automatic,blocking,separate_done,per_file,3,False,0,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U080,intro,grid,automatic,blocking,separate_done,restart_batch,3,False,20,9,소개 후 시작 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U081,intro,grid,one_send,in_place,same_gallery,per_file,3,True,0,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U082,intro,grid,one_send,in_place,same_gallery,restart_batch,3,True,20,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U083,intro,grid,one_send,in_place,separate_done,per_file,4,True,0,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U084,intro,grid,one_send,in_place,separate_done,restart_batch,4,True,20,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U085,intro,grid,one_send,blocking,same_gallery,per_file,3,True,0,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U086,intro,grid,one_send,blocking,same_gallery,restart_batch,3,True,20,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U087,intro,grid,one_send,blocking,separate_done,per_file,4,True,0,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U088,intro,grid,one_send,blocking,separate_done,restart_batch,4,True,20,9,소개 후 시작 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U089,intro,grid,review_then_send,in_place,same_gallery,per_file,4,True,0,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U090,intro,grid,review_then_send,in_place,same_gallery,restart_batch,4,True,20,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U091,intro,grid,review_then_send,in_place,separate_done,per_file,5,True,0,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U092,intro,grid,review_then_send,in_place,separate_done,restart_batch,5,True,20,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U093,intro,grid,review_then_send,blocking,same_gallery,per_file,4,True,0,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U094,intro,grid,review_then_send,blocking,same_gallery,restart_batch,4,True,20,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U095,intro,grid,review_then_send,blocking,separate_done,per_file,5,True,0,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U096,intro,grid,review_then_send,blocking,separate_done,restart_batch,5,True,20,9,소개 후 시작 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U097,intro,strip,automatic,in_place,same_gallery,per_file,2,False,0,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U098,intro,strip,automatic,in_place,same_gallery,restart_batch,2,False,20,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U099,intro,strip,automatic,in_place,separate_done,per_file,3,False,0,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U100,intro,strip,automatic,in_place,separate_done,restart_batch,3,False,20,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U101,intro,strip,automatic,blocking,same_gallery,per_file,2,False,0,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U102,intro,strip,automatic,blocking,same_gallery,restart_batch,2,False,20,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U103,intro,strip,automatic,blocking,separate_done,per_file,3,False,0,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U104,intro,strip,automatic,blocking,separate_done,restart_batch,3,False,20,3,소개 후 시작 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U105,intro,strip,one_send,in_place,same_gallery,per_file,3,True,0,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U106,intro,strip,one_send,in_place,same_gallery,restart_batch,3,True,20,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U107,intro,strip,one_send,in_place,separate_done,per_file,4,True,0,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U108,intro,strip,one_send,in_place,separate_done,restart_batch,4,True,20,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U109,intro,strip,one_send,blocking,same_gallery,per_file,3,True,0,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U110,intro,strip,one_send,blocking,same_gallery,restart_batch,3,True,20,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U111,intro,strip,one_send,blocking,separate_done,per_file,4,True,0,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U112,intro,strip,one_send,blocking,separate_done,restart_batch,4,True,20,3,소개 후 시작 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U113,intro,strip,review_then_send,in_place,same_gallery,per_file,4,True,0,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U114,intro,strip,review_then_send,in_place,same_gallery,restart_batch,4,True,20,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U115,intro,strip,review_then_send,in_place,separate_done,per_file,5,True,0,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U116,intro,strip,review_then_send,in_place,separate_done,restart_batch,5,True,20,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U117,intro,strip,review_then_send,blocking,same_gallery,per_file,4,True,0,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U118,intro,strip,review_then_send,blocking,same_gallery,restart_batch,4,True,20,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U119,intro,strip,review_then_send,blocking,separate_done,per_file,5,True,0,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U120,intro,strip,review_then_send,blocking,separate_done,restart_batch,5,True,20,3,소개 후 시작 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U121,intro,list,automatic,in_place,same_gallery,per_file,2,False,0,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U122,intro,list,automatic,in_place,same_gallery,restart_batch,2,False,20,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U123,intro,list,automatic,in_place,separate_done,per_file,3,False,0,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U124,intro,list,automatic,in_place,separate_done,restart_batch,3,False,20,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U125,intro,list,automatic,blocking,same_gallery,per_file,2,False,0,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U126,intro,list,automatic,blocking,same_gallery,restart_batch,2,False,20,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U127,intro,list,automatic,blocking,separate_done,per_file,3,False,0,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U128,intro,list,automatic,blocking,separate_done,restart_batch,3,False,20,4,소개 후 시작 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U129,intro,list,one_send,in_place,same_gallery,per_file,3,True,0,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U130,intro,list,one_send,in_place,same_gallery,restart_batch,3,True,20,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U131,intro,list,one_send,in_place,separate_done,per_file,4,True,0,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U132,intro,list,one_send,in_place,separate_done,restart_batch,4,True,20,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U133,intro,list,one_send,blocking,same_gallery,per_file,3,True,0,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U134,intro,list,one_send,blocking,same_gallery,restart_batch,3,True,20,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U135,intro,list,one_send,blocking,separate_done,per_file,4,True,0,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U136,intro,list,one_send,blocking,separate_done,restart_batch,4,True,20,4,소개 후 시작 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U137,intro,list,review_then_send,in_place,same_gallery,per_file,4,True,0,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U138,intro,list,review_then_send,in_place,same_gallery,restart_batch,4,True,20,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U139,intro,list,review_then_send,in_place,separate_done,per_file,5,True,0,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U140,intro,list,review_then_send,in_place,separate_done,restart_batch,5,True,20,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U141,intro,list,review_then_send,blocking,same_gallery,per_file,4,True,0,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U142,intro,list,review_then_send,blocking,same_gallery,restart_batch,4,True,20,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U143,intro,list,review_then_send,blocking,separate_done,per_file,5,True,0,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U144,intro,list,review_then_send,blocking,separate_done,restart_batch,5,True,20,4,소개 후 시작 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U145,wizard,grid,automatic,in_place,same_gallery,per_file,3,False,0,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U146,wizard,grid,automatic,in_place,same_gallery,restart_batch,3,False,20,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U147,wizard,grid,automatic,in_place,separate_done,per_file,4,False,0,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U148,wizard,grid,automatic,in_place,separate_done,restart_batch,4,False,20,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U149,wizard,grid,automatic,blocking,same_gallery,per_file,3,False,0,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U150,wizard,grid,automatic,blocking,same_gallery,restart_batch,3,False,20,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U151,wizard,grid,automatic,blocking,separate_done,per_file,4,False,0,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U152,wizard,grid,automatic,blocking,separate_done,restart_batch,4,False,20,9,단계 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U153,wizard,grid,one_send,in_place,same_gallery,per_file,4,True,0,9,단계 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U154,wizard,grid,one_send,in_place,same_gallery,restart_batch,4,True,20,9,단계 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U155,wizard,grid,one_send,in_place,separate_done,per_file,5,True,0,9,단계 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U156,wizard,grid,one_send,in_place,separate_done,restart_batch,5,True,20,9,단계 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U157,wizard,grid,one_send,blocking,same_gallery,per_file,4,True,0,9,단계 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U158,wizard,grid,one_send,blocking,same_gallery,restart_batch,4,True,20,9,단계 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U159,wizard,grid,one_send,blocking,separate_done,per_file,5,True,0,9,단계 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U160,wizard,grid,one_send,blocking,separate_done,restart_batch,5,True,20,9,단계 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U161,wizard,grid,review_then_send,in_place,same_gallery,per_file,5,True,0,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U162,wizard,grid,review_then_send,in_place,same_gallery,restart_batch,5,True,20,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U163,wizard,grid,review_then_send,in_place,separate_done,per_file,6,True,0,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U164,wizard,grid,review_then_send,in_place,separate_done,restart_batch,6,True,20,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U165,wizard,grid,review_then_send,blocking,same_gallery,per_file,5,True,0,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U166,wizard,grid,review_then_send,blocking,same_gallery,restart_batch,5,True,20,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U167,wizard,grid,review_then_send,blocking,separate_done,per_file,6,True,0,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U168,wizard,grid,review_then_send,blocking,separate_done,restart_batch,6,True,20,9,단계 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U169,wizard,strip,automatic,in_place,same_gallery,per_file,3,False,0,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U170,wizard,strip,automatic,in_place,same_gallery,restart_batch,3,False,20,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U171,wizard,strip,automatic,in_place,separate_done,per_file,4,False,0,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U172,wizard,strip,automatic,in_place,separate_done,restart_batch,4,False,20,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U173,wizard,strip,automatic,blocking,same_gallery,per_file,3,False,0,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U174,wizard,strip,automatic,blocking,same_gallery,restart_batch,3,False,20,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U175,wizard,strip,automatic,blocking,separate_done,per_file,4,False,0,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U176,wizard,strip,automatic,blocking,separate_done,restart_batch,4,False,20,3,단계 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U177,wizard,strip,one_send,in_place,same_gallery,per_file,4,True,0,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U178,wizard,strip,one_send,in_place,same_gallery,restart_batch,4,True,20,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U179,wizard,strip,one_send,in_place,separate_done,per_file,5,True,0,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U180,wizard,strip,one_send,in_place,separate_done,restart_batch,5,True,20,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U181,wizard,strip,one_send,blocking,same_gallery,per_file,4,True,0,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U182,wizard,strip,one_send,blocking,same_gallery,restart_batch,4,True,20,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U183,wizard,strip,one_send,blocking,separate_done,per_file,5,True,0,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U184,wizard,strip,one_send,blocking,separate_done,restart_batch,5,True,20,3,단계 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U185,wizard,strip,review_then_send,in_place,same_gallery,per_file,5,True,0,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U186,wizard,strip,review_then_send,in_place,same_gallery,restart_batch,5,True,20,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U187,wizard,strip,review_then_send,in_place,separate_done,per_file,6,True,0,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U188,wizard,strip,review_then_send,in_place,separate_done,restart_batch,6,True,20,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U189,wizard,strip,review_then_send,blocking,same_gallery,per_file,5,True,0,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U190,wizard,strip,review_then_send,blocking,same_gallery,restart_batch,5,True,20,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U191,wizard,strip,review_then_send,blocking,separate_done,per_file,6,True,0,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U192,wizard,strip,review_then_send,blocking,separate_done,restart_batch,6,True,20,3,단계 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U193,wizard,list,automatic,in_place,same_gallery,per_file,3,False,0,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U194,wizard,list,automatic,in_place,same_gallery,restart_batch,3,False,20,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U195,wizard,list,automatic,in_place,separate_done,per_file,4,False,0,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U196,wizard,list,automatic,in_place,separate_done,restart_batch,4,False,20,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U197,wizard,list,automatic,blocking,same_gallery,per_file,3,False,0,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U198,wizard,list,automatic,blocking,same_gallery,restart_batch,3,False,20,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U199,wizard,list,automatic,blocking,separate_done,per_file,4,False,0,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U200,wizard,list,automatic,blocking,separate_done,restart_batch,4,False,20,4,단계 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U201,wizard,list,one_send,in_place,same_gallery,per_file,4,True,0,4,단계 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U202,wizard,list,one_send,in_place,same_gallery,restart_batch,4,True,20,4,단계 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U203,wizard,list,one_send,in_place,separate_done,per_file,5,True,0,4,단계 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U204,wizard,list,one_send,in_place,separate_done,restart_batch,5,True,20,4,단계 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U205,wizard,list,one_send,blocking,same_gallery,per_file,4,True,0,4,단계 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U206,wizard,list,one_send,blocking,same_gallery,restart_batch,4,True,20,4,단계 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U207,wizard,list,one_send,blocking,separate_done,per_file,5,True,0,4,단계 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U208,wizard,list,one_send,blocking,separate_done,restart_batch,5,True,20,4,단계 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U209,wizard,list,review_then_send,in_place,same_gallery,per_file,5,True,0,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U210,wizard,list,review_then_send,in_place,same_gallery,restart_batch,5,True,20,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U211,wizard,list,review_then_send,in_place,separate_done,per_file,6,True,0,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U212,wizard,list,review_then_send,in_place,separate_done,restart_batch,6,True,20,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U213,wizard,list,review_then_send,blocking,same_gallery,per_file,5,True,0,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U214,wizard,list,review_then_send,blocking,same_gallery,restart_batch,5,True,20,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U215,wizard,list,review_then_send,blocking,separate_done,per_file,6,True,0,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U216,wizard,list,review_then_send,blocking,separate_done,restart_batch,6,True,20,4,단계 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U217,chat,grid,automatic,in_place,same_gallery,per_file,2,False,0,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U218,chat,grid,automatic,in_place,same_gallery,restart_batch,2,False,20,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U219,chat,grid,automatic,in_place,separate_done,per_file,3,False,0,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U220,chat,grid,automatic,in_place,separate_done,restart_batch,3,False,20,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U221,chat,grid,automatic,blocking,same_gallery,per_file,2,False,0,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U222,chat,grid,automatic,blocking,same_gallery,restart_batch,2,False,20,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U223,chat,grid,automatic,blocking,separate_done,per_file,3,False,0,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U224,chat,grid,automatic,blocking,separate_done,restart_batch,3,False,20,9,대화 안내 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U225,chat,grid,one_send,in_place,same_gallery,per_file,3,True,0,9,대화 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U226,chat,grid,one_send,in_place,same_gallery,restart_batch,3,True,20,9,대화 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U227,chat,grid,one_send,in_place,separate_done,per_file,4,True,0,9,대화 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U228,chat,grid,one_send,in_place,separate_done,restart_batch,4,True,20,9,대화 안내 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U229,chat,grid,one_send,blocking,same_gallery,per_file,3,True,0,9,대화 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U230,chat,grid,one_send,blocking,same_gallery,restart_batch,3,True,20,9,대화 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U231,chat,grid,one_send,blocking,separate_done,per_file,4,True,0,9,대화 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U232,chat,grid,one_send,blocking,separate_done,restart_batch,4,True,20,9,대화 안내 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U233,chat,grid,review_then_send,in_place,same_gallery,per_file,4,True,0,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U234,chat,grid,review_then_send,in_place,same_gallery,restart_batch,4,True,20,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U235,chat,grid,review_then_send,in_place,separate_done,per_file,5,True,0,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U236,chat,grid,review_then_send,in_place,separate_done,restart_batch,5,True,20,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U237,chat,grid,review_then_send,blocking,same_gallery,per_file,4,True,0,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U238,chat,grid,review_then_send,blocking,same_gallery,restart_batch,4,True,20,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U239,chat,grid,review_then_send,blocking,separate_done,per_file,5,True,0,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U240,chat,grid,review_then_send,blocking,separate_done,restart_batch,5,True,20,9,대화 안내 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U241,chat,strip,automatic,in_place,same_gallery,per_file,2,False,0,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U242,chat,strip,automatic,in_place,same_gallery,restart_batch,2,False,20,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U243,chat,strip,automatic,in_place,separate_done,per_file,3,False,0,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U244,chat,strip,automatic,in_place,separate_done,restart_batch,3,False,20,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U245,chat,strip,automatic,blocking,same_gallery,per_file,2,False,0,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U246,chat,strip,automatic,blocking,same_gallery,restart_batch,2,False,20,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U247,chat,strip,automatic,blocking,separate_done,per_file,3,False,0,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U248,chat,strip,automatic,blocking,separate_done,restart_batch,3,False,20,3,대화 안내 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U249,chat,strip,one_send,in_place,same_gallery,per_file,3,True,0,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U250,chat,strip,one_send,in_place,same_gallery,restart_batch,3,True,20,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U251,chat,strip,one_send,in_place,separate_done,per_file,4,True,0,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U252,chat,strip,one_send,in_place,separate_done,restart_batch,4,True,20,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U253,chat,strip,one_send,blocking,same_gallery,per_file,3,True,0,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U254,chat,strip,one_send,blocking,same_gallery,restart_batch,3,True,20,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U255,chat,strip,one_send,blocking,separate_done,per_file,4,True,0,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U256,chat,strip,one_send,blocking,separate_done,restart_batch,4,True,20,3,대화 안내 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U257,chat,strip,review_then_send,in_place,same_gallery,per_file,4,True,0,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U258,chat,strip,review_then_send,in_place,same_gallery,restart_batch,4,True,20,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U259,chat,strip,review_then_send,in_place,separate_done,per_file,5,True,0,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U260,chat,strip,review_then_send,in_place,separate_done,restart_batch,5,True,20,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U261,chat,strip,review_then_send,blocking,same_gallery,per_file,4,True,0,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U262,chat,strip,review_then_send,blocking,same_gallery,restart_batch,4,True,20,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U263,chat,strip,review_then_send,blocking,separate_done,per_file,5,True,0,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U264,chat,strip,review_then_send,blocking,separate_done,restart_batch,5,True,20,3,대화 안내 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U265,chat,list,automatic,in_place,same_gallery,per_file,2,False,0,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U266,chat,list,automatic,in_place,same_gallery,restart_batch,2,False,20,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U267,chat,list,automatic,in_place,separate_done,per_file,3,False,0,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U268,chat,list,automatic,in_place,separate_done,restart_batch,3,False,20,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U269,chat,list,automatic,blocking,same_gallery,per_file,2,False,0,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U270,chat,list,automatic,blocking,same_gallery,restart_batch,2,False,20,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U271,chat,list,automatic,blocking,separate_done,per_file,3,False,0,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U272,chat,list,automatic,blocking,separate_done,restart_batch,3,False,20,4,대화 안내 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U273,chat,list,one_send,in_place,same_gallery,per_file,3,True,0,4,대화 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U274,chat,list,one_send,in_place,same_gallery,restart_batch,3,True,20,4,대화 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U275,chat,list,one_send,in_place,separate_done,per_file,4,True,0,4,대화 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U276,chat,list,one_send,in_place,separate_done,restart_batch,4,True,20,4,대화 안내 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U277,chat,list,one_send,blocking,same_gallery,per_file,3,True,0,4,대화 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U278,chat,list,one_send,blocking,same_gallery,restart_batch,3,True,20,4,대화 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U279,chat,list,one_send,blocking,separate_done,per_file,4,True,0,4,대화 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U280,chat,list,one_send,blocking,separate_done,restart_batch,4,True,20,4,대화 안내 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U281,chat,list,review_then_send,in_place,same_gallery,per_file,4,True,0,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U282,chat,list,review_then_send,in_place,same_gallery,restart_batch,4,True,20,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U283,chat,list,review_then_send,in_place,separate_done,per_file,5,True,0,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U284,chat,list,review_then_send,in_place,separate_done,restart_batch,5,True,20,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U285,chat,list,review_then_send,blocking,same_gallery,per_file,4,True,0,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U286,chat,list,review_then_send,blocking,same_gallery,restart_batch,4,True,20,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U287,chat,list,review_then_send,blocking,separate_done,per_file,5,True,0,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U288,chat,list,review_then_send,blocking,separate_done,restart_batch,5,True,20,4,대화 안내 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U289,auto_picker,grid,automatic,in_place,same_gallery,per_file,0,False,0,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U290,auto_picker,grid,automatic,in_place,same_gallery,restart_batch,0,False,20,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U291,auto_picker,grid,automatic,in_place,separate_done,per_file,1,False,0,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U292,auto_picker,grid,automatic,in_place,separate_done,restart_batch,1,False,20,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U293,auto_picker,grid,automatic,blocking,same_gallery,per_file,0,False,0,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U294,auto_picker,grid,automatic,blocking,same_gallery,restart_batch,0,False,20,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U295,auto_picker,grid,automatic,blocking,separate_done,per_file,1,False,0,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U296,auto_picker,grid,automatic,blocking,separate_done,restart_batch,1,False,20,9,진입 즉시 선택기 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U297,auto_picker,grid,one_send,in_place,same_gallery,per_file,1,True,0,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U298,auto_picker,grid,one_send,in_place,same_gallery,restart_batch,1,True,20,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U299,auto_picker,grid,one_send,in_place,separate_done,per_file,2,True,0,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U300,auto_picker,grid,one_send,in_place,separate_done,restart_batch,2,True,20,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U301,auto_picker,grid,one_send,blocking,same_gallery,per_file,1,True,0,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U302,auto_picker,grid,one_send,blocking,same_gallery,restart_batch,1,True,20,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U303,auto_picker,grid,one_send,blocking,separate_done,per_file,2,True,0,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U304,auto_picker,grid,one_send,blocking,separate_done,restart_batch,2,True,20,9,진입 즉시 선택기 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U305,auto_picker,grid,review_then_send,in_place,same_gallery,per_file,2,True,0,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U306,auto_picker,grid,review_then_send,in_place,same_gallery,restart_batch,2,True,20,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U307,auto_picker,grid,review_then_send,in_place,separate_done,per_file,3,True,0,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U308,auto_picker,grid,review_then_send,in_place,separate_done,restart_batch,3,True,20,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U309,auto_picker,grid,review_then_send,blocking,same_gallery,per_file,2,True,0,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U310,auto_picker,grid,review_then_send,blocking,same_gallery,restart_batch,2,True,20,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U311,auto_picker,grid,review_then_send,blocking,separate_done,per_file,3,True,0,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U312,auto_picker,grid,review_then_send,blocking,separate_done,restart_batch,3,True,20,9,진입 즉시 선택기 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U313,auto_picker,strip,automatic,in_place,same_gallery,per_file,0,False,0,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U314,auto_picker,strip,automatic,in_place,same_gallery,restart_batch,0,False,20,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U315,auto_picker,strip,automatic,in_place,separate_done,per_file,1,False,0,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U316,auto_picker,strip,automatic,in_place,separate_done,restart_batch,1,False,20,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U317,auto_picker,strip,automatic,blocking,same_gallery,per_file,0,False,0,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U318,auto_picker,strip,automatic,blocking,same_gallery,restart_batch,0,False,20,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U319,auto_picker,strip,automatic,blocking,separate_done,per_file,1,False,0,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U320,auto_picker,strip,automatic,blocking,separate_done,restart_batch,1,False,20,3,진입 즉시 선택기 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U321,auto_picker,strip,one_send,in_place,same_gallery,per_file,1,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U322,auto_picker,strip,one_send,in_place,same_gallery,restart_batch,1,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U323,auto_picker,strip,one_send,in_place,separate_done,per_file,2,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U324,auto_picker,strip,one_send,in_place,separate_done,restart_batch,2,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U325,auto_picker,strip,one_send,blocking,same_gallery,per_file,1,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U326,auto_picker,strip,one_send,blocking,same_gallery,restart_batch,1,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U327,auto_picker,strip,one_send,blocking,separate_done,per_file,2,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U328,auto_picker,strip,one_send,blocking,separate_done,restart_batch,2,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U329,auto_picker,strip,review_then_send,in_place,same_gallery,per_file,2,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U330,auto_picker,strip,review_then_send,in_place,same_gallery,restart_batch,2,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U331,auto_picker,strip,review_then_send,in_place,separate_done,per_file,3,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U332,auto_picker,strip,review_then_send,in_place,separate_done,restart_batch,3,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U333,auto_picker,strip,review_then_send,blocking,same_gallery,per_file,2,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U334,auto_picker,strip,review_then_send,blocking,same_gallery,restart_batch,2,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U335,auto_picker,strip,review_then_send,blocking,separate_done,per_file,3,True,0,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U336,auto_picker,strip,review_then_send,blocking,separate_done,restart_batch,3,True,20,3,진입 즉시 선택기 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U337,auto_picker,list,automatic,in_place,same_gallery,per_file,0,False,0,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U338,auto_picker,list,automatic,in_place,same_gallery,restart_batch,0,False,20,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U339,auto_picker,list,automatic,in_place,separate_done,per_file,1,False,0,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U340,auto_picker,list,automatic,in_place,separate_done,restart_batch,1,False,20,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U341,auto_picker,list,automatic,blocking,same_gallery,per_file,0,False,0,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U342,auto_picker,list,automatic,blocking,same_gallery,restart_batch,0,False,20,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U343,auto_picker,list,automatic,blocking,separate_done,per_file,1,False,0,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U344,auto_picker,list,automatic,blocking,separate_done,restart_batch,1,False,20,4,진입 즉시 선택기 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U345,auto_picker,list,one_send,in_place,same_gallery,per_file,1,True,0,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U346,auto_picker,list,one_send,in_place,same_gallery,restart_batch,1,True,20,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U347,auto_picker,list,one_send,in_place,separate_done,per_file,2,True,0,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U348,auto_picker,list,one_send,in_place,separate_done,restart_batch,2,True,20,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U349,auto_picker,list,one_send,blocking,same_gallery,per_file,1,True,0,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U350,auto_picker,list,one_send,blocking,same_gallery,restart_batch,1,True,20,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U351,auto_picker,list,one_send,blocking,separate_done,per_file,2,True,0,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U352,auto_picker,list,one_send,blocking,separate_done,restart_batch,2,True,20,4,진입 즉시 선택기 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U353,auto_picker,list,review_then_send,in_place,same_gallery,per_file,2,True,0,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U354,auto_picker,list,review_then_send,in_place,same_gallery,restart_batch,2,True,20,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U355,auto_picker,list,review_then_send,in_place,separate_done,per_file,3,True,0,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U356,auto_picker,list,review_then_send,in_place,separate_done,restart_batch,3,True,20,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U357,auto_picker,list,review_then_send,blocking,same_gallery,per_file,2,True,0,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U358,auto_picker,list,review_then_send,blocking,same_gallery,restart_batch,2,True,20,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U359,auto_picker,list,review_then_send,blocking,separate_done,per_file,3,True,0,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U360,auto_picker,list,review_then_send,blocking,separate_done,restart_batch,3,True,20,4,진입 즉시 선택기 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U361,source_choice,grid,automatic,in_place,same_gallery,per_file,2,False,0,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U362,source_choice,grid,automatic,in_place,same_gallery,restart_batch,2,False,20,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U363,source_choice,grid,automatic,in_place,separate_done,per_file,3,False,0,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U364,source_choice,grid,automatic,in_place,separate_done,restart_batch,3,False,20,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U365,source_choice,grid,automatic,blocking,same_gallery,per_file,2,False,0,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U366,source_choice,grid,automatic,blocking,same_gallery,restart_batch,2,False,20,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U367,source_choice,grid,automatic,blocking,separate_done,per_file,3,False,0,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U368,source_choice,grid,automatic,blocking,separate_done,restart_batch,3,False,20,9,가져올 곳 선택 · 사진 격자 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U369,source_choice,grid,one_send,in_place,same_gallery,per_file,3,True,0,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U370,source_choice,grid,one_send,in_place,same_gallery,restart_batch,3,True,20,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U371,source_choice,grid,one_send,in_place,separate_done,per_file,4,True,0,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U372,source_choice,grid,one_send,in_place,separate_done,restart_batch,4,True,20,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U373,source_choice,grid,one_send,blocking,same_gallery,per_file,3,True,0,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U374,source_choice,grid,one_send,blocking,same_gallery,restart_batch,3,True,20,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U375,source_choice,grid,one_send,blocking,separate_done,per_file,4,True,0,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U376,source_choice,grid,one_send,blocking,separate_done,restart_batch,4,True,20,9,가져올 곳 선택 · 사진 격자 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U377,source_choice,grid,review_then_send,in_place,same_gallery,per_file,4,True,0,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U378,source_choice,grid,review_then_send,in_place,same_gallery,restart_batch,4,True,20,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U379,source_choice,grid,review_then_send,in_place,separate_done,per_file,5,True,0,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U380,source_choice,grid,review_then_send,in_place,separate_done,restart_batch,5,True,20,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U381,source_choice,grid,review_then_send,blocking,same_gallery,per_file,4,True,0,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U382,source_choice,grid,review_then_send,blocking,same_gallery,restart_batch,4,True,20,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U383,source_choice,grid,review_then_send,blocking,separate_done,per_file,5,True,0,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U384,source_choice,grid,review_then_send,blocking,separate_done,restart_batch,5,True,20,9,가져올 곳 선택 · 사진 격자 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U385,source_choice,strip,automatic,in_place,same_gallery,per_file,2,False,0,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U386,source_choice,strip,automatic,in_place,same_gallery,restart_batch,2,False,20,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U387,source_choice,strip,automatic,in_place,separate_done,per_file,3,False,0,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U388,source_choice,strip,automatic,in_place,separate_done,restart_batch,3,False,20,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U389,source_choice,strip,automatic,blocking,same_gallery,per_file,2,False,0,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U390,source_choice,strip,automatic,blocking,same_gallery,restart_batch,2,False,20,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U391,source_choice,strip,automatic,blocking,separate_done,per_file,3,False,0,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U392,source_choice,strip,automatic,blocking,separate_done,restart_batch,3,False,20,3,가져올 곳 선택 · 가로 사진 띠 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U393,source_choice,strip,one_send,in_place,same_gallery,per_file,3,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U394,source_choice,strip,one_send,in_place,same_gallery,restart_batch,3,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U395,source_choice,strip,one_send,in_place,separate_done,per_file,4,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U396,source_choice,strip,one_send,in_place,separate_done,restart_batch,4,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U397,source_choice,strip,one_send,blocking,same_gallery,per_file,3,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U398,source_choice,strip,one_send,blocking,same_gallery,restart_batch,3,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U399,source_choice,strip,one_send,blocking,separate_done,per_file,4,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U400,source_choice,strip,one_send,blocking,separate_done,restart_batch,4,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U401,source_choice,strip,review_then_send,in_place,same_gallery,per_file,4,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U402,source_choice,strip,review_then_send,in_place,same_gallery,restart_batch,4,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U403,source_choice,strip,review_then_send,in_place,separate_done,per_file,5,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U404,source_choice,strip,review_then_send,in_place,separate_done,restart_batch,5,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U405,source_choice,strip,review_then_send,blocking,same_gallery,per_file,4,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U406,source_choice,strip,review_then_send,blocking,same_gallery,restart_batch,4,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U407,source_choice,strip,review_then_send,blocking,separate_done,per_file,5,True,0,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U408,source_choice,strip,review_then_send,blocking,separate_done,restart_batch,5,True,20,3,가져올 곳 선택 · 가로 사진 띠 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U409,source_choice,list,automatic,in_place,same_gallery,per_file,2,False,0,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U410,source_choice,list,automatic,in_place,same_gallery,restart_batch,2,False,20,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U411,source_choice,list,automatic,in_place,separate_done,per_file,3,False,0,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U412,source_choice,list,automatic,in_place,separate_done,restart_batch,3,False,20,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U413,source_choice,list,automatic,blocking,same_gallery,per_file,2,False,0,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U414,source_choice,list,automatic,blocking,same_gallery,restart_batch,2,False,20,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U415,source_choice,list,automatic,blocking,separate_done,per_file,3,False,0,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U416,source_choice,list,automatic,blocking,separate_done,restart_batch,3,False,20,4,가져올 곳 선택 · 파일 목록 · 선택 즉시 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U417,source_choice,list,one_send,in_place,same_gallery,per_file,3,True,0,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U418,source_choice,list,one_send,in_place,same_gallery,restart_batch,3,True,20,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U419,source_choice,list,one_send,in_place,separate_done,per_file,4,True,0,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U420,source_choice,list,one_send,in_place,separate_done,restart_batch,4,True,20,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U421,source_choice,list,one_send,blocking,same_gallery,per_file,3,True,0,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U422,source_choice,list,one_send,blocking,same_gallery,restart_batch,3,True,20,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U423,source_choice,list,one_send,blocking,separate_done,per_file,4,True,0,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U424,source_choice,list,one_send,blocking,separate_done,restart_batch,4,True,20,4,가져올 곳 선택 · 파일 목록 · 보내기 한 번 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택
+U425,source_choice,list,review_then_send,in_place,same_gallery,per_file,4,True,0,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 남은 파일만 복구
+U426,source_choice,list,review_then_send,in_place,same_gallery,restart_batch,4,True,20,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U427,source_choice,list,review_then_send,in_place,separate_done,per_file,5,True,0,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 남은 파일만 복구
+U428,source_choice,list,review_then_send,in_place,separate_done,restart_batch,5,True,20,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 같은 화면 진행 · 별도 완료 화면 · 묶음 전체 다시 선택
+U429,source_choice,list,review_then_send,blocking,same_gallery,per_file,4,True,0,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 남은 파일만 복구
+U430,source_choice,list,review_then_send,blocking,same_gallery,restart_batch,4,True,20,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 저장된 격자 유지 · 묶음 전체 다시 선택
+U431,source_choice,list,review_then_send,blocking,separate_done,per_file,5,True,0,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 남은 파일만 복구
+U432,source_choice,list,review_then_send,blocking,separate_done,restart_batch,5,True,20,4,가져올 곳 선택 · 파일 목록 · 별도 검토 후 전송 · 전송 전용 화면 · 별도 완료 화면 · 묶음 전체 다시 선택

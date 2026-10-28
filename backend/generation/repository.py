@@ -44,6 +44,8 @@ async def claim_task(session: AsyncSession, now: datetime, lease_seconds: int, *
         from backend.models import GoodsRevision
         goods_count=await session.scalar(select(func.count()).select_from(GoodsRevision).where(GoodsRevision.status=='running',GoodsRevision.lease_until>now))
         counts['image_transform']=counts.get('image_transform',0)+goods_count
+        from backend.models import AlbumCaptionJob
+        counts['caption']=counts.get('caption',0)+(await session.scalar(select(func.count()).select_from(AlbumCaptionJob).where(AlbumCaptionJob.status=='running',AlbumCaptionJob.lease_until>now)))
         available = []
         for name, cap in limits.items():
             setting = STAGE_SETTINGS[name]

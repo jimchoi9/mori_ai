@@ -81,6 +81,8 @@ class Settings(BaseSettings):
         if self.goods_mail_to and not re.fullmatch(r'[^\s,;<>@]+@[^\s,;<>@]+\.[^\s,;<>@]+', self.goods_mail_to):
             raise ValueError('exactly one operator recipient is required')
         return self
+    album_content_enabled: bool = False
+    album_content_caption_profile: Literal["mini_full_v1", "luna_1024_v1"] = "mini_full_v1"
     easy_upload_enabled: bool = False
     easy_upload_max_photos: Literal[20, 50] = 20
 
