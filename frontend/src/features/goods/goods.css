@@ -55,6 +55,7 @@
 .purchase-qr{display:block;max-width:220px;width:100%;height:auto;margin:20px auto}
 .purchase-files{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}.purchase-files a{padding:12px 16px;border:1px solid #b7c7bc;border-radius:12px;color:inherit;text-decoration:none}
 .purchase-detail .hint{font-size:13px;line-height:1.7;color:#66756a}.purchase-test-note{margin-top:26px}
+.purchase-order-id{overflow-wrap:anywhere}
 @media(max-width:360px){.purchase-summary{padding:14px;gap:12px}.purchase-summary>img{width:90px;height:100px}.purchase-detail{padding:20px 16px 40px}}
 
 .purchase-gift-option{display:flex;align-items:center;gap:10px;font-size:14px;margin:18px 0;min-height:44px}.purchase-gift-option input{width:18px;height:18px;flex:none}

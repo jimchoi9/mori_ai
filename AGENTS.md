@@ -1,5 +1,11 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## 구매 직후 화면과 주문 내역 정리 — 2026-10-29
+
+- 사용자 승인으로 구매 완료→사진 채우기를 주 동작으로 정리했다. 고객 화면의 제작 PNG/PDF/JSON 다운로드·메일 전달 상태를 제거하고 기존 운영자 제작/메일 경로는 유지한다. 관리 모드에서 저장 사진이 있으면 구매 URL 재진입은 관리로 바로 연결한다. `?details=1`은 디자인·주문번호·날짜를 다시 확인하는 경로이며 관리 화면의 주문 내역 링크가 이를 사용한다. 선물 등록 QR/관리 권한/삭제된 앨범 안내는 보존했다.
+- `feat/purchase-album-entry`, worktree `/private/tmp/mori-purchase-ui-20261029`. 구매·결제 UI 테스트15/타입/Vite 통과, Chrome에서 기존 사진3장 관리 자동 연결→명시 주문 내역→관리 링크를 확인했다. 빈 앨범/선물/삭제/오류·대기는 자동검사로 확인했으며 신규 실제 결제·사진 추가·메일 발송은 실행하지 않았다.
+- 로컬18187 web만 `mori-ai:purchase-album-entry-20261029`, worker는 기존 `mori-ai:album-throughput-20261028`. backend/환경/DB schema 변경없음. 반영 전후 사진·구매·NFC태그·글귀job·예산원장 등10테이블 전체행digest와migration0016 동일. 기존 compose overlays 뒤 worktree의 `purchase-ui.override.yaml`을 마지막에 적용한다. 상세 재실행·검증은 개발운영 최신 절. 기본 checkout의 작업 브랜치와 운영/다른QA는 변경하지 않음.
+
 ## 저장 큐 연속 처리·글귀2병렬·짧은 문구 반영 — 2026-10-28
 
 - 사용자 진행 승인으로 공통계약v1.19를 적용했다. validation1lane은 작업성공 뒤 바로 다음 작업을 확인하고 idle/실패시 기존1초poll을 유지한다. 독립ContentWorker2개/복구cursor분리, 기존generation과합산caption4/원장/unknown무재호출/기기압축1lane 유지.

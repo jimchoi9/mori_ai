@@ -38,8 +38,8 @@ export function TestCheckout({design,userId}:{design:GoodsDesign;userId:string})
  if(purchase)return <section className="test-checkout" aria-label="테스트 구매">
   <p className="notice">전용 사진첩이 연결되었어요. 실제 결제·제작·배송은 진행되지 않습니다.</p>
   {purchase.album_status==='deleted'?<p>연결된 사진첩이 삭제되었습니다.</p>:
-   <p>사진 추가와 확정 자료를 구매 화면에서 이어서 확인하세요.</p>}
-  <Link className="button-link" to={`/purchases/${purchase.id}`}>구매 자료·사진 추가 QR 보기</Link>
+   <p>구매한 굿즈의 사진첩을 이어서 채워 보세요.</p>}
+  <Link className="button-link" to={`/purchases/${purchase.id}`}>{purchase.album_status==='deleted'?'주문 내역 보기':'내 사진첩으로'}</Link>
  </section>;
  if(config.isPending)return <p role="status">구매 체험을 준비하고 있어요…</p>;
  if(config.isError)return <p role="alert">구매 체험 설정을 불러오지 못했어요. <button onClick={()=>void config.refetch()}>다시 확인</button></p>;
