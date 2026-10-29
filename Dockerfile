@@ -40,6 +40,16 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
     && ./node_modules/.bin/esbuild src/features/goods/mockup/renderer.ts --bundle --platform=node --format=esm --outfile=/tmp/goods-renderer.mjs \
     && node tests/goods_renderer.test.mjs file:///tmp/goods-renderer.mjs
 
+RUN node tests/album_purchase_access.test.mjs \
+    && node tests/easy_upload_queue.test.mjs \
+    && node tests/easy_upload_optimize.test.mjs \
+    && node tests/easy_upload_hook.test.mjs \
+    && node tests/upload_messages.test.mjs \
+    && node tests/iphone_webp.test.mjs \
+    && node tests/nfc_access.test.mjs \
+    && node tests/nfc_loading.test.mjs \
+    && node tests/nfc_music.test.mjs
+
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app

@@ -166,3 +166,26 @@ NORMALIZED_MAX_BYTES=1000000
 이미지/글귀동시성은 공통코드2/4이며 별도 환경변수 변경은 필요없다. 기존예약/진행run의동결설정은환경변경으로backfill하지않는다. 신규nullable migration `0007_upload_pairs`를포함하므로 기존스크립트의백업→정지→migration→재시작을따른다. 진행중외부AI호출의강제중단은응답불명확상태를만들수있으므로 기존안내대로진행작업이끝난점검시간에배포한다. 이것은기존데이터삭제나실행작업취소지시가아니다.
 
 배포후health는프로세스확인만의미한다. 사용자로그인·새업로드·굿즈교체실패시보존·세로/가로표시를별도확인한다. 메모리개선·이미지4재판정·실제모바일/실사진검증은후속이다.
+
+
+## 2026-10-29 업로드·앨범 관리 배포 인계
+
+운영 Compose가 새 업로드/관리/사진 글귀 profile·굿즈 제작 전달 설정을 앱에 전달하도록 보완했다. 이전에는 서버 `.env.production`에 적어도 해당 Compose 목록에 없는 값은 컨테이너에 전달되지 않았다. web/worker/migrate가 같은 설정을 받으며 `docker compose --profile maintenance config` 기준으로 기본값과 명시 설정을 검사한다. 실제 서버의 환경 파일은 이번에 열거나 변경하지 않았다.
+
+현재 로컬에서 확인한 간편 업로드/사진·글귀 관리를 운영에서 사용하려면, 배포 전에 서버 `.env.production`의 다음 선택을 확인한다. 아래는 로컬과 같은 기능을 선택하는 예이며 자동 적용되는 기본값이 아니다. 구매는 여전히 실제 요금 청구 없는 테스트 모드다.
+
+```dotenv
+GOODS_CHECKOUT_MODE=test
+EASY_UPLOAD_ENABLED=true
+EASY_UPLOAD_MAX_PHOTOS=20
+ALBUM_CONTENT_ENABLED=true
+ALBUM_CONTENT_CAPTION_PROFILE=luna_1024_v1
+GOODS_DELIVERY_ORIGIN=https://aimori.kro.kr
+GOODS_MAIL_ENABLED=false
+```
+
+기본값은 업로드/관리 false·기존 mini profile·checkout disabled·메일 false다. 새 이미지만 배포해서 새 기능이나 메일/AI를 자동 활성화하지 않는다. 실제 AI 활성화·API 키·예산·기존 데이터·수신자는 기존 운영값과 별도 승인 범위를 유지한다. LAN 개발 주소/만료 인증서/로컬 비용 원장을 운영에 복사하지 않는다. 운영 LAN 전달은 false로 고정했다.
+
+이번 후보는 기존 배포용 브랜치보다17개 앞선 커밋의 구매/선물/권한·NFC·사진관리와migration0008~0016을 포함한다. 이전 SHA만의 화면 변경으로 보지 않는다. Actions의 전체 backend/격리 PostgreSQL·migration 왕복/check·frontend 검사와 runtime 이미지 게시 성공을 확인한 SHA를 사용한다. 기존배포스크립트의DB백업·migration·앱교체·health절차를 유지하며 서버적용은 사용자가 수행한다. 실제 서버환경/R2/OAuth·실기기 인수는CI성공과별개다.
+
+배포 검사에는 기존 실패경로5검사와 Compose 설정4검사를 포함한다. 새 업로드/권한·iPhone WebP·NFC frontend44검사도 정식 Docker 빌드에 포함했다. 이 검사는 가짜값/격리 환경으로 실행하며 실제 메일·AI 호출·운영 DB 작업은 하지 않는다.

@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Check deployment failure paths
-        run: python3 tests/deploy/test_lightsail_deploy.py
+        run: python3 -m unittest discover -s tests/deploy -p 'test_*.py' -v
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build test image (includes frontend checks)
