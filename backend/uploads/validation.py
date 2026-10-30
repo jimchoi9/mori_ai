@@ -254,6 +254,12 @@ class ValidationWorker:
         return count
 
     async def _scan_deleted_assets(self, limit):
+        with span('storage.deleted_scan', kind='deleted_asset_scan', storage_mode=self.store.mode) as metrics:
+            metrics.update(assets_scanned=0, existence_checks=0, missing_objects=0,
+                           present_objects=0, check_errors=0, cleanup_enqueued=0)
+            return await self._scan_deleted_assets_measured(limit, metrics)
+
+    async def _scan_deleted_assets_measured(self, limit, metrics):
         """A bounded rotating UUID sweep revisits even already-finished cleanup jobs.
 
         The DB tombstone survives crashes; the cursor is only a fairness hint and
@@ -272,6 +278,7 @@ class ValidationWorker:
             rows = list((await session.execute(query.where(MediaAsset.id > after) if after else query)).all())
             if not rows and after is not None:
                 rows = list((await session.execute(query)).all())
+        metrics["assets_scanned"] = len(rows)
         self._deleted_scan_after = rows[-1].id if len(rows) == limit else None
         count = 0
         # Only this sweep shares observations. The next sweep must discover late PUTs.
@@ -289,16 +296,20 @@ class ValidationWorker:
                 present = False
                 for key in keys:
                     if key not in existence:
+                        metrics['existence_checks'] += 1
                         if self.store.mode == 'r2':
                             existence[key] = await asyncio.to_thread(self.store.exists, key)
                         else:
                             existence[key] = await asyncio.to_thread(lambda: self.store.path(key).is_file())
+                        metrics['present_objects' if existence[key] else 'missing_objects'] += 1
                     if existence[key]:
                         present = True
                         break
             except StorageUnavailable:
+                metrics['check_errors'] += 1
                 raise
             except (ValueError, OSError):
+                metrics['check_errors'] += 1
                 continue
             if not present:
                 continue
@@ -312,6 +323,7 @@ class ValidationWorker:
                     continue
                 await enqueue_job(session, 'cleanup_asset', asset_id)
                 count += 1
+                metrics['cleanup_enqueued'] += 1
         return count
 
     async def _cleanup_keys(self, session, album, page, asset, *, lock=False):

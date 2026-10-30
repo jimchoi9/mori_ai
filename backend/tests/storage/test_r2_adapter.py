@@ -284,3 +284,19 @@ def test_sdk_retries_connection_close_bounded_without_exposing_endpoint(monkeypa
     assert len(attempts)==3
     assert caught.value.__context__ is None
     assert 'SECRET' not in caplog.text
+
+@pytest.mark.parametrize('operation,status,outcome', [
+    ('exists',404,'not_found'), ('stat',404,'error'),
+    ('exists',403,'error'), ('exists',503,'error'),
+])
+def test_expected_absence_is_distinct_from_required_object_and_service_errors(storage,caplog,operation,status,outcome):
+    import json,logging
+    s,c=storage;c.error=RemoteError(status)
+    caplog.set_level(logging.INFO,logger='mori.performance')
+    if operation=='exists' and status==404:
+        assert s.exists(K) is False
+    else:
+        with pytest.raises(OSError):getattr(s,operation)(K)
+    event=json.loads(caplog.records[-1].message)
+    assert event['outcome']==outcome and event['http_status']==status
+    assert 'SECRET' not in caplog.text and K not in caplog.text

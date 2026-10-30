@@ -14,7 +14,9 @@ from backend.uploads.validation import now
 
 
 @pytest.mark.asyncio
-async def test_deleted_page_checks_each_key_once_and_rechecks_next_sweep(client,db,tmp_path,monkeypatch):
+async def test_deleted_page_checks_each_key_once_and_rechecks_next_sweep(client,db,tmp_path,monkeypatch,caplog):
+    import json, logging
+    caplog.set_level(logging.INFO, logger="mori.performance")
     worker,c,me,album,u,path,data,source=await r2_pending(client,db,tmp_path,monkeypatch)
     assert await worker.run_once()
     async with db() as s,s.begin():
@@ -26,6 +28,13 @@ async def test_deleted_page_checks_each_key_once_and_rechecks_next_sweep(client,
     assert await worker._scan_deleted_assets(10)==0
     counts=Counter(key for op,key in c.calls if op=='head')
     assert len(counts)==7 and max(counts.values())==1
+    events=[json.loads(r.message) for r in caplog.records if r.name=='mori.performance']
+    summary=[e for e in events if e['event']=='storage.deleted_scan'][-1]
+    assert summary['existence_checks']==7 and summary['missing_objects']==7
+    assert summary['present_objects']==0 and summary['check_errors']==0
+    assert summary['cleanup_enqueued']==0 and summary['outcome']=='succeeded'
+    probes=[e for e in events if e.get('kind')=='deleted_asset_scan' and e['event']=='storage.request']
+    assert len(probes)==7 and all(e['outcome']=='not_found' for e in probes)
     assert 'worker-test/'+storage_key(row.owner_id,row.id,page.id,'upload_thumbnail') in counts
     # A source 404 cannot hide a late result, and absence is not cached across scans.
     c.objects['worker-test/'+late]=b'late'
@@ -94,3 +103,21 @@ async def test_main_keeps_jobs_running_with_independent_bounded_sweep(db,monkeyp
     assert events.count('job')==4
     assert scans==[10]  # Both adapters now have an independent 30-second scan lane.
     if error=='slow':assert events[-1]=='scan_cancelled'
+
+@pytest.mark.asyncio
+async def test_deleted_scan_records_partial_counts_on_storage_failure(client,db,tmp_path,monkeypatch,caplog):
+    import json,logging
+    worker,c,me,album,*_=await r2_pending(client,db,tmp_path,monkeypatch)
+    assert await worker.run_once()
+    async with db() as s,s.begin():
+        row=await s.get(Album,UUID(album));row.status='deleted';row.deleted_at=now()
+    def unavailable(key):
+        raise StorageUnavailable('SECRET must not appear')
+    monkeypatch.setattr(worker.store,'exists',unavailable)
+    caplog.set_level(logging.INFO,logger='mori.performance')
+    with pytest.raises(StorageUnavailable):await worker._scan_deleted_assets(10)
+    summaries=[json.loads(r.message) for r in caplog.records if r.name=='mori.performance' and 'storage.deleted_scan' in r.message]
+    assert summaries[-1]['outcome']=='error'
+    assert summaries[-1]['existence_checks']==1 and summaries[-1]['check_errors']==1
+    assert summaries[-1]['missing_objects']==0
+    assert 'SECRET' not in caplog.text

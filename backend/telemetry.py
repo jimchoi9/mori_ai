@@ -12,7 +12,7 @@ from uuid import UUID
 
 _LOG = logging.getLogger('mori.performance')
 _CONTEXT = ContextVar('mori_performance_context', default={})
-_NUMERIC = {'elapsed_ms','queue_age_ms','bytes','http_status','attempt_no','retry_attempts'}
+_NUMERIC = {'elapsed_ms','queue_age_ms','bytes','http_status','attempt_no','retry_attempts','assets_scanned','existence_checks','missing_objects','present_objects','check_errors','cleanup_enqueued'}
 _LABELS = {'stage','operation','outcome','error_type','error_code','kind','storage_mode'}
 _IDS = {'task_id','attempt_id','job_id','run_id','request_id'}
 

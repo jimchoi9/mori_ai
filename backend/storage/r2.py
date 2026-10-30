@@ -22,7 +22,7 @@ class _ConditionalConflict(Exception):
     pass
 
 
-def _safe_call(function, *args, **kwargs):
+def _safe_call(function, *args, expected_missing=False, **kwargs):
     # Raise outside the handler: even __context__ must not retain signed URLs/keys.
     failure = None
     started = perf_counter()
@@ -41,9 +41,10 @@ def _safe_call(function, *args, **kwargs):
         metadata = response.get('ResponseMetadata')
         code = detail.get('Code') if isinstance(detail, dict) else None
         status = metadata.get('HTTPStatusCode') if isinstance(metadata, dict) else None
-        emit('storage.request', operation=operation, outcome='error', error_type=type(error).__name__,
+        missing = code in ('NoSuchKey', 'NotFound', '404') or status == 404
+        emit('storage.request', operation=operation, outcome='not_found' if missing and expected_missing else 'error', error_type=type(error).__name__,
              http_status=status, elapsed_ms=(perf_counter()-started)*1000)
-        if code in ('NoSuchKey', 'NotFound', '404') or status == 404:
+        if missing:
             failure = FileNotFoundError('remote object missing')
         elif code in ('PreconditionFailed', 'ConditionalRequestConflict', '412', '409') or status in (409, 412):
             failure = _ConditionalConflict('immutable object conflict')
@@ -180,7 +181,7 @@ class R2Storage:
         key = self._key(key)
         missing = False
         try:
-            _safe_call(self._client.head_object, **self._params(key))
+            _safe_call(self._client.head_object, expected_missing=True, **self._params(key))
         except FileNotFoundError:
             missing = True
         if missing:
