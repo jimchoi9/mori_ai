@@ -22,6 +22,8 @@ class Created:
 class User(Identity, Created, Base):
     __tablename__ = 'users'
     is_guest: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
+    access_version: Mapped[int] = mapped_column(Integer, server_default=text('0'), default=0)
     test_access_approved: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), default=False)
     test_access_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dev_account: Mapped[str | None] = mapped_column(String(20), unique=True)
