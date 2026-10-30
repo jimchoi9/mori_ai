@@ -23,6 +23,8 @@ RUN ./node_modules/.bin/tsc src/features/auth/oauth.ts --target ES2022 --module 
 RUN ./node_modules/.bin/tsc src/features/uploads/putFile.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/r2-upload-check \
     && node tests/r2_upload.test.mjs file:///tmp/r2-upload-check/features/uploads/putFile.js
 
+RUN node tests/admin_access.test.mjs && node tests/admin_management.test.mjs
+
 RUN node tests/ui_components.test.mjs && node tests/review_navigation.test.mjs && node tests/generation_steps.test.mjs
 
 RUN node tests/upload_preprocess.test.mjs ../src/features/uploads/preprocess.ts \

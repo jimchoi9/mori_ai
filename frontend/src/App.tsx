@@ -1,4 +1,5 @@
 import {lazy,Suspense} from 'react';
+const AdminGate=lazy(()=>import('./features/admin/AdminGate').then(m=>({default:m.AdminGate})));
 const ContentManager=lazy(()=>import('./features/content/ContentManager').then(m=>({default:m.ContentManager})));
 
 import {NfcExperience} from './features/nfc/NfcExperience';
@@ -22,6 +23,7 @@ function AlbumScreen({userId,Screen}:{userId:string;Screen:ComponentType<{userId
 export default function App(){
  const location=useLocation();const goods=location.pathname==='/'||location.pathname==='/goods';
  const [error,setError]=useState('');
+ if(location.pathname==='/admin')return <Suspense fallback={<p role="status">관리자 화면을 준비하고 있어요…</p>}><AdminGate/></Suspense>;
  if(location.pathname.startsWith('/nfc/'))return <NfcExperience/>;
  return <><GiftTokenCapture/><a className="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" className={goods?'goods-root':undefined} tabIndex={-1}>
   <AuthGate allowGuest={goods}>{(me,logout,agree,resume)=>{

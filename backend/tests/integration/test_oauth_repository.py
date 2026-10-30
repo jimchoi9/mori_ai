@@ -210,3 +210,11 @@ async def test_begin_rejects_provider_and_non_hash_tokens(oauth_db, provider, st
     with pytest.raises(ValueError):
         async with oauth_db() as session, session.begin():
             await begin_login(session, provider, state_hash, binding_hash, '/albums', datetime.now(timezone.utc) + timedelta(minutes=10))
+
+@pytest.mark.asyncio
+async def test_admin_return_path_is_exact(oauth_db):
+    await begin(oauth_db, return_to='/admin')
+    assert await consume(oauth_db) == '/admin'
+    for path in ('/administrator', '/admin/', '//evil.test', 'https://evil.test', '/admin?x=1'):
+        with pytest.raises(ValueError):
+            await begin(oauth_db, return_to=path)

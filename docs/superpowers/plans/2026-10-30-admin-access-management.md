@@ -85,13 +85,13 @@
 
 **Interfaces:** 위 서비스 signature. 기존 `list/approve/revoke` CLI 유지, `admin-list`, `admin-grant UUID`, `admin-revoke UUID` 추가.
 
-- [ ] 실패 테스트 작성: 관리자 지정은 승인도 부여, 관리자 해제는 승인 유지, 마지막 관리자 해제 거부, 두 CLI 해제 경쟁 시 관리자 최소1명 유지, 일반 승인 반복 no-op, 관리자 승인 취소 거부, guest/삭제 대상 거부.
-- [ ] `bash scripts/verify-db.sh backend/tests/integration/test_admin_access.py`를 실행해 미구현 기능으로 실패하는지 확인한다. QA DB는 사용하지 않는다.
-- [ ] 두 User 필드와 additive migration을 구현한다. 기존 승인값은 보존하고 관리자 기본 false를 적용한다. downgrade는 관리자 권한 데이터가 있으면 거부하고, 깨끗한 임시 DB에서는 왕복/schema 검사를 통과시킨다.
-- [ ] 공통 승인 서비스·서버 전용 관리자 변경 서비스와 잠금 규칙을 구현한다. 기존 CLI 승인·취소도 공통 서비스를 거치게 한다. CLI grant가 최초 지정과 비상 복구를 담당하며 웹 bootstrap 경로는 없다.
-- [ ] `test_revoked_actor_cannot_approve_after_lock`, `test_stale_approval_version_conflicts`, `test_failed_change_rolls_back`를 추가하고 DB의 현재 권한 재검사·원자성·version을 검증한다.
-- [ ] Task 1과 기존 `backend/tests/integration/test_access_approval.py`를 실행한다. 승인 취소의 기존 작업·비용·재개 동작이 유지돼야 한다.
-- [ ] diff 검토 후 데이터/서비스/CLI 변경을 커밋한다. 푸시·배포는 별도 지시를 따른다.
+- [x] 실패 테스트 작성: 관리자 지정은 승인도 부여, 관리자 해제는 승인 유지, 마지막 관리자 해제 거부, 두 CLI 해제 경쟁 시 관리자 최소1명 유지, 일반 승인 반복 no-op, 관리자 승인 취소 거부, guest/삭제 대상 거부.
+- [x] `bash scripts/verify-db.sh backend/tests/integration/test_admin_access.py`를 실행해 미구현 기능으로 실패하는지 확인한다. QA DB는 사용하지 않는다.
+- [x] 두 User 필드와 additive migration을 구현한다. 기존 승인값은 보존하고 관리자 기본 false를 적용한다. downgrade는 관리자 권한 데이터가 있으면 거부하고, 깨끗한 임시 DB에서는 왕복/schema 검사를 통과시킨다.
+- [x] 공통 승인 서비스·서버 전용 관리자 변경 서비스와 잠금 규칙을 구현한다. 기존 CLI 승인·취소도 공통 서비스를 거치게 한다. CLI grant가 최초 지정과 비상 복구를 담당하며 웹 bootstrap 경로는 없다.
+- [x] `test_revoked_actor_cannot_approve_after_lock`, `test_stale_approval_version_conflicts`, `test_failed_change_rolls_back`를 추가하고 DB의 현재 권한 재검사·원자성·version을 검증한다.
+- [x] Task 1과 기존 `backend/tests/integration/test_access_approval.py`를 실행한다. 승인 취소의 기존 작업·비용·재개 동작이 유지돼야 한다.
+- [x] diff 검토 후 데이터/서비스/CLI 변경을 커밋한다. 푸시·배포는 별도 지시를 따른다.
 
 ## Task 2: 최소 관리자 API와 계약
 
@@ -99,12 +99,12 @@
 
 **Interfaces:** Task 1의 서비스 및 위 3개 HTTP endpoint만 사용한다.
 
-- [ ] 실패 테스트 작성: 익명·guest401/일반403/관리자200, 공개 access mode에서도 일반403, CSRF 누락·다른 Origin 거부, role 변경 endpoint404/405, 요청 body에 `is_admin`을 넣어도 권한 변경 불가.
-- [ ] `bash scripts/verify-db.sh backend/tests/integration/test_admin_http.py`로 실패를 확인한다.
-- [ ] GET마다 DB 관리자 여부를 검사하고 PUT에서는 잠금 획득 뒤 재검사한다. StrictBody·기존 오류 envelope·no-store를 적용한다.
-- [ ] 검색/페이지 repository를 구현한다. UUID·동명이인·복수 provider·검색 escape·페이지 중복 없음·잘못된 cursor422·민감정보 미노출을 검증한다.
-- [ ] CLI 관리자 해제 후 기존 쿠키의 다음 관리 API403, 승인 후 일반 사용자의 기존 세션에서 다음 보호 API 허용, 취소 후 기존 승인 정책에 따른 차단을 검증한다. 공개 모드의 동작 차이를 별도 검증한다.
-- [ ] 공통계약/샘플에 최소 DTO·오류·CLI 운영 경계를 갱신하고 Task 1/2·기존 승인 HTTP 회귀 통과 후 커밋한다. `/me`·client-config에 관리자 메뉴용 플래그는 추가하지 않는다.
+- [x] 실패 테스트 작성: 익명·guest401/일반403/관리자200, 공개 access mode에서도 일반403, CSRF 누락·다른 Origin 거부, role 변경 endpoint404/405, 요청 body에 `is_admin`을 넣어도 권한 변경 불가.
+- [x] `bash scripts/verify-db.sh backend/tests/integration/test_admin_http.py`로 실패를 확인한다.
+- [x] GET마다 DB 관리자 여부를 검사하고 PUT에서는 잠금 획득 뒤 재검사한다. StrictBody·기존 오류 envelope·no-store를 적용한다.
+- [x] 검색/페이지 repository를 구현한다. UUID·동명이인·복수 provider·검색 escape·페이지 중복 없음·잘못된 cursor422·민감정보 미노출을 검증한다.
+- [x] CLI 관리자 해제 후 기존 쿠키의 다음 관리 API403, 승인 후 일반 사용자의 기존 세션에서 다음 보호 API 허용, 취소 후 기존 승인 정책에 따른 차단을 검증한다. 공개 모드의 동작 차이를 별도 검증한다.
+- [x] 공통계약/샘플에 최소 DTO·오류·CLI 운영 경계를 갱신하고 Task 1/2·기존 승인 HTTP 회귀 통과 후 커밋한다. `/me`·client-config에 관리자 메뉴용 플래그는 추가하지 않는다.
 
 ## Task 3: `/admin` 목록·검색·승인 화면
 
@@ -112,13 +112,13 @@
 
 **Interfaces:** Task 2 DTO/API. `AdminGate`는 `/me`로 CSRF를 확보하고 `/admin/me`로 권한을 확인한다. `AdminPage`는 검색창·사용자 목록·이전/다음·승인/취소만 제공한다.
 
-- [ ] 실패 테스트 작성: `/admin` 직접 접근/새로고침, 비로그인 return_to=/admin, 일반 접근 거부, 기존 메뉴에 관리자 링크 없음, 관리자 지정·해제 버튼 없음.
-- [ ] App에서 `/admin`을 상품 AuthGate·GiftTokenCapture·PurchaseReturn 이전의 별도 lazy-load 분기로 연결한다. 상품 저장 인계·guest 생성·사진 동의 요청을 실행하지 않는다. 기존 OAuthLoginOptions·세션 정리 패턴을 재사용한다.
-- [ ] OAuth allowlist에 정확한 `/admin`만 추가한다. 외부 URL·`//host`·`/administrator` 거부와 기존 상품/앨범 복귀 경로를 회귀 검증한다.
-- [ ] 목록에 이름·제공자·가입일·계정 UUID·승인 상태를 표시한다. 관리자 행에는 읽기 전용 관리자 표시와 취소 제한 설명을 둔다. 검색·이전/다음 외 필터나 별도 탭은 만들지 않는다.
-- [ ] 승인 취소는 대상 이름+UUID 확인창을 거친다. 승인/취소 요청 중 해당 버튼을 비활성화하고 응답 후 목록을 갱신한다. 409는 최신 상태를 재조회해 다시 판단하도록 안내한다. 네트워크 응답 유실 시 자동 재변경하지 않고 조회로 확인한다.
-- [ ] 401 로그인 복귀, 403 접근 거부와 관리자 캐시 제거, 계정별 쿼리 키·로그아웃 캐시 삭제를 구현한다. 일반 네트워크 오류를 권한 해제로 오인하지 않고 재시도를 제공한다.
-- [ ] 새 Node 테스트와 `npm run build`, 기존 OAuth/세션 테스트를 실행한다. Docker frontend 검사 단계에 새 테스트를 연결한다. 390px/1280px, 확인창 키보드·초점 복귀를 로컬에서 확인하고 커밋한다.
+- [x] 실패 테스트 작성: `/admin` 직접 접근/새로고침, 비로그인 return_to=/admin, 일반 접근 거부, 기존 메뉴에 관리자 링크 없음, 관리자 지정·해제 버튼 없음.
+- [x] App에서 `/admin`을 상품 AuthGate·GiftTokenCapture·PurchaseReturn 이전의 별도 lazy-load 분기로 연결한다. 상품 저장 인계·guest 생성·사진 동의 요청을 실행하지 않는다. 기존 OAuthLoginOptions·세션 정리 패턴을 재사용한다.
+- [x] OAuth allowlist에 정확한 `/admin`만 추가한다. 외부 URL·`//host`·`/administrator` 거부와 기존 상품/앨범 복귀 경로를 회귀 검증한다.
+- [x] 목록에 이름·제공자·가입일·계정 UUID·승인 상태를 표시한다. 관리자 행에는 읽기 전용 관리자 표시와 취소 제한 설명을 둔다. 검색·이전/다음 외 필터나 별도 탭은 만들지 않는다.
+- [x] 승인 취소는 대상 이름+UUID 확인창을 거친다. 승인/취소 요청 중 해당 버튼을 비활성화하고 응답 후 목록을 갱신한다. 409는 최신 상태를 재조회해 다시 판단하도록 안내한다. 네트워크 응답 유실 시 자동 재변경하지 않고 조회로 확인한다.
+- [x] 401 로그인 복귀, 403 접근 거부와 관리자 캐시 제거, 계정별 쿼리 키·로그아웃 캐시 삭제를 구현한다. 일반 네트워크 오류를 권한 해제로 오인하지 않고 재시도를 제공한다.
+- [x] 새 Node 테스트와 `npm run build`, 기존 OAuth/세션 테스트를 실행한다. Docker frontend 검사 단계에 새 테스트를 연결한다. 390px/1280px, 확인창 키보드·초점 복귀를 로컬에서 확인하고 커밋한다.
 
 ## Task 4: 기존 기능 회귀·운영 인계
 
@@ -145,3 +145,12 @@ Task 1 → Task 2 → Task 3 → Task 4. DTO 확정 후 API와 화면 일부는 
 완료 기준: URL 전용 진입, CLI 전용 관리자 변경, 목록/기본 검색/페이지 이동/승인·취소만의 화면, 서버 권한·CSRF 검증, 기존 세션의 승인 반영, 기존 상품/앨범·OAuth·승인 CLI 회귀 통과. 이 계획의 단순화를 이유로 보안 검사를 프론트에만 맡기지 않는다.
 
 Self-review: 최신 사용자 지시 1은 Task 1·4, 2·3은 Task 2·3, 4는 Tasks 1–4 검증에 연결했다. 이전 계획의 웹 관리자 변경·감사 테이블/조회·고급 필터는 제거했다. 마지막 관리자 보호와 동시 변경 검증은 CLI 범위로 유지한다.
+
+
+## 구현 검증 기록 — 2026-10-30
+
+- Tasks1/2: 관리자·승인·OAuth 대상 회귀100개 통과, migration up/down/up 및 schema check 통과. 기존 approve/revoke 서비스 규칙을 유지한다.
+- Task3: Docker frontend target 전체 검사·타입 검사·프로덕션 빌드 통과. 새 관리자 Node 테스트8개 통과. Chrome390px/1280px에서 가짜 API로 화면 넘침 없음, 승인/취소, 키보드 확인/취소 및 초점 복귀, 권한 해제 후 목록 제거를 확인했다.
+- 실제 Google/Kakao 왕복·실제 iPhone/Safari·운영 배포는 미실행이다. 전체 백엔드 결과는 개발운영 최신 절에 기록한다.
+- 독립 검토: Critical/Important 없음. 후속 minor 테스트 보완2개: 웹 승인부터 실제 보호 API까지 하나로 묶는 테스트(현재 /me 반영과 보호 API 회귀는 별도 검사), 서버 적용 후 PUT 응답 유실을 직접 주입하는 프론트 테스트(현재409/재조회/중복 요청 방지 검사).
+- 기존 보안 계약과 맞춰 guest 전용 세션은401, 일반 회원 비관리자는403을 유지한다. 존재하지 않는 역할 변경 경로는 기존 라우팅대로404/405다. 관리자 목록은 전역 query cache 대신 계정별 컴포넌트 메모리에만 저장하고 권한 변경/로그아웃 때 해제한다.

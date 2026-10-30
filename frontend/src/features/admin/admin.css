@@ -1,0 +1,9 @@
+.admin-root{max-width:960px;margin:0 auto;padding:24px 16px;min-height:100dvh}
+.admin-root header,.admin-users li,.admin-pages{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.admin-root h1{font-size:1.6rem}.admin-root button{min-height:44px;flex-shrink:0}
+.admin-search{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:24px 0}
+.admin-search input{flex:1;min-width:140px;min-height:44px}.admin-users{list-style:none;padding:0}
+.admin-users li{border-bottom:1px solid #ddd;padding:20px 0}.admin-users li>div{min-width:0}
+.admin-users p{margin:6px 0;overflow-wrap:anywhere}.admin-users code{font-size:.85rem}
+.admin-pages{justify-content:center;margin-top:24px}
+@media(max-width:600px){.admin-search label{width:100%}.admin-users li{align-items:flex-start;flex-direction:column}.admin-root h1{font-size:1.3rem}}
