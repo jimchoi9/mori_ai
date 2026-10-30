@@ -57,7 +57,7 @@ test('gate separates signed out, denied and network errors without product side 
  for(const [status,kind]of [[401,'login'],[403,'denied'],[500,'error']]){
   setup();const paths=[];globalThis.fetch=async url=>{paths.push(url);if(url.endsWith('/client-config'))return ok({auth_providers:['google']});if(url.endsWith('/me')&&!url.includes('/admin/'))return status===401?fail(401,'AUTH_REQUIRED'):ok({user:{id:'a'},csrf_token:'x'});return fail(status,'ADMIN_REQUIRED');};
   const h=harness(AdminGate);await h.settle();if(kind==='login')assert.ok(nodes(h.tree).find(n=>n.props?.returnTo==='/admin'));if(kind==='denied')assert.match(text(h.tree),/관리자만 접근/);if(kind==='error')assert.ok(button(h,'연결 다시 시도'));
-  assert.ok(paths.every(p=>['/api/v1/me','/api/v1/admin/me','/api/v1/client-config'].includes(p)));h.close();
+  assert.ok(paths.every(p=>['/api/v1/me','/api/v1/admin/me','/api/v1/client-config','/api/dev/config'].includes(p)));h.close();
  }
 });
 test('open gate removes the page on role loss and rejects mismatched session identity',async()=>{
@@ -66,5 +66,21 @@ test('open gate removes the page on role loss and rejects mismatched session ide
  denied=true;window.dispatchEvent(new Event('focus'));await h.settle();assert.ok(!nodes(h.tree).some(n=>n.type?.name==='AdminPage'));assert.match(text(h.tree),/관리자만/);h.close();
  globalThis.fetch=async url=>url.endsWith('/client-config')?ok({auth_providers:[]}):url.includes('/admin/')?ok({user_id:'b'}):ok({user:{id:'a'},csrf_token:'x'});
  const other=harness(AdminGate);await other.settle();assert.match(text(other.tree),/계정이 변경/);other.close();
+});
+test('development login is opt-in and uses existing session endpoint',async()=>{
+ for(const enabled of [false,true]){
+  setup();let signedIn=false,posts=0;
+  globalThis.fetch=async(url,o)=>{
+   if(url==='/api/dev/config')return ok({dev_auth_enabled:enabled});
+   if(url==='/api/v1/client-config')return ok({auth_providers:[]});
+   if(url==='/api/dev/login'){assert.deepEqual(JSON.parse(o.body),{account:'alpha'});posts++;signedIn=true;return new Response(null,{status:204});}
+   if(!signedIn)return fail(401,'AUTH_REQUIRED');
+   return url.includes('/admin/')?ok({user_id:'a',access_mode:'approved_only'}):ok({user:{id:'a'},csrf_token:'x'});
+  };
+  const h=harness(AdminGate);await h.settle();
+  const login=button(h,'alpha 개발 계정으로 로그인');assert.equal(Boolean(login),enabled);
+  if(enabled){login.props.onClick();await h.settle();assert.equal(posts,1);assert.ok(nodes(h.tree).some(n=>n.type?.name==='AdminPage'));}
+  h.close();
+ }
 });
 test.after(()=>rm(dir,{recursive:true,force:true}));

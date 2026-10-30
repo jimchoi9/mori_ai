@@ -90,6 +90,28 @@ AI 호출 전 비용을 예약하고 결과를 원장에 기록합니다. 전송
 
 ## 실행 방법
 
+### 관리자 화면 빠른 로컬 테스트
+
+Docker Desktop을 켠 뒤 저장소 루트에서 실행합니다.
+
+```bash
+bash scripts/admin-local.sh up
+```
+
+[로컬 관리자 화면](http://127.0.0.1:18090/admin)에서 **alpha 개발 계정으로 로그인**을 누릅니다. 별도 관리자 지정 명령이나 OAuth 설정은 필요 없습니다. 시크릿 창에서 같은 주소의 beta 개발 로그인으로 일반 계정 접근 거부를 확인하거나, [일반 로그인 화면](http://127.0.0.1:18090/login)에서 beta로 로그인해 승인 대기/승인 반영을 확인합니다.
+
+- 전용 Compose 프로젝트 `mori-admin-local`, DB `mori_admin_local`, 포트18090을 사용합니다. 기존 `.env`·`.env.qa`·`.env.production`과 운영 자격증명은 읽지 않습니다.
+- alpha는 로컬 관리자, beta는 처음에는 미승인 일반 사용자입니다. 재실행해도 beta의 승인 상태/데이터를 초기화하지 않습니다. alpha 관리자 권한은 준비 단계에서 보장합니다.
+- `.local/admin-local.env`와 임의 생성한 로컬 DB 비밀번호 파일을 사용하며 Git에서 제외됩니다. 설정 파일은 up 시 재생성되므로 일반 환경 설정 변경용으로 사용하지 않습니다. DB를 유지하는 동안 비밀번호 파일도 보존합니다.
+- 가짜 AI·로컬 저장소만 사용합니다. 관리자 개발 로그인 버튼은 서버의 `dev_auth_enabled=true`일 때만 표시되며 기존 개발 로그인 API의 local/Origin 검사를 유지합니다. 자동 관리자 준비는 전용 로컬 DB에서만 허용하며 운영에서는 실행할 수 없습니다.
+- 코드 수정 후 같은 `up` 명령을 실행하면 재빌드·migration·서버 반영을 수행합니다. 첫 빌드는 의존성 다운로드로 시간이 걸릴 수 있습니다.
+
+```bash
+bash scripts/admin-local.sh status  # 실행 상태
+bash scripts/admin-local.sh logs    # web/worker 로그 (Ctrl+C로 조회 종료)
+bash scripts/admin-local.sh down    # 서버 종료, DB·사진 보존
+```
+
 ### 1. 새 로컬 환경 준비
 
 Docker Desktop 또는 Docker Engine과 Compose, `make`가 필요합니다. Python·Node.js는 Docker 빌드 안에서 준비합니다.
