@@ -189,3 +189,30 @@ GOODS_MAIL_ENABLED=false
 이번 후보는 기존 배포용 브랜치보다17개 앞선 커밋의 구매/선물/권한·NFC·사진관리와migration0008~0016을 포함한다. 이전 SHA만의 화면 변경으로 보지 않는다. Actions의 전체 backend/격리 PostgreSQL·migration 왕복/check·frontend 검사와 runtime 이미지 게시 성공을 확인한 SHA를 사용한다. 기존배포스크립트의DB백업·migration·앱교체·health절차를 유지하며 서버적용은 사용자가 수행한다. 실제 서버환경/R2/OAuth·실기기 인수는CI성공과별개다.
 
 배포 검사에는 기존 실패경로5검사와 Compose 설정4검사를 포함한다. 새 업로드/권한·iPhone WebP·NFC frontend44검사도 정식 Docker 빌드에 포함했다. 이 검사는 가짜값/격리 환경으로 실행하며 실제 메일·AI 호출·운영 DB 작업은 하지 않는다.
+
+
+## 관리자 사용자 승인 관리 (migration0017)
+
+이 절은 새 버전을 배포하고 migration0017 적용 후 서버에서 사용하는 절차다. 로컬 구현 완료만으로 운영 관리자 지정/배포를 수행하지 않는다. 기존 사용자 승인값은 보존되며 자동으로 관리자가 되는 사용자는 없다.
+
+먼저 관리자로 지정할 사람이 기존 Google/Kakao 로그인으로 계정을 만든다. 서버에서 계정 UUID와 이름을 확인한 후 지정한다.
+
+```bash
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access list
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-grant 사용자UUID
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-list
+```
+
+그 계정으로 `https://aimori.kro.kr/admin`에 직접 접근한다. 기존 서비스 메뉴에는 버튼이 없다. 화면에서 이름/UUID 검색, 이전/다음, 이용 승인/취소만 수행한다. 동명이인은 UUID와 로그인 제공자로 구분한다. 관리자 지정은 이용 승인도 부여하지만 사진 처리 동의를 대신하지 않는다.
+
+관리자 권한 해제는 서버에서만 한다.
+
+```bash
+sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-revoke 사용자UUID
+```
+
+관리자 해제는 이용 승인을 유지한다. 이용도 취소하려면 그 뒤 기존 `revoke 사용자UUID` 또는 `/admin`에서 취소한다. 마지막 활성 관리자 해제는 거부한다. 계정 변경/복구 시 새 관리자를 먼저 지정한 뒤 기존 관리자를 해제한다. 관리자 계정의 이용 승인 취소는 먼저 관리자 해제가 필요하다. CLI list/admin-list는 최근200명이다.
+
+기존 열린 세션도 다음 관리 API 요청에서 현재 권한을 다시 확인한다. 승인/취소는 다음 일반 보호 요청에서 반영되며 기존 대기·진행 작업의 취소/비용 정책을 바꾸지 않는다. `ACCESS_MODE=all_authenticated`이면 일반 이용 승인은 접근 제한에 사용되지 않지만 관리자 검사는 유지된다.
+
+추가 env나 프론트 빌드용 비밀키는 없다. 모델 필드가 추가되므로 새 코드 실행 전 기존 배포 절차의 migration을 완료해야 한다. 관리자 정보가 남아 있으면0017 downgrade는 거부되므로 운영에서 DB downgrade로 권한 정보를 지우지 않는다. 이 기능에는 웹 관리자 변경·사용자 삭제·사진 열람·감사 이력 화면이 없다.

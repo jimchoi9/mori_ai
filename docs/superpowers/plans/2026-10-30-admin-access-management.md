@@ -1,6 +1,6 @@
 # 관리자 사용자 승인 관리 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 2026-10-30 사용자가 구현·로컬 커밋을 승인했다. 푸시·배포는 제외한다.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. 2026-10-30 사용자가 구현·로컬 커밋을 승인했다. 푸시·배포는 제외한다.
 
 **Goal:** `/admin`에서 관리자가 사용자 목록을 검색하고 이용 승인·취소를 처리한다. 관리자 지정·해제는 서버 CLI에서만 수행한다.
 
@@ -81,7 +81,7 @@
 
 ## Task 1: 관리자 데이터·CLI와 공통 승인 서비스
 
-**Files:** Modify `backend/models.py`, `backend/access/repository.py`, `backend/access/service.py`, `backend/access/__main__.py`. Create `backend/migrations/versions/0017_admin_access.py`, `backend/tests/integration/test_admin_access.py`.
+**Files:** Modify `backend/models.py`, `backend/access/repository.py`, `backend/access/service.py`, `backend/access/__main__.py`. Create `backend/migrations/versions/0017_admin_access.py`, `backend/tests/integration/test_admin_access.py`, `backend/tests/integration/test_admin_migration.py`, `backend/tests/integration/test_admin_cli.py`.
 
 **Interfaces:** 위 서비스 signature. 기존 `list/approve/revoke` CLI 유지, `admin-list`, `admin-grant UUID`, `admin-revoke UUID` 추가.
 
@@ -124,10 +124,10 @@
 
 **Files:** Modify `docs/개발운영.md`, `docs/Lightsail-배포.md`; 위 테스트 파일에 통합 시나리오 보강.
 
-- [ ] 별도 DB에서 기존 승인 사용자 보존 → CLI 최초 관리자 지정 → `/admin` 로그인 → 사용자 검색/페이지 이동 → 승인/취소 → 일반 사용자 기존 세션의 실제 접근 반영을 검증한다.
-- [ ] CLI 관리자 해제 후 열린 관리자 탭/API 차단, CLI·웹 동시 변경, 마지막 관리자 보호, 기존 CLI approve/revoke 호환성을 검증한다.
-- [ ] 최신 lock 기반 검증 이미지로 `MORI_VERIFY_TEST_IMAGE=<검증이미지> bash scripts/verify-db.sh backend/tests`를 실행한다. frontend target 빌드로 UI 회귀 검사를 수행한다. 실제 OAuth·운영 모바일 미검증은 로컬 가짜 로그인 성공과 구분해 보고한다.
-- [ ] 운영 문서에 아래 명령과 `/admin` URL을 기록한다. 아래는 **구현 완료 후** 사용할 명령이며 현재 실행하지 않는다.
+- [x] 별도 DB에서 기존 승인 사용자 보존 → CLI 최초 관리자 지정 → `/admin` 로그인 → 사용자 검색/페이지 이동 → 승인/취소 → 일반 사용자 기존 세션의 실제 접근 반영을 검증한다.
+- [x] CLI 관리자 해제 후 열린 관리자 탭/API 차단, CLI·웹 동시 변경, 마지막 관리자 보호, 기존 CLI approve/revoke 호환성을 검증한다.
+- [x] 최신 lock 기반 검증 이미지로 `MORI_VERIFY_TEST_IMAGE=<검증이미지> bash scripts/verify-db.sh backend/tests`를 실행한다. frontend target 빌드로 UI 회귀 검사를 수행한다. 실제 OAuth·운영 모바일 미검증은 로컬 가짜 로그인 성공과 구분해 보고한다.
+- [x] 운영 문서에 아래 명령과 `/admin` URL을 기록한다. 아래는 **구현 완료 후** 사용할 명령이며 현재 실행하지 않는다.
 
 ```bash
 sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-list
@@ -135,8 +135,8 @@ sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-grant 
 sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-revoke 사용자UUID
 ```
 
-- [ ] 관리자들이 웹에서 다른 관리자를 지정·해제할 수 없고 서버 접근자가 CLI로만 처리한다는 운영 경계를 문서화한다. 기존 승인 CLI도 유지한다.
-- [ ] 변경 파일·테스트 결과·계약/migration 영향·미검증 항목을 보고한다. 운영 관리자 지정·서버 배포·GHCR 게시·푸시는 자동 수행하지 않는다.
+- [x] 관리자들이 웹에서 다른 관리자를 지정·해제할 수 없고 서버 접근자가 CLI로만 처리한다는 운영 경계를 문서화한다. 기존 승인 CLI도 유지한다.
+- [x] 변경 파일·테스트 결과·계약/migration 영향·미검증 항목을 보고한다. 운영 관리자 지정·서버 배포·GHCR 게시·푸시는 자동 수행하지 않는다.
 
 ## 실행 순서와 완료 기준
 
@@ -150,7 +150,8 @@ Self-review: 최신 사용자 지시 1은 Task 1·4, 2·3은 Task 2·3, 4는 Tas
 ## 구현 검증 기록 — 2026-10-30
 
 - Tasks1/2: 관리자·승인·OAuth 대상 회귀100개 통과, migration up/down/up 및 schema check 통과. 기존 approve/revoke 서비스 규칙을 유지한다.
+- 추가 검증: 기존 승인 계정 migration 보존/downgrade 보호1개와 실제 CLI subprocess 명령 호환1개 통과.
 - Task3: Docker frontend target 전체 검사·타입 검사·프로덕션 빌드 통과. 새 관리자 Node 테스트8개 통과. Chrome390px/1280px에서 가짜 API로 화면 넘침 없음, 승인/취소, 키보드 확인/취소 및 초점 복귀, 권한 해제 후 목록 제거를 확인했다.
-- 실제 Google/Kakao 왕복·실제 iPhone/Safari·운영 배포는 미실행이다. 전체 백엔드 결과는 개발운영 최신 절에 기록한다.
+- 실제 Google/Kakao 왕복·실제 iPhone/Safari·운영 배포는 미실행이다. 전체 백엔드는1133 passed/3 optional-load skipped/10 subtests passed이며 세부 결과는 개발운영 최신 절에 기록한다.
 - 독립 검토: Critical/Important 없음. 후속 minor 테스트 보완2개: 웹 승인부터 실제 보호 API까지 하나로 묶는 테스트(현재 /me 반영과 보호 API 회귀는 별도 검사), 서버 적용 후 PUT 응답 유실을 직접 주입하는 프론트 테스트(현재409/재조회/중복 요청 방지 검사).
 - 기존 보안 계약과 맞춰 guest 전용 세션은401, 일반 회원 비관리자는403을 유지한다. 존재하지 않는 역할 변경 경로는 기존 라우팅대로404/405다. 관리자 목록은 전역 query cache 대신 계정별 컴포넌트 메모리에만 저장하고 권한 변경/로그아웃 때 해제한다.
