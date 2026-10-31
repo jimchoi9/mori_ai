@@ -1,4 +1,5 @@
-import {photoTask,canvasBlob} from './photoDecoder';
+import {photoTask,canvasBlob,readPhoto} from './photoDecoder';
+import type {DecodedPhoto} from './heicDecoder';
 import {captureHints,inspectImage,resizeDimensions,type PreparedFile} from './preprocess';
 
 const MAX_BYTES=20*1024*1024,MAX_PIXELS=40_000_000;
@@ -7,19 +8,6 @@ const pause=(signal:AbortSignal)=>new Promise<void>((resolve,reject)=>{
  const timer=setTimeout(()=>{signal.removeEventListener('abort',cancel);resolve();},120);
  signal.addEventListener('abort',cancel,{once:true});if(signal.aborted)cancel();
 });
-
-function imageElement(blob:Blob,signal:AbortSignal):Promise<HTMLImageElement> {
- return new Promise((resolve,reject)=>{
-  const image=new Image(),url=URL.createObjectURL(blob);
-  const cleanup=()=>{clearTimeout(timer);URL.revokeObjectURL(url);signal.removeEventListener('abort',cancel);image.onload=null;image.onerror=null;};
-  const fail=(error:unknown)=>{cleanup();image.removeAttribute('src');reject(error);};
-  const cancel=()=>fail(signal.reason);
-  const timer=setTimeout(()=>fail(new Error('사진을 읽는 데 시간이 걸리고 있어요.')),15000);
-  image.onload=()=>{cleanup();resolve(image);};
-  image.onerror=()=>fail(new Error('이 사진 형식을 읽지 못했어요.'));
-  signal.addEventListener('abort',cancel,{once:true});image.src=url;if(signal.aborted)cancel();
- });
-}
 
 /** One decoder at a time; output always meets transport policy, never the original file. */
 async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
@@ -38,12 +26,12 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
  // Fresh surfaces retry transient failures. Safe JPEG/PNG use bitmap first;
  // HTMLImageElement also covers HEIC where the browser's native decoder supports it.
  for(let attempt=0;attempt<3;attempt++){
-  let image:ImageBitmap|HTMLImageElement|undefined,canvas:HTMLCanvasElement|undefined;
+  let image:DecodedPhoto|undefined,canvas:HTMLCanvasElement|undefined;
   try{
    signal.throwIfAborted();stage='decode';if(attempt)await pause(signal);
-   image=typeof createImageBitmap==='function'&&(info?attempt<2:attempt===2)?await createImageBitmap(blob):await imageElement(blob,signal);
+   image=await readPhoto(blob,signal,!!(info?attempt<2:attempt===2));
    signal.throwIfAborted();
-   const width='naturalWidth' in image?image.naturalWidth:image.width,height='naturalHeight' in image?image.naturalHeight:image.height;
+   const {width,height}=image;
    if(!width||!height||width*height>MAX_PIXELS)throw new Error('이 사진 크기를 처리하지 못했어요. 선택한 사진은 유지돼요.');
    const orientation=info?.orientation??1,rotated=orientation>=5;
    const originalWidth=rotated?height:width,originalHeight=rotated?width:height;
@@ -55,7 +43,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
     const ctx=canvas.getContext('2d');if(!ctx)throw new Error('사진 준비 공간을 만들지 못했어요.');
     const matrices=[[1,0,0,1,0,0],[-1,0,0,1,w,0],[-1,0,0,-1,w,h],[1,0,0,-1,0,h],[0,1,1,0,0,0],[0,1,-1,0,w,0],[0,-1,-1,0,w,h],[0,-1,1,0,0,h]];
     const m=matrices[orientation-1];ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);
-    ctx.drawImage(image!,0,0,rotated?h:w,rotated?w:h);
+    ctx.drawImage(image!.image,0,0,rotated?h:w,rotated?w:h);
     try{
      const result=await canvasBlob(canvas,quality,signal);signal.throwIfAborted();
      if(!result||result.type!=='image/webp'||!result.size)throw new Error('사진을 전송용으로 준비하지 못했어요.');
@@ -74,7 +62,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
    const make=(data:Blob,suffix='')=>new File([data],file.name.replace(/\.[^.]*$/,'')+suffix+'.webp',{type:'image/webp',lastModified:file.lastModified});
    return {file:make(body),...(thumbnail?{thumbnail:make(thumbnail,'.thumb')}:{ }),preprocessing:{version:2,original_width:originalWidth,original_height:originalHeight,captured_at_raw:capture.date,captured_timezone:capture.timezone}};
   }catch(error){signal.throwIfAborted();lastError=error;}
-  finally{if(image){if('close' in image)image.close();else image.removeAttribute('src');}if(canvas){canvas.width=0;canvas.height=0;}}
+  finally{image?.close();if(canvas){canvas.width=0;canvas.height=0;}}
  }
  throw new Error(lastError instanceof Error&&lastError.message.includes('유지')?lastError.message:stage==='encode'?'사진을 압축하지 못했어요. 선택한 사진은 남겨 두었어요. (E1)':'사진을 읽지 못했어요. 선택한 사진은 남겨 두었어요. (D1)');
 }

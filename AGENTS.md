@@ -1,5 +1,12 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## Android HEIC 웹 자동 읽기 보완 — 2026-10-31
+
+- 사용자 승인: 고객 설치·다운로드·별도 변환 조작 없이 우리 웹이 HEIC를 자동 처리하며 기존 사진 고르기→보내기→저장을 유지한다. `fix/android-photo-read`/기준4abbb98. S25 Ultra/Android17/Chrome156에서 정상 HEIC1+선택8장의 native decode 실패·D1을 실제 예외로 확인했다. 다른 갤럭시 성공 보고의 파일 형식/화면은 미확인이며 모델 고유 문제로 단정하지 않는다.
+- native 실패 HEIC에만 `libheif-js@1.23.5` WASM을 별도 worker로 자동 로드한다. `photoDecoder.readPhoto`가 미리보기/최적화 공통 읽기, `heicDecoder/heicWorker/heicPixels/heicColor`가 수명/실행/픽셀/SDR 색상을 분리한다. 단일 lane·20MiB/40MP·2048/1MB WebP·20장·원본 서버 전송 금지·기존 iPhone 인코더를 유지한다. API/DB 변경 없음, 계약1.20 유지. 출처·LGPL 고지/독립 자산은 재사용조사 최신 절을 따른다.
+- 수정 전 실패/수정 후 성공 회귀, 실제 WASM primary·색상·한도·취소·시간 초과·20장 검사 포함 Docker frontend244/타입/빌드 통과. Mac Chrome과 S25 Chrome에서 실제 HEIC/JPG 변환·미리보기 성공. S25의 원본1장과 앞서 실패한 동일 해시8장이 모두 성공했고 선택8장 전처리는 USB진단에서0.936~1.111초/장이다. 운영 저장/실물20장/모바일 메모리 인수로 확대하지 않는다. 유료 AI·메일·운영/기존 로컬 서비스 변경·commit/push/배포 없음. 상세는 개발운영 최신 절과 gitignore 인계 메모.
+- 이후 사용자 인계 지시로 작업 브랜치 commit/push·PR·GitHub 전체 검사/이미지 게시 확인을 진행한다. 서버 반영은 사용자가 수행하며 에이전트는 서버 접속/재시작·환경 변경을 하지 않는다. USB 진단은 종료돼 기기를 분리해도 된다. 배포는 단순 재시작 대신 기준 브랜치 통합 후 CI가 게시한 전체40자리SHA를 `scripts/lightsail-deploy.sh`에 전달한다. 앞 절의 commit/push 없음은 진단 단계 이력이다.
+
 ## 배포용 브랜치 통합·설정 전달 보완 — 2026-10-29
 
 - 사용자 최신 지시는 `feat/development-foundation`에 현재 변경을 푸시하고 GitHub 전체 검사를 확인한 뒤 서버는 사용자가 반영하는 것이다. 이번 대상 브랜치 푸시를 명시 승인한 것으로 적용하며 서버 접속/배포·환경값 변경은 수행하지 않는다.

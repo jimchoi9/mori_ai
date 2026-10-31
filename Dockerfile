@@ -4,6 +4,7 @@ WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./
 RUN node --version && npm --version && npm ci && npm ls --depth=0
 COPY frontend/ ./
+COPY tests/fixtures/media/primary-second.heic /tests/fixtures/media/primary-second.heic
 RUN npm run build
 RUN ./node_modules/.bin/tsc src/api/client.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/client-check \
     && node tests/upload_headers.test.mjs file:///tmp/client-check/api/client.js \
@@ -45,6 +46,8 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
 RUN node tests/album_purchase_access.test.mjs \
     && node tests/easy_upload_queue.test.mjs \
     && node tests/easy_upload_optimize.test.mjs \
+    && node tests/android_heic.test.mjs \
+    && node tests/heic_pixels.test.mjs \
     && node tests/easy_upload_hook.test.mjs \
     && node tests/upload_messages.test.mjs \
     && node tests/iphone_webp.test.mjs \
