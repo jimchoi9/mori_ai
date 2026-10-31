@@ -1,5 +1,20 @@
 # Lightsail 배포 — ai_mori
 
+## Android HEIC 웹 수정 반영 — 2026-10-31
+
+S25 Ultra의 실제 HEIC 읽기/미리보기 재검증이 끝나면 USB는 분리해도 된다. USB 진단용 서버·연결은 운영 반영에 필요하지 않다. 웹 코드·HEIC worker·코덱 자산이 새 빌드에 포함돼야 하므로 기존 컨테이너를 단순 restart하는 것으로는 반영되지 않는다.
+
+1. `fix/android-photo-read`의 검증된 변경을 PR로 `feat/development-foundation`에 통합한다.
+2. 배포할 통합 커밋의 **Build verified container**가 전체 검사와 **Publish verified image**까지 성공했는지 확인한다. 다른 SHA의 성공 결과를 대신 사용하지 않는다.
+3. 서버에서 업로드/생성 작업이 끝난 뒤 아래 기존 절차로 해당 **전체40자리SHA** 이미지를 반영한다. 로컬 PC가 아닌 Lightsail에서 사용자가 실행한다.
+
+```bash
+cd ~/apps/mori_ai
+sudo bash scripts/lightsail-deploy.sh <전체40자리커밋SHA>
+```
+
+이번 수정에는 API/DB migration·기능 env·AI/메일 설정 변경이 없다. 배포 스크립트의 기존 백업·migration 확인·이미지 digest 고정·health 절차는 그대로 사용한다. 배포 후 휴대폰 Chrome에서 새 웹을 다시 불러와 기존 선물 앨범의 실패 사진을 재시도한다. 로컬 진단의 변환/미리보기 성공과 운영에서의 사진 저장 성공은 구분한다.
+
 2026-10-17 사용자 선택: Render 대신 서울 Lightsail 2GB 단일 VPS에 web·worker·PostgreSQL17·Caddy를 실행한다. 주소는 https://aimori.kro.kr 이며 사용자 DNS 조회 결과는 54.116.168.155다. 실제 서버 배포와 인증서 발급은 아직 검증하지 않았다.
 
 ## 파일과 격리
