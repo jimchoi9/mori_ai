@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import Field, StrictInt, field_validator
+from pydantic import Field, StrictInt, field_validator, model_validator
 from typing import Literal
 from backend.http.schemas import StrictBody
 from backend.http.security import AuthContext, require_user, require_csrf, csrf_token, COOKIE_NAME, require_approved_user
@@ -40,9 +40,17 @@ class FileBody(StrictBody):
 
 
 class ReservationBody(StrictBody):
+    selection_id: UUID | None = None
+    selection_count: StrictInt | None = Field(default=None,ge=1,le=50)
     replaces_page_id: UUID|None=None
     expected_version: StrictInt=Field(ge=1)
     files: list[FileBody]=Field(min_length=1,max_length=50)
+
+    @model_validator(mode='after')
+    def selection(self):
+        if (self.selection_id is None)!=(self.selection_count is None) or self.selection_count is not None and self.selection_count<len(self.files):
+            raise ValueError('Complete selection identity/count required')
+        return self
 
 
 class OrderBody(StrictBody):
@@ -82,6 +90,8 @@ async def private_user(request: Request):
 async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(default=None)):
     require_csrf(request,context); validate_query(request,())
     identity=body.model_dump(mode='json')
+    for optional in ('selection_id','selection_count'):
+        if identity[optional] is None:identity.pop(optional)
     for file in identity['files']:
         hint=file.get('preprocessing')
         if hint is not None and hint.get('gps') is None:hint.pop('gps',None)

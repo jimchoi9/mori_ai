@@ -53,14 +53,17 @@ async def access_entries(session,refs,owner):
 
 
 async def summary(session, album):
+    uploads=await repo.page_uploads(session,album.id)
     if album.content_enabled:
         from backend.album_content.service import visible_pages
-        pages=await visible_pages(session,album)
+        pages=await visible_pages(session,album,uploads=uploads)
     else:pages = await repo.album_pages(session, album.id)
     assets = {a.id: a for a in await repo.ready_assets(session, album.id)}
     cover_page = pages[0] if pages else None
     cover = scoped_asset(assets, cover_page, 'thumbnail', album) if cover_page else None
-    return {'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
+    from backend.album_titles.service import capture_period
+    period=capture_period(pages,uploads)
+    return {'capture_period':period,'title_pending':bool(album.content_enabled and session.info.get('album_title_generation_enabled',True) and album.title_source=='pending' and album.title_seed is not None), 'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
         **({'content_enabled':True,'content_ready':bool(album.content_manifest)} if album.content_enabled else {}),
         'nfc_required':not album.legacy_access, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}

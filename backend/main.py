@@ -26,6 +26,7 @@ def create_app(static_dir: Path | None = None, *, settings: Settings | None = No
         def request_session():
             session = factory()
             session.info['media_signer'] = app.state.media_signer
+            session.info['album_title_generation_enabled'] = app.state.settings.album_content_enabled and app.state.settings.generation_enabled
             return session
         app.state.session_factory = request_session
         from backend.goods_design.suggestions.service import SuggestionService
