@@ -114,3 +114,19 @@ test('50-photo selection keeps an excess file, then saves all 50 and retries onl
  assert.ok(hook.items.every(item=>!item.prepared));h.close();
 });
 test.after(()=>rm(dir,{recursive:true,force:true}));
+test('saved uploads unlock immediately while title metadata is pending, and logout aborts all notices',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));const h=harness('title-notice');let hook=h.render();const known=[],signals=[];
+ globalThis.fetch=async(url,options={})=>{
+  if(url.endsWith('/title-selection/complete'))return new Promise((resolve,reject)=>{
+   signals.push(options.signal);options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true});
+  });
+  return response({detail:{pages:known.map(id=>({id}))}});
+ };
+ globalThis.prepare=async file=>({file});
+ globalThis.transfer=async(_album,item)=>{item.pageId=item.id;item.transferred=true;known.push(item.id);};
+ globalThis.verify=async()=>{};
+ hook.select([photo(1)],20);await h.render().send();hook=h.render();
+ assert.equal(hook.busy,false);assert.equal(hook.items.filter(item=>item.state==='saved').length,1);assert.equal(signals.length,1);assert.equal(signals[0].aborted,false);
+ hook.select([photo(2)],19);await h.render().send();assert.equal(h.render().busy,false);assert.equal(known.length,2);assert.equal(signals.length,2);
+ window.dispatchEvent(new Event('mori:logout'));assert.ok(signals.every(signal=>signal.aborted));h.close();
+});
