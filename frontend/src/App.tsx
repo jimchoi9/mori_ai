@@ -1,3 +1,4 @@
+import {SiteHeader} from './components/layout/SiteHeader';
 import {AccountMenu} from './components/account/AccountMenu';
 import {lazy,Suspense} from 'react';
 const AdminGate=lazy(()=>import('./features/admin/AdminGate').then(m=>({default:m.AdminGate})));
@@ -29,7 +30,7 @@ export default function App(){
  return <><GiftTokenCapture/><a className="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" className={goods?'goods-root':undefined} tabIndex={-1}>
   <AuthGate allowGuest={goods}>{(me,logout,agree,resume)=>{
    const account=me.guest?<Link className="goods-login-link" to="/login">로그인</Link>:<AccountMenu name={me.user.display_name} goods={goods} onLogout={()=>{if(window.dispatchEvent(new Event('mori:before-logout',{cancelable:true})))void logout().catch(e=>setError(errorText(e)));}}/>;
-   return <>{!goods&&account}{error&&<p role="alert">{error}</p>}<PurchaseReturn key={`purchase:${me.user.id}`} userId={me.user.id}/>
+   return <>{!goods&&<SiteHeader account={account}/>}{error&&<p role="alert">{error}</p>}<PurchaseReturn key={`purchase:${me.user.id}`} userId={me.user.id}/>
     <Routes>
      <Route path="/goods" element={<GoodsWorkspace key={workspaceKey(me.user.id,location.key)} userId={me.user.id} guest={me.guest} consent={me.consent} onConsent={agree} resume={resume} account={account}/>}/>
      <Route path="/gifts/:purchaseId" element={<GiftRegistration key={me.user.id} userId={me.user.id} csrfToken={me.csrf_token} displayName={me.user.display_name}/>}/>
