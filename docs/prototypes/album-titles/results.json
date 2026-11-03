@@ -1,0 +1,97 @@
+{
+  "source": "Actual Luna calls on synthetic captions; not photo or user testing",
+  "calls": 24,
+  "cost_usd": "0.0012122",
+  "results": [
+    {
+      "id": "empty",
+      "state": "skipped",
+      "title": "새 앨범",
+      "first_title": "새 앨범"
+    },
+    {
+      "id": "gijang",
+      "state": "completed",
+      "title": "기장 나들이",
+      "first_title": "기장 바닷가 나들이"
+    },
+    {
+      "id": "repeat",
+      "state": "completed",
+      "title": "기장 바다 나들이",
+      "first_title": "기장 바닷가 산책"
+    },
+    {
+      "id": "coex",
+      "state": "completed",
+      "title": "코엑스 팝업 구경",
+      "first_title": "코엑스 팝업 구경"
+    },
+    {
+      "id": "meal",
+      "state": "completed",
+      "title": "삼성동 한 끼",
+      "first_title": "삼성동 식사"
+    },
+    {
+      "id": "cities",
+      "state": "completed",
+      "title": "여행의 순간",
+      "first_title": "여행지 풍경"
+    },
+    {
+      "id": "daily",
+      "state": "completed",
+      "title": "일상의 여러 순간",
+      "first_title": "일상의 풍경"
+    },
+    {
+      "id": "no_location",
+      "state": "completed",
+      "title": "바닷가 산책",
+      "first_title": "바닷가 산책"
+    },
+    {
+      "id": "modified_only",
+      "state": "completed",
+      "title": "국밥 한 끼",
+      "first_title": "식당 국밥 한 끼"
+    },
+    {
+      "id": "outlier",
+      "state": "completed",
+      "title": "기장 바닷가 나들이",
+      "first_title": "기장 해변 산책과 카페"
+    },
+    {
+      "id": "custom",
+      "state": "skipped",
+      "title": "우리의 여름",
+      "first_title": "우리의 여름"
+    },
+    {
+      "id": "unknown",
+      "state": "skipped",
+      "title": "새 앨범",
+      "first_title": "새 앨범"
+    },
+    {
+      "id": "year_boundary",
+      "state": "completed",
+      "title": "교토 나들이",
+      "first_title": "교토 거리와 사찰 산책"
+    },
+    {
+      "id": "workshop",
+      "state": "completed",
+      "title": "회사 워크숍",
+      "first_title": "회사 워크숍"
+    },
+    {
+      "id": "injection",
+      "state": "completed",
+      "title": "바닷가 산책",
+      "first_title": "바닷가 산책"
+    }
+  ]
+}

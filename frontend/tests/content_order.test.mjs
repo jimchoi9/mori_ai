@@ -7,7 +7,7 @@ import {join} from 'node:path';
 const dir=await mkdtemp(join(tmpdir(),'content-order-'));
 await build({entryPoints:['src/features/content/ContentManager.tsx'],bundle:true,platform:'node',format:'esm',jsx:'automatic',outfile:join(dir,'manager.mjs'),plugins:[{name:'contract-harness',setup(b){
  b.onResolve({filter:/\.css$/},a=>({path:a.path,namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:''}));
- b.onResolve({filter:/^(react|react\/jsx-runtime|react-router|@tanstack\/react-query)$|api\/client$|useEasyUploads$|useCaptionEdits$|usePhotoReorder$|UploadPhoto$|UploadInspector$|AlbumUploadActivity$/},a=>({path:a.path,namespace:'harness'}));
+ b.onResolve({filter:/^(react|react\/jsx-runtime|react-router|@tanstack\/react-query)$|api\/client$|useEasyUploads$|useCaptionEdits$|usePhotoReorder$|UploadPhoto$|UploadInspector$|AlbumUploadActivity$|AlbumTitle$/},a=>({path:a.path,namespace:'harness'}));
  b.onLoad({filter:/.*/,namespace:'harness'},a=>({contents:
  a.path==='react/jsx-runtime'?`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment="fragment";`:
  a.path==='react'?`export const useEffect=()=>{},useRef=v=>({current:v}),useState=v=>{const i=globalThis.cursor++;if(!(i in globalThis.cells))cells[i]=v;return [cells[i],n=>cells[i]=typeof n==='function'?n(cells[i]):n];};`:
@@ -17,7 +17,7 @@ await build({entryPoints:['src/features/content/ContentManager.tsx'],bundle:true
  /useEasyUploads$/.test(a.path)?`export const hasUploadDraft=()=>false,useEasyUploads=(_album,_user,_refresh,max)=>{globalThis.uploadLimit=max;return {items:[],busy:false,error:''};};`:
  /useCaptionEdits$/.test(a.path)?`export const useCaptionEdits=()=>({drafts:{},flush:async()=>{events.push('flush');return globalThis.flushOK;}});`:
  /usePhotoReorder$/.test(a.path)?`export const usePhotoReorder=()=>({stop(){}});`:
- `export const UploadPhoto='photo',UploadInspector='inspector',AlbumUploadActivity='activity',PhotoAddButton='add';`}));
+ `export const UploadPhoto='photo',UploadInspector='inspector',AlbumUploadActivity='activity',PhotoAddButton='add',AlbumTitle='album-title';`}));
 }}]});
 const {ContentManager}=await import(join(dir,'manager.mjs'));
 const nodes=t=>!t||typeof t!=='object'?[]:Array.isArray(t)?t.flatMap(nodes):[t,...nodes(t.props?.children)];

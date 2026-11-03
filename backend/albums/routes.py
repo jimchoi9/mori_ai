@@ -98,3 +98,29 @@ async def content(request:Request,album_id:UUID,body:EmptyBody,context:AuthConte
         await enable(session,context.user_id,album_id,request.app.state.settings)
         data=await service.get_album_detail(session,context.user_id,album_id)
     return envelope(request,data)
+
+
+class TitleBody(PublishBody):
+    title: StrictStr = Field(min_length=1,max_length=200)
+
+
+@router.patch('/{album_id}/title')
+async def title(request:Request,album_id:UUID,body:TitleBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    from backend.album_titles.service import rename_album
+    async with request.app.state.session_factory() as session,session.begin():
+        data=await rename_album(session,context.user_id,album_id,body.expected_version,body.title)
+    return envelope(request,data)
+
+
+class TitleSelectionBody(StrictBody):
+    selection_id: UUID
+
+
+@router.post('/{album_id}/title-selection/complete')
+async def title_selection_complete(request:Request,album_id:UUID,body:TitleSelectionBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    from backend.album_titles.service import complete_selection
+    async with request.app.state.session_factory() as session,session.begin():
+        data=await complete_selection(session,context.user_id,album_id,body.selection_id)
+    return envelope(request,data)

@@ -45,6 +45,8 @@ class Album(Identity, Created, Base):
     active_run_id: Mapped[UUID | None] = mapped_column(ForeignKey('generation_runs.id', use_alter=True, name='fk_album_active_run'))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text('now()'))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    title_source: Mapped[str] = mapped_column(String(12), default='legacy', server_default='legacy')
+    title_seed: Mapped[dict | None] = mapped_column(JSONB)
     title: Mapped[str] = mapped_column(Text, default='나의 사진첩')
     status: Mapped[str] = mapped_column(String(30), default='draft')
     version: Mapped[int] = mapped_column(default=1)
@@ -396,5 +398,18 @@ class AlbumCaptionJob(Identity, Created, Base):
     fence_version: Mapped[int] = mapped_column(default=0)
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(50))
+    __table_args__ = (CheckConstraint("status IN ('queued','running','succeeded','failed','unknown','cancelled')"),)
+
+
+class AlbumTitleJob(Identity, Created, Base):
+    """One immutable title request per new album. No paid-call replay."""
+    __tablename__ = 'album_title_jobs'
+    album_id: Mapped[UUID] = mapped_column(ForeignKey('albums.id'), unique=True)
+    config_snapshot: Mapped[dict] = mapped_column(JSONB)
+    captions: Mapped[list] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(20), default='queued', index=True)
+    dispatch_state: Mapped[str] = mapped_column(String(20), default='not_sent')
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error_code: Mapped[str | None] = mapped_column(String(50))
     __table_args__ = (CheckConstraint("status IN ('queued','running','succeeded','failed','unknown','cancelled')"),)

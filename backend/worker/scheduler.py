@@ -27,7 +27,7 @@ async def _poll(operation, stopped, interval, name, *, drain_ready=False):
 
 async def run_worker(validation, runner, stopped, *, poll_seconds,
                      generation_enabled=True, oauth_cleanup=None, goods_operation=None, delivery_operation=None,
-                     content_operation=None, content_operations=()):
+                     content_operation=None, content_operations=(), title_operation=None):
     if poll_seconds <= 0:
         raise ValueError('poll_seconds must be positive')
     if content_operation is not None and content_operations:
@@ -46,6 +46,8 @@ async def run_worker(validation, runner, stopped, *, poll_seconds,
         operations.append(_poll(goods_operation, stopped, poll_seconds, 'goods'))
     if delivery_operation is not None:
         operations.append(_poll(delivery_operation, stopped, max(5, poll_seconds), 'purchase_delivery'))
+    if title_operation is not None:
+        operations.append(_poll(title_operation,stopped,poll_seconds,'album_title',drain_ready=True))
     for index, operation in enumerate(content_operations):
         operations.append(_poll(operation,stopped,poll_seconds,f'album_content_{index}',drain_ready=True))
     if generation_enabled:

@@ -103,6 +103,9 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         if f.thumbnail is not None:
             url,thumb_headers=signer.upload_url(thumb.storage_key,path+'/thumbnail',u.id,int(expiry.timestamp()),'image/webp',f.thumbnail.bytes)
             result[-1]['thumbnail_upload']={'asset_id':str(thumb.id),'method':'PUT','url':url,'required_headers':thumb_headers,'expires_at':utc(expiry)}
+    if not replacement:
+        from backend.album_titles.service import register_selection
+        register_selection(parent,body.selection_id or batch,body.selection_count or len(body.files),[row['page_id'] for row in result],stamp)
     if not pages: parent.cover_page_id=page.id if len(body.files)==1 else None
     # Cover always follows current first page, including reserved/failed pages.
     await session.flush()

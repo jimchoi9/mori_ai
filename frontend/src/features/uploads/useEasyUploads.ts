@@ -6,15 +6,16 @@ import {optimizePhoto} from './optimizePhoto';
 import {transferPhoto,verifyPhoto,type TransferItem} from './easyTransport';
 import type {UploadBatch} from './uploadMessages';
 
-interface Draft {items:TransferItem[];batches:UploadBatch[];activeIds:string[];busy:boolean;controller?:AbortController;listeners:Set<()=>void>}
+const TITLE_NOTICE_TIMEOUT_MS=5000;
+interface Draft {notifications:Set<AbortController>;items:TransferItem[];batches:UploadBatch[];activeIds:string[];busy:boolean;controller?:AbortController;listeners:Set<()=>void>}
 const drafts=new Map<string,Draft>();
 export function hasUploadDraft(userId:string,albumId:string){return drafts.get(`${userId}:${albumId}`)?.items.some(item=>!item.replacesPageId&&item.state!=='saved')??false;}
-function clearDrafts(){for(const draft of drafts.values()){draft.controller?.abort();draft.items=[];draft.batches=[];draft.activeIds=[];draft.busy=false;draft.listeners.forEach(f=>f());}drafts.clear();}
+function clearDrafts(){for(const draft of drafts.values()){draft.controller?.abort();for(const request of draft.notifications)request.abort();draft.notifications.clear();draft.items=[];draft.batches=[];draft.activeIds=[];draft.busy=false;draft.listeners.forEach(f=>f());}drafts.clear();}
 window.addEventListener('mori:logout',clearDrafts);window.addEventListener('mori:clear-private-memory',clearDrafts);
 
 export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<unknown>,maxPhotos:20|50,knownPageIds:readonly string[]=[]){
  const key=`${userId}:${albumId}`;
- if(!drafts.has(key))drafts.set(key,{items:[],batches:[],activeIds:[],busy:false,listeners:new Set()});
+ if(!drafts.has(key))drafts.set(key,{notifications:new Set(),items:[],batches:[],activeIds:[],busy:false,listeners:new Set()});
  const draft=drafts.get(key)!,[,render]=useState(0),[error,setError]=useState('');
  const refreshRef=useRef(refresh);refreshRef.current=refresh;
  const knownIds=useRef(new Set(knownPageIds));knownIds.current=new Set(knownPageIds);
@@ -35,7 +36,7 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
   const items=draft.items.filter(item=>item.state!=='saved'&&(!requested||requested.has(item.id)));
   if(!items.length)return;
   const batchId=crypto.randomUUID();
-  for(const item of items){item.submitted=true;item.batchId??=batchId;}
+  for(const item of items){item.submitted=true;item.batchId??=batchId;item.selectionCount??=items.length;}
   draft.busy=true;draft.activeIds=items.map(item=>item.id);setError('');const controller=new AbortController();draft.controller=controller;changed();
   try{
    const fresh=await api<Detail>(`/albums/${albumId}`,{signal:controller.signal});
@@ -46,18 +47,30 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
     transfer:(item,signal)=>transferPhoto(albumId,item,signal,changed),
     verify:async(item,signal)=>{await verifyPhoto(albumId,item,signal);await refreshRef.current();},changed});
   }catch(e){if(!controller.signal.aborted)setError(errorText(e));}
-  finally{if(draft.controller===controller){draft.busy=false;draft.activeIds=[];draft.controller=undefined;}changed();void refreshRef.current().catch(()=>undefined);}
+  finally{
+   if(draft.controller===controller){draft.busy=false;draft.activeIds=[];draft.controller=undefined;}
+   changed();void refreshRef.current().catch(()=>undefined);
+   // Naming metadata never keeps saved photos in the uploading state. Notifications
+   // have their own bounded lifetime and remain abortable on logout/unmount.
+   if(!controller.signal.aborted){
+    const notification=new AbortController();draft.notifications.add(notification);
+    const signal=AbortSignal.any([controller.signal,notification.signal,AbortSignal.timeout(TITLE_NOTICE_TIMEOUT_MS)]);
+    const groups=[...new Set(items.filter(item=>!item.replacesPageId).map(item=>item.batchId))];
+    void Promise.allSettled(groups.map(selection_id=>api(`/albums/${albumId}/title-selection/complete`,{method:'POST',body:{selection_id},signal})))
+     .finally(()=>draft.notifications.delete(notification));
+   }
+  }
  }
  useEffect(()=>{
   const update=()=>render(n=>n+1);draft.listeners.add(update);
-  const expire=()=>draft.controller?.abort();
+  const expire=()=>{draft.controller?.abort();for(const request of draft.notifications)request.abort();};
   // Network/visibility recovery is consent to resume previously sent photos only.
   const resume=()=>{const ids=draft.items.filter(item=>item.submitted&&item.state!=='saved').map(item=>item.id);if(ids.length)void send(ids);};
   const visible=()=>{if(!document.hidden){void refreshRef.current();resume();}};
   const leave=(event:BeforeUnloadEvent)=>{if(draft.busy){event.preventDefault();event.returnValue='';}};
   window.addEventListener('online',resume);document.addEventListener('visibilitychange',visible);
   window.addEventListener('mori:session-expired',expire);window.addEventListener('beforeunload',leave);
-  return()=>{draft.listeners.delete(update);draft.controller?.abort();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);window.removeEventListener('mori:session-expired',expire);window.removeEventListener('beforeunload',leave);};
+  return()=>{draft.listeners.delete(update);expire();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);window.removeEventListener('mori:session-expired',expire);window.removeEventListener('beforeunload',leave);};
  },[draft]);
  function select(files:File[],remaining:number){
   if(draft.busy)return [];
