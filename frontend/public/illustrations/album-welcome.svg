@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="350" viewBox="0 0 400 350" fill="none">
+<defs><linearGradient id="cover" x1="100" y1="60" x2="300" y2="310" gradientUnits="userSpaceOnUse"><stop stop-color="#A8B49A"/><stop offset="1" stop-color="#768B71"/></linearGradient><linearGradient id="sky" x1="230" y1="100" x2="230" y2="260" gradientUnits="userSpaceOnUse"><stop stop-color="#E4ECE7"/><stop offset="1" stop-color="#BAD1CE"/></linearGradient><filter id="shadow" x="-40%" y="-30%" width="190%" height="190%"><feDropShadow dx="1" dy="14" stdDeviation="12" flood-color="#364535" flood-opacity=".14"/></filter><clipPath id="photo"><rect x="14" y="14" width="144" height="142" rx="1"/></clipPath></defs>
+<ellipse cx="203" cy="186" rx="164" ry="148" fill="#EFF0E7"/>
+<g transform="translate(78 51) rotate(-9 100 127)" filter="url(#shadow)">
+<rect x="5" y="8" width="188" height="250" rx="9" fill="#E0E2D4"/><path d="M19 256H183" stroke="#F8F7EF" stroke-width="3"/>
+<rect width="190" height="250" rx="8" fill="url(#cover)"/><path d="M15 1V249" stroke="#596F56" stroke-opacity=".4"/><path d="M18 2V247" stroke="#D4DDC9" stroke-opacity=".5"/>
+<rect x="48" y="43" width="99" height="73" rx="2" fill="#E8EBDD" fill-opacity=".65"/>
+<path d="M82 83C82 71 96 62 103 68C110 74 101 86 96 91C90 86 82 83 82 83Z" stroke="#71876C" stroke-width="1.4"/>
+<path d="M74 135H121M84 142H111" stroke="#DFE5D5" stroke-opacity=".7" stroke-width="1.2"/>
+<path d="M150 228L150 250L157 245L164 250V228" fill="#E6C49A"/>
+</g>
+<g transform="translate(184 104) rotate(11 86 98)" filter="url(#shadow)">
+<rect width="172" height="195" rx="3" fill="#FFFEF8"/>
+<g clip-path="url(#photo)"><path fill="url(#sky)" d="M14 14H158V156H14Z"/><circle cx="124" cy="44" r="14" fill="#FFF7D8"/><path d="M14 84C64 80 108 88 158 82V156H14Z" fill="#85AAA5"/><path d="M14 119C57 102 85 115 112 126C135 135 147 127 158 120V156H14Z" fill="#D5C7A9"/><path d="M14 102C64 97 116 109 158 101" stroke="#D5E7DE" stroke-width="1.5"/></g>
+<path d="M66 174H106" stroke="#D3D7CA" stroke-width="1.5" stroke-linecap="round"/>
+</g>
+</svg>

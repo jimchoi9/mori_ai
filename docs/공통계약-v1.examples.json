@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.20",
+  "contract_version": "1.25",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -30,7 +30,7 @@
       "auth_providers": [],
       "easy_upload": {
         "enabled": false,
-        "max_photos": 20
+        "max_photos": 50
       },
       "album_content_enabled": false
     },
@@ -1611,6 +1611,29 @@
           }
         }
       ]
+    },
+    "preprocessed_webp_gps_without_date": {
+      "expected_version": 1,
+      "files": [
+        {
+          "client_file_id": "00000000-0000-4000-8000-000000000804",
+          "filename": "photo.webp",
+          "mime": "image/webp",
+          "bytes": 420000,
+          "file_last_modified_at": "2026-10-01T03:00:00Z",
+          "preprocessing": {
+            "version": 2,
+            "original_width": 3000,
+            "original_height": 4000,
+            "captured_at_raw": null,
+            "captured_timezone": null,
+            "gps": {
+              "latitude": 35.24,
+              "longitude": 129.22
+            }
+          }
+        }
+      ]
     }
   },
   "upload_reservation": {
@@ -1888,7 +1911,7 @@
   "easy_upload_internal_validation": {
     "settings": {
       "EASY_UPLOAD_ENABLED": true,
-      "EASY_UPLOAD_MAX_PHOTOS": 20
+      "EASY_UPLOAD_MAX_PHOTOS": 50
     },
     "finish": "saved_photos_in_management_only",
     "excluded": [
@@ -1971,5 +1994,86 @@
       "expected_version": 0
     },
     "role_management": "server_cli_only"
+  },
+  "album_date_order": {
+    "request": {
+      "method": "POST",
+      "path": "/api/v1/albums/00000000-0000-4000-8000-000000000001/date-order",
+      "body": {
+        "expected_version": 3
+      }
+    },
+    "response_shape": "existing album detail envelope, detail.order_mode=date",
+    "fallback_order": [
+      "DateTimeOriginal",
+      "file_last_modified_at",
+      "reservation_created_at"
+    ],
+    "same_date": "selection_index; replacements inherit original slot",
+    "pending_upload_or_replacement": {
+      "status": 409,
+      "code": "STATE_CONFLICT"
+    },
+    "existing_albums": "no automatic reordering or backfill",
+    "paid_ai_calls": 0
+  },
+  "manual_order_restore": {
+    "request": {
+      "method": "POST",
+      "path": "/api/v1/albums/00000000-0000-4000-8000-000000000001/manual-order",
+      "body": {
+        "expected_version": 12
+      }
+    },
+    "response_contract": "200 {detail:AlbumDetail,media_access:MediaAccess[]}",
+    "policy": {
+      "deleted": "omit",
+      "replacement": "inherit original slot",
+      "new": "append in selection_index order",
+      "no_saved_order": "keep current positions and enter manual mode",
+      "stale_version": "409",
+      "pending_upload_or_replacement": "409"
+    }
+  },
+  "album_place_caption_policy": {
+    "profile": "luna_places_1024_v1",
+    "caption_prompt_version": "album-place-experience-v1",
+    "current_edge": 1024,
+    "reference_edge": 512,
+    "max_references": 2,
+    "caption_max_chars": 80,
+    "context_example": {
+      "version": 1,
+      "gps": {
+        "latitude": 35.24,
+        "longitude": 129.22
+      },
+      "references": []
+    },
+    "source_captions_transmitted": false,
+    "existing_captions_rewritten": false,
+    "legacy_prompt_version": "album-place-action-v1",
+    "calls_per_photo": 1,
+    "max_output_tokens": 512,
+    "structured_response_example": {
+      "venue": "코엑스",
+      "neighborhood": "삼성동",
+      "district": "강남구",
+      "city": "서울",
+      "setting": "팝업",
+      "activity": "캐릭터 그림을 둘러봤다."
+    },
+    "assembled_caption_example": "코엑스 팝업에서 캐릭터 그림을 둘러봤다.",
+    "selection_order": [
+      "venue",
+      "neighborhood",
+      "district",
+      "city"
+    ],
+    "invalid_structured_response": {
+      "error_code": "CAPTION_INVALID",
+      "dispatch_state": "responded",
+      "automatic_retry": false
+    }
   }
 }

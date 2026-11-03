@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Mori · 앨범 흐름 체험</title><link rel="stylesheet" href="style.css?v=6"></head>
+<body>
+<aside class="lab">
+ <a class="brand" href="./">mori<span>FLOW STUDY · 05</span></a>
+ <div class="lab-intro"><p class="eyebrow">눌러보며 비교하는 목업</p><h1>앨범 UI 목업</h1><p>사진 업로드와 편집 흐름을<br>직접 눌러보세요.</p></div>
+ <div class="experiment"><label for="flow">선물 진입 방식 비교</label><select id="flow"><option value="proposed">제안 · 등록 후 바로 앨범</option><option value="current">현재 · 등록 완료 화면 한 번 더</option></select><label class="check"><input id="firstVisit" type="checkbox" checked> 처음 이용하는 사람으로 시작</label><button class="lab-primary" data-action="restart">선물 QR부터 시작 ↗</button><div class="lab-pair"><button data-action="open-album">앨범 화면 바로 보기</button><button data-action="fifty">샘플 50장 체험</button></div><button class="lab-link" data-action="revisit">등록된 선물 QR 재방문</button></div>
+ <div class="flow-note" id="flowNote"></div><div class="journey"><p class="eyebrow">지금 지나온 화면</p><ol id="journey"></ol></div>
+ <p class="lab-disclaimer">로그인·등록·저장은 시뮬레이션입니다. 선택한 사진은 이 브라우저 메모리에서만 사용하며 서버로 보내지 않습니다. 새로고침하면 초기화됩니다.</p>
+</aside>
+<div class="stage"><div class="prototype-label"><span class="live-dot"></span> INTERACTIVE PROTOTYPE <span>최대 50장</span></div><div class="phone"><div class="phone-top"><span>mori</span></div><main id="app"></main></div><p class="stage-note">선물 진입은 현재/제안을 비교합니다. 앨범 화면은 두 모드 모두 새 제안입니다.</p></div>
+<dialog id="picker" aria-labelledby="pickerTitle"></dialog><dialog id="preview" aria-label="사진 크게 보기"></dialog><dialog id="confirm" aria-labelledby="confirmTitle"></dialog><div class="toast" role="status" aria-live="polite" id="toast"></div>
+<input id="files" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+<script src="app.js?v=6"></script>
+</body></html>

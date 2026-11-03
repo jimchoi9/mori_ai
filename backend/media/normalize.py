@@ -9,6 +9,7 @@ from io import BytesIO
 from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
 import pillow_heif
 from .contracts import MediaValidationError, NormalizedImage
+from .gps import exif_gps
 from . import png_color, icc_sdr
 
 pillow_heif.register_heif_opener(thumbnails=False)
@@ -58,6 +59,7 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
             image = Image.open(BytesIO(source))
             png_color.validate(png, image.info)
         exif = image.getexif()
+        photo_gps = exif_gps(exif)
         nested = exif.get_ifd(0x8769) if 0x8769 in exif else {}
         captured = nested.get(36867, exif.get(36867))
         timezone = nested.get(36881, exif.get(36881))
@@ -184,7 +186,7 @@ def normalize(source: bytes, filename: str) -> NormalizedImage:
         image.close()
         return NormalizedImage(encoded, thumbnail, *size, exact,
             str(captured) if captured else None, str(timezone) if timezone else None,
-            hashlib.sha256(source).hexdigest())
+            hashlib.sha256(source).hexdigest(), photo_gps=photo_gps)
     except MediaValidationError:
         raise
     except (OSError, ValueError, TypeError, ImageCms.PyCMSError) as error:

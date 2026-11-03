@@ -1,3 +1,4 @@
+import {AccountMenu} from './components/account/AccountMenu';
 import {lazy,Suspense} from 'react';
 const AdminGate=lazy(()=>import('./features/admin/AdminGate').then(m=>({default:m.AdminGate})));
 const ContentManager=lazy(()=>import('./features/content/ContentManager').then(m=>({default:m.ContentManager})));
@@ -27,11 +28,11 @@ export default function App(){
  if(location.pathname.startsWith('/nfc/'))return <NfcExperience/>;
  return <><GiftTokenCapture/><a className="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" className={goods?'goods-root':undefined} tabIndex={-1}>
   <AuthGate allowGuest={goods}>{(me,logout,agree,resume)=>{
-   const account=me.guest?<Link className="goods-login-link" to="/login">로그인</Link>:<details className={goods?'goods-account':'app-account'}><summary aria-label={`${me.user.display_name} 계정 메뉴`}>{me.user.display_name.slice(0,1)}</summary><div><p>{me.user.display_name}님의 공간</p><nav aria-label="내 프로필 메뉴"><Link to="/goods">굿즈 만들기</Link><Link to="/designs">내 디자인</Link><Link to="/albums">내 책장</Link></nav><button className="text" onClick={()=>{if(window.dispatchEvent(new Event('mori:before-logout',{cancelable:true})))void logout().catch(e=>setError(errorText(e)));}}>로그아웃</button></div></details>;
+   const account=me.guest?<Link className="goods-login-link" to="/login">로그인</Link>:<AccountMenu name={me.user.display_name} goods={goods} onLogout={()=>{if(window.dispatchEvent(new Event('mori:before-logout',{cancelable:true})))void logout().catch(e=>setError(errorText(e)));}}/>;
    return <>{!goods&&account}{error&&<p role="alert">{error}</p>}<PurchaseReturn key={`purchase:${me.user.id}`} userId={me.user.id}/>
     <Routes>
      <Route path="/goods" element={<GoodsWorkspace key={workspaceKey(me.user.id,location.key)} userId={me.user.id} guest={me.guest} consent={me.consent} onConsent={agree} resume={resume} account={account}/>}/>
-     <Route path="/gifts/:purchaseId" element={<GiftRegistration key={me.user.id} userId={me.user.id} csrfToken={me.csrf_token}/>}/>
+     <Route path="/gifts/:purchaseId" element={<GiftRegistration key={me.user.id} userId={me.user.id} csrfToken={me.csrf_token} displayName={me.user.display_name}/>}/>
      <Route path="/purchases/:purchaseId" element={<PurchaseDetail key={me.user.id} userId={me.user.id}/>}/>
      <Route path="/purchases/:purchaseId/photos" element={<PurchasePhotos key={me.user.id} userId={me.user.id}/>}/>
      <Route path="/designs" element={<Designs userId={me.user.id}/>}/>

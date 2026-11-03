@@ -33,9 +33,16 @@ class ProductionConfigTest(unittest.TestCase):
                 env = services[name]['environment']
                 for key in ('EASY_UPLOAD_ENABLED', 'ALBUM_CONTENT_ENABLED', 'GOODS_MAIL_ENABLED', 'AI_REAL_CALLS_ENABLED'):
                     self.assertEqual(str(env[key]).lower(), 'false', key)
-                self.assertEqual(str(env['EASY_UPLOAD_MAX_PHOTOS']), '20')
+                self.assertEqual(str(env['EASY_UPLOAD_MAX_PHOTOS']), '50')
                 self.assertEqual(env['ALBUM_CONTENT_CAPTION_PROFILE'], 'mini_full_v1')
                 self.assertEqual(env['GOODS_CHECKOUT_MODE'], 'disabled')
+
+    def test_explicit_twenty_photo_override_is_preserved(self):
+        for filename in ('compose.yaml', 'compose.lightsail.yaml'):
+            services = render(filename, EASY_UPLOAD_MAX_PHOTOS='20')
+            for name in ('web', 'worker', 'migrate'):
+                with self.subTest(compose=filename, service=name):
+                    self.assertEqual(str(services[name]['environment']['EASY_UPLOAD_MAX_PHOTOS']), '20')
 
     def test_selected_modes_and_operator_settings_reach_every_app_service(self):
         options = {
@@ -70,6 +77,7 @@ class ProductionConfigTest(unittest.TestCase):
             env = services[name]['environment']
             self.assertEqual(str(env['ALBUM_CONTENT_ENABLED']).lower(), 'true')
             self.assertEqual(env['ALBUM_CONTENT_CAPTION_PROFILE'], 'luna_1024_v1')
+            self.assertEqual(str(env['EASY_UPLOAD_MAX_PHOTOS']), '50')
 
 
 if __name__ == '__main__':

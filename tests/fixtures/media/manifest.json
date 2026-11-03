@@ -207,6 +207,49 @@
         40
       ],
       "input_is_3_4": true
+    },
+    {
+      "path": "capture-primary-second.heic",
+      "sha256": "bd3b32cc1caa01361e81239094e8bd600c5bf1bdd23539e94ffc026fc7d5c00e",
+      "ownership": "generated synthetic red/blue images; no user data",
+      "purpose": "two HEIC images with distinct EXIF dates; second is primary",
+      "primary_index": 1,
+      "expected_capture_date": "2026:10:01 12:30:00",
+      "expected_capture_timezone": "+09:00",
+      "generator": "Pillow Image.Exif nested Exif IFD + pillow-heif 1.8.1 from_pillow/add_from_pillow; save(primary_index=1,quality=30)",
+      "stored_size": [
+        64,
+        48
+      ],
+      "expected_size": [
+        64,
+        48
+      ],
+      "input_is_3_4": false,
+      "alpha": false,
+      "orientation": 1
+    },
+    {
+      "path": "capture-primary-gps.heic",
+      "sha256": "d0f0f355185e131720b1a322937e637c8234b84ca0a8a75e659b4ee2591240be",
+      "stored_size": [
+        64,
+        48
+      ],
+      "expected_size": [
+        64,
+        48
+      ],
+      "orientation": 1,
+      "alpha": false,
+      "input_is_3_4": false,
+      "primary_index": 1,
+      "expected_gps": {
+        "latitude": 35.24,
+        "longitude": 129.22
+      },
+      "ownership": "generated synthetic; no user data",
+      "generator": "Pillow GPS EXIF + pillow-heif from_pillow/add_from_pillow; save(primary_index=1,quality=30)"
     }
   ],
   "not_executed": [

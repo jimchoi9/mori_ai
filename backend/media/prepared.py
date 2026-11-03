@@ -1,4 +1,5 @@
 """Version 3: verify pixels once and reuse eligible compressed WebP payloads."""
+from .gps import exif_gps
 from dataclasses import asdict
 from io import BytesIO
 import hashlib
@@ -64,6 +65,7 @@ def validate_prepared(source,thumbnail=None):
         with Image.open(BytesIO(source)) as image:
             if image.width*image.height>legacy.MAX_PIXELS:raise MediaValidationError('IMAGE_PIXEL_LIMIT_EXCEEDED')
             exif=image.getexif();width,height=image.size
+            photo_gps=exif_gps(exif)
             if exif.get(274,1) in {5,6,7,8}:width,height=height,width
             chunks=inspect(source) if image.format=='WEBP' else None
             reuse=(not _hdr(image.info) and chunks is not None and exif.get(274,1)==1
@@ -79,13 +81,13 @@ def validate_prepared(source,thumbnail=None):
                 return PreparedMediaResult(clean,thumb,*image.size,width*4==height*3,
                     str(captured) if captured else None,str(timezone) if timezone else None,
                     hashlib.sha256(source).hexdigest(),width,height,hashlib.sha256(clean).hexdigest(),
-                    'reuse' if clean==source else 'sanitize_then_reuse',action,*ts)
+                    'reuse' if clean==source else 'sanitize_then_reuse',action,*ts,photo_gps=photo_gps)
         # Header inspection did not decode pixels; legacy now decodes once and
         # generates both derivatives from that same image. Its HDR/color checks
         # and decoder reductions are retained.
         result=legacy.normalize(source,'source')
         with Image.open(BytesIO(result.thumbnail_bytes)) as thumb:ts=thumb.size
-        return PreparedMediaResult(**asdict(result),original_width=width,original_height=height,
+        return PreparedMediaResult(**{**asdict(result),'photo_gps':photo_gps},original_width=width,original_height=height,
             output_sha256=hashlib.sha256(result.webp_bytes).hexdigest(),body_action='normalize',
             thumbnail_action='normalize',thumbnail_width=ts[0],thumbnail_height=ts[1])
     except MediaValidationError:raise

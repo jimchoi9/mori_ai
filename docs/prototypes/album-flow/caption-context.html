@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>mori · 글귀 비교</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f1eb;color:#293d34;font-family:system-ui,sans-serif}main{max-width:680px;margin:0 auto;padding:28px 20px 48px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}a{color:inherit}b.logo{font:italic bold 36px Georgia,serif}h1{font-size:24px;margin-bottom:8px}.note{font-size:14px;color:#657068;line-height:1.7}select,button{font:inherit;font-size:16px}select{width:100%;padding:14px;border:1px solid #c8cec2;border-radius:12px;background:#fffdf7;color:inherit;margin:18px 0}.card{border:1px solid #d9ddcf;border-radius:18px;background:#fffdf7;padding:20px;margin:16px 0}.label{font-size:13px;color:#657068;margin:0 0 12px}.scene{padding:12px;background:#eef0e6;border-radius:10px;font-size:14px;line-height:1.6}.caption{font-size:19px;line-height:1.7;min-height:65px;margin:16px 0 4px}.switch{display:flex;gap:8px;margin:18px 0 0}.switch button{flex:1;border:1px solid #c8cec2;border-radius:10px;padding:12px 8px;background:transparent;color:inherit}.switch button[aria-pressed=true]{background:#3e5a48;color:white;border-color:#3e5a48}#explanation{line-height:1.8;font-size:14px}details{margin-top:26px;font-size:13px;line-height:1.8}summary{cursor:pointer}h2{font-size:16px;font-weight:600;margin:0 0 12px}
+</style></head><body><main><header><b class="logo">mori</b><a href="/?v=6">앨범 목업</a></header>
+<h1>장소와 행동으로 남기는 기록</h1><p class="note">동작 비교용 목업입니다. 문장은 직접 작성한 예시이며 실제 AI 결과가 아닙니다.</p>
+<label for="scenario">비교할 상황</label><select id="scenario"></select>
+<section class="card"><h2>주변 사진의 단서</h2><div class="scene">12:00 · GPS에서 얻은 지역: 기장 (합성 예시)</div><p class="note">이 사진의 글·사람 관계·행동은 가져오지 않습니다.</p><div class="switch"><button data-context="false" aria-pressed="true">사진만 참고</button><button data-context="true" aria-pressed="false">지역 단서 참고</button></div></section>
+<section class="card" aria-live="polite"><h2>이후 추가한 사진</h2><div id="scene" class="scene"></div><p id="result" class="caption"></p></section>
+<p id="explanation"></p><p class="note">이미 저장된 다른 사진의 글은 그대로 유지됩니다.</p>
+<details><summary>시험 기준 보기</summary>시간은 촬영시간만 사용합니다. 임시 기준은 60분 이내, GPS가 양쪽에 있으면 500m 이내입니다. 촬영시간 없이 GPS만 가까우면 장소만 참고합니다(100m 이내). 관계 정보는 어떤 경우에도 다른 사진에 전달하지 않습니다. 특정 상호는 이번 사진에서 확인해야 합니다. 실제 사진과 AI로 추가 검증해야 합니다. 이 화면의 선택 버튼과 설명은 비교용이며 제품에 추가할 UI가 아닙니다.</details>
+</main><script src="caption-context.js?v=2"></script></body></html>

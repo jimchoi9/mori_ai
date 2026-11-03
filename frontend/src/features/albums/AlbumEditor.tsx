@@ -11,6 +11,7 @@ import { UploadPanel } from '../uploads/UploadPanel';
 import { albumPath, requestIntents } from '../generation/flow';
 import { DevAiNotice } from '../generation/DevAiNotice';
 import { usePrivateRequest } from '../generation/usePrivateRequest';
+const ContentManager=lazy(()=>import('../content/ContentManager').then(module=>({default:module.ContentManager})));
 const EasyAlbumUpload=lazy(()=>import('../uploads/EasyAlbumUpload').then(module=>({default:module.EasyAlbumUpload})));
 const labels: Record<string,string>={reserved:'전송 대기',validating:'사진 검증·정규화 중',ready:'준비 완료',rejected:'검증 실패 · 삭제 후 다시 첨부',expired:'업로드 만료 · 삭제 후 다시 첨부'};
 function Photo({page,access,renew}:{page:Page;access?:MediaAccess;renew:()=>void}) {
@@ -59,5 +60,6 @@ export function AlbumEditor({userId}:{userId:string}) {
  const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  if(config.isPending)return <p role="status">사진첩을 준비하고 있어요…</p>;
  if(!config.data)return <p role="alert">{errorText(config.error)} <button onClick={()=>void config.refetch()}>다시 불러오기</button></p>;
+ if(config.data.album_content_enabled)return <Suspense fallback={<p role="status">앨범을 불러오는 중…</p>}><ContentManager userId={userId}/></Suspense>;
  return config.data.easy_upload?.enabled?<Suspense fallback={<p role="status">사진첩을 준비하고 있어요…</p>}><EasyAlbumUpload userId={userId} maxPhotos={config.data.easy_upload.max_photos}/></Suspense>:<LegacyAlbumEditor userId={userId}/>;
 }

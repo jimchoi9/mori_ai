@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const dir=await mkdtemp(join(tmpdir(),'android-heic-'));
@@ -52,6 +52,32 @@ test('the native HEIC path stays native without creating or loading a decoder wo
  const stats=browser();globalThis.Image=class{naturalWidth=4000;naturalHeight=2252;set src(value){if(value)queueMicrotask(()=>this.onload?.());}removeAttribute(){}};
  const result=await optimizePhoto(heic(),new AbortController().signal);
  assert.equal(result.file.type,'image/webp');assert.equal(stats.workers,0);
+});
+test('real primary HEIC capture date survives both native and fallback optimization, separately from WebP bytes',async()=>{
+ const bytes=await readFile('../tests/fixtures/media/capture-primary-second.heic');
+ for(const native of [false,true]){
+  const stats=browser();
+  if(native)globalThis.Image=class{naturalWidth=64;naturalHeight=48;set src(value){if(value)queueMicrotask(()=>this.onload?.());}removeAttribute(){}};
+  const original=new File([bytes],'primary.heic',{type:'image/heic',lastModified:123});
+  const result=await optimizePhoto(original,new AbortController().signal);
+  assert.equal(result.preprocessing.captured_at_raw,'2026:10:01 12:30:00');
+  assert.equal(result.preprocessing.captured_timezone,'+09:00');
+  assert.equal(result.file.lastModified,123);assert.equal(result.file.type,'image/webp');
+  assert.equal(new TextDecoder().decode(await result.file.arrayBuffer()).includes('2026:'),false);
+  assert.equal(stats.workers,native?0:1);
+ }
+});
+test('primary HEIC GPS survives native and fallback optimization without capture date or image metadata',async()=>{
+ const bytes=await readFile('../tests/fixtures/media/capture-primary-gps.heic');
+ for(const native of [false,true]){
+  const stats=browser();
+  if(native)globalThis.Image=class{naturalWidth=64;naturalHeight=48;set src(value){if(value)queueMicrotask(()=>this.onload?.());}removeAttribute(){}};
+  const result=await optimizePhoto(new File([bytes],'gps.heic',{type:'image/heic'}),new AbortController().signal);
+  assert.deepEqual(result.preprocessing.gps,{latitude:35.24,longitude:129.22});
+  assert.equal(result.preprocessing.captured_at_raw,null);
+  assert.equal(new TextDecoder().decode(await result.file.arrayBuffer()).includes('Exif'),false);
+  assert.equal(stats.workers,native?0:1);
+ }
 });
 test('non-HEIC decode failures do not load a HEIC worker',async()=>{
  const stats=browser();await assert.rejects(optimizePhoto(new File(['bad png'],'bad.png',{type:'image/png'}),new AbortController().signal),/\(D1\)/);

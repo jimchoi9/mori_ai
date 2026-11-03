@@ -25,9 +25,12 @@ async def start(client,db):
 
 async def detail(client,aid):return (await client.get(f'/api/v1/albums/{aid}')).json()['data']['detail']
 
-async def upload(client,db,me,aid,settings,*,replace=None,validate=True):
+async def upload(client,db,me,aid,settings,*,replace=None,validate=True,captured=None,modified=None,gps=None):
     d=await detail(client,aid);out=BytesIO();Image.new('RGB',(600,400),'green').save(out,format='WEBP');data=out.getvalue()
     body={'expected_version':d['album']['version'],'files':[optimized(bytes=len(data))]}
+    body['files'][0]['preprocessing']['captured_at_raw']=captured
+    if gps is not None:body['files'][0]['preprocessing']['gps']=gps
+    if modified:body['files'][0]['file_last_modified_at']=modified
     if replace:body['replaces_page_id']=replace
     h=headers(me,str(uuid4()));r=await client.post(f'/api/v1/albums/{aid}/uploads',json=body,headers=h)
     assert r.status_code==201,r.text
@@ -49,9 +52,110 @@ async def save(client,me,aid,page,text):
     assert r.status_code==200,r.text
     return r
 
+
+@pytest.mark.asyncio
+async def test_new_content_uses_capture_date_with_modified_fallback_and_stable_ties(client,db):
+    me,aid,s=await start(client,db)
+    late=await upload(client,db,me,aid,s,captured='2026:10:03 12:00:00')
+    early=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    middle=await upload(client,db,me,aid,s,modified='2026-10-02T03:00:00Z')
+    tie=await upload(client,db,me,aid,s,captured='2026:10:02 12:00:00')
+    d=await detail(client,aid)
+    assert d['order_mode']=='date'
+    assert [p['id'] for p in d['pages']]==[u['page_id'] for u in (early,middle,tie,late)]
+    assert [p['sort_date_source'] for p in d['pages']]==['exif','file_modified','exif','exif']
+    assert [p['position'] for p in d['pages']]==[1,2,3,4]
+    worker=ContentWorker(db,s,client._transport.app.state.media_storage)
+    for _ in range(4):await worker.run_once()
+    async with db() as session:
+        album=await session.get(Album,UUID(aid))
+        assert [p['id'] for p in album.content_manifest]==[p['id'] for p in d['pages']]
+
+
+@pytest.mark.asyncio
+async def test_date_sort_is_explicit_preserves_text_and_manual_order_then_appends(client,db):
+    me,aid,s=await start(client,db)
+    late=await upload(client,db,me,aid,s,captured='2026:10:03 12:00:00')
+    early=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    d=await detail(client,aid)
+    await save(client,me,aid,next(p for p in d['pages'] if p['id']==early['page_id']),'내가 적은 장소')
+    await save(client,me,aid,next(p for p in d['pages'] if p['id']==late['page_id']),'늦은 날의 기록')
+    assert (await detail(client,aid))['album']['status']=='published'
+    ids=[late['page_id'],early['page_id']]
+    d=await detail(client,aid)
+    assert (await client.put(f'/api/v1/albums/{aid}/page-order',json={'expected_version':d['album']['version'],'page_ids':ids},headers=headers(me))).status_code==200
+    older=await upload(client,db,me,aid,s,captured='2026:09:01 12:00:00')
+    await save(client,me,aid,next(p for p in (await detail(client,aid))['pages'] if p['id']==older['page_id']),'추가한 기록')
+    d=await detail(client,aid)
+    assert d['order_mode']=='manual' and [p['id'] for p in d['pages']]==ids+[older['page_id']]
+    version=d['album']['version']
+    r=await client.post(f'/api/v1/albums/{aid}/date-order',json={'expected_version':version},headers=headers(me))
+    assert r.status_code==200,r.text
+    d=r.json()['data']['detail']
+    assert d['order_mode']=='date'
+    assert [p['id'] for p in d['pages']]==[older['page_id'],early['page_id'],late['page_id']]
+    assert d['pages'][1]['caption_text']=='내가 적은 장소'
+    assert (await client.post(f'/api/v1/albums/{aid}/date-order',json={'expected_version':version},headers=headers(me))).status_code==409
+    async with db() as session:
+        assert await session.scalar(select(func.count()).select_from(AlbumCaptionJob))==0
+        album=await session.get(Album,UUID(aid))
+        assert [p['id'] for p in album.content_manifest]==[p['id'] for p in d['pages']]
+
+
+@pytest.mark.asyncio
+async def test_enabling_existing_content_preserves_existing_order(client,db):
+    me,aid,s=await start(client,db)
+    for date in ['2026:10:03 12:00:00','2026:10:01 12:00:00']:
+        await upload(client,db,me,aid,s,captured=date)
+    async with db() as session,session.begin():
+        album=await session.get(Album,UUID(aid));album.content_enabled=False
+    before=await detail(client,aid)
+    assert (await client.post(f'/api/v1/albums/{aid}/content',json={},headers=headers(me))).status_code==200
+    after=await detail(client,aid)
+    assert after['order_mode']=='manual'
+    assert [p['id'] for p in after['pages']]==[p['id'] for p in before['pages']]
+
+
+@pytest.mark.asyncio
+async def test_date_sort_refuses_pending_work_and_has_owner_csrf_boundaries(client,db):
+    me,aid,s=await start(client,db)
+    await upload(client,db,me,aid,s,validate=False)
+    d=await detail(client,aid);path=f'/api/v1/albums/{aid}/date-order';body={'expected_version':d['album']['version']}
+    assert (await client.post(path,json=body,headers=headers(me))).status_code==409
+    assert (await client.post(path,json=body)).status_code==403
+    await login(client,'beta')
+    other=(await client.get('/api/v1/me')).json()['data']
+    assert (await client.post(path,json=body,headers=headers(other))).status_code==404
+
+
+@pytest.mark.asyncio
+async def test_default_date_order_replacement_keeps_position_and_pending_replacement_is_hidden(client,db):
+    me,aid,s=await start(client,db)
+    first=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    last=await upload(client,db,me,aid,s,captured='2026:10:03 12:00:00')
+    pending=await upload(client,db,me,aid,s,replace=last['page_id'],validate=False)
+    middle=await upload(client,db,me,aid,s,captured='2026:10:02 12:00:00')
+    d=await detail(client,aid)
+    assert [p['id'] for p in d['pages']]==[first['page_id'],middle['page_id'],last['page_id']]
+    assert [p['position'] for p in d['pages']]==[1,2,3]
+    assert (await client.delete(f'/api/v1/albums/{aid}/pages/{pending["page_id"]}?expected_version={d["album"]["version"]}',headers=headers(me))).status_code==200
+    replacement=await upload(client,db,me,aid,s,replace=first['page_id'],captured='2026:12:01 12:00:00')
+    assert [p['id'] for p in (await detail(client,aid))['pages']]==[replacement['page_id'],middle['page_id'],last['page_id']]
+
+
+@pytest.mark.asyncio
+async def test_date_replacement_keeps_equal_time_slot_when_later_upload_sorts_again(client,db):
+    me,aid,s=await start(client,db)
+    first=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    second=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    replacement=await upload(client,db,me,aid,s,replace=first['page_id'],captured='2026:12:01 12:00:00')
+    earlier=await upload(client,db,me,aid,s,captured='2026:09:01 12:00:00')
+    d=await detail(client,aid)
+    assert [p['id'] for p in d['pages']]==[earlier['page_id'],replacement['page_id'],second['page_id']]
+
 @pytest.mark.asyncio
 async def test_incremental_caption_auto_publishes_without_image_generation(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     worker=ContentWorker(db,s,client._transport.app.state.media_storage)
     await worker.run_once();d=await detail(client,aid)
     assert d['album']['status']=='published' and d['album']['content_ready']
@@ -68,7 +172,7 @@ async def test_incremental_caption_auto_publishes_without_image_generation(clien
 
 @pytest.mark.asyncio
 async def test_manual_caption_wins_before_dispatch_and_blank_is_allowed(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     await save(client,me,aid,(await detail(client,aid))['pages'][0],'')
     worker=ContentWorker(db,s,client._transport.app.state.media_storage);await worker.run_once()
     d=await detail(client,aid);assert d['pages'][0]['caption_text']=='' and d['album']['content_ready']
@@ -76,7 +180,7 @@ async def test_manual_caption_wins_before_dispatch_and_blank_is_allowed(client,d
 
 @pytest.mark.asyncio
 async def test_replacement_keeps_text_position_and_does_not_admit_new_ai(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     worker=ContentWorker(db,s,client._transport.app.state.media_storage);await worker.run_once()
     first=(await detail(client,aid))['pages'][0];await save(client,me,aid,first,'직접 적은 추억')
     replacement=await upload(client,db,me,aid,s,replace=first['id'],validate=False)
@@ -138,7 +242,7 @@ async def test_unknown_paid_caption_is_accounted_and_never_retried(client,db):
 
 @pytest.mark.asyncio
 async def test_replace_at_twenty_keeps_existing_book_while_other_additions_are_pending(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     await ContentWorker(db,s,client._transport.app.state.media_storage).run_once()
     d=await detail(client,aid);first=d['pages'][0]
     r=await client.post(f'/api/v1/albums/{aid}/uploads',json={'expected_version':d['album']['version'],'files':[optimized() for _ in range(19)]},headers=headers(me,str(uuid4())))
@@ -161,7 +265,7 @@ async def test_first_manual_caption_can_follow_ai_but_another_manual_writer_conf
 
 @pytest.mark.asyncio
 async def test_durable_response_recovers_after_crash_without_another_caption(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     worker=ContentWorker(db,s,client._transport.app.state.media_storage);await worker.scan();c=await worker.claim();assert await worker.dispatch(c)
     await worker.results.save(str(c['attempt']),{'caption':'중단 뒤에도 보존된 글귀예요','sha':c['sha']})
     async with db() as session,session.begin():
@@ -171,7 +275,7 @@ async def test_durable_response_recovers_after_crash_without_another_caption(cli
 
 @pytest.mark.asyncio
 async def test_late_ai_result_never_overwrites_manual_text(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     worker=ContentWorker(db,s,client._transport.app.state.media_storage);await worker.scan();c=await worker.claim();assert await worker.dispatch(c)
     await save(client,me,aid,(await detail(client,aid))['pages'][0],'이미 직접 작성한 글귀')
     await worker.apply(c,{'caption':'나중에 도착한 자동 글귀','sha':c['sha']})
@@ -190,7 +294,7 @@ async def test_first_upload_activates_once_and_preserves_old_request_replay(clie
 
 @pytest.mark.asyncio
 async def test_profile_change_keeps_pending_mini_and_admits_new_luna(client,db):
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     s.dev_ai_enabled=False;s.ai_real_calls_enabled=True
     worker=ContentWorker(db,s,client._transport.app.state.media_storage)
     await worker.scan()
@@ -207,7 +311,7 @@ async def test_invalid_response_cost_is_settled_without_retry(client,db):
     class Invalid:
         async def caption(self,*args,**kwargs):
             raise ProviderFailure('CAPTION_INVALID',dispatch_state='responded',cost_usd=Decimal('0.0001'),usage={'input_tokens':1},request_id='req_test')
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     s.dev_ai_enabled=False;s.ai_real_calls_enabled=True
     worker=ContentWorker(db,s,client._transport.app.state.media_storage,Invalid())
     await worker.run_once();await worker.run_once()
@@ -225,7 +329,7 @@ async def test_luna_worker_publishes_and_settles_luna_price(client,db):
     from pydantic import SecretStr
     import backend.generation.openai_provider as module
     import httpx,json,base64
-    me,aid,s=await start(client,db);await upload(client,db,me,aid,s)
+    me,aid,s=await start(client,db);s.easy_upload_max_photos=20;await upload(client,db,me,aid,s)
     s.dev_ai_enabled=False;s.ai_real_calls_enabled=True;s.album_content_caption_profile='luna_1024_v1'
     calls=[]
     def handle(request):
@@ -244,3 +348,48 @@ async def test_luna_worker_publishes_and_settles_luna_price(client,db):
             job=await session.scalar(select(AlbumCaptionJob));entry=await session.get(AIBudgetEntry,job.attempt_id)
             assert entry.actual_usd==Decimal('0.000110') and entry.status=='settled'
     finally:await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_manual_arrangement_survives_date_roundtrips_replacement_delete_and_add(client,db):
+    me,aid,s=await start(client,db)
+    a=await upload(client,db,me,aid,s,captured='2026:10:03 12:00:00')
+    b=await upload(client,db,me,aid,s,captured='2026:10:01 12:00:00')
+    c=await upload(client,db,me,aid,s,captured='2026:10:02 12:00:00')
+    d=await detail(client,aid)
+    ids=[a['page_id'],c['page_id'],b['page_id']]
+    r=await client.put(f'/api/v1/albums/{aid}/page-order',json={'expected_version':d['album']['version'],'page_ids':ids},headers=headers(me))
+    assert r.status_code==200,r.text
+    async def sort(mode):
+        fresh=await detail(client,aid)
+        r=await client.post(f'/api/v1/albums/{aid}/{mode}-order',json={'expected_version':fresh['album']['version']},headers=headers(me))
+        assert r.status_code==200,r.text
+        return r.json()['data']['detail']
+    for _ in range(2):
+        d=await sort('date');assert [p['id'] for p in d['pages']]==[b['page_id'],c['page_id'],a['page_id']]
+        d=await sort('manual');assert [p['id'] for p in d['pages']]==ids
+    await sort('date')
+    replacement=await upload(client,db,me,aid,s,replace=c['page_id'])
+    replacement2=await upload(client,db,me,aid,s,replace=replacement['page_id'])
+    fresh=await detail(client,aid)
+    r=await client.delete(f'/api/v1/albums/{aid}/pages/{b["page_id"]}?expected_version={fresh["album"]["version"]}',headers=headers(me))
+    assert r.status_code==200
+    added=await upload(client,db,me,aid,s,captured='2026:09:01 12:00:00')
+    d=await sort('manual')
+    assert [p['id'] for p in d['pages']]==[a['page_id'],replacement2['page_id'],added['page_id']]
+    async with db() as session:
+        album=await session.get(Album,UUID(aid))
+        assert album.manual_page_order==[p['id'] for p in d['pages']]
+    stale=d['album']['version']-1
+    assert (await client.post(f'/api/v1/albums/{aid}/manual-order',json={'expected_version':stale},headers=headers(me))).status_code==409
+
+
+@pytest.mark.asyncio
+async def test_manual_restore_has_owner_csrf_and_pending_boundaries(client,db):
+    me,aid,s=await start(client,db)
+    await upload(client,db,me,aid,s,validate=False)
+    d=await detail(client,aid);url=f'/api/v1/albums/{aid}/manual-order';body={'expected_version':d['album']['version']}
+    assert (await client.post(url,json=body)).status_code==403
+    assert (await client.post(url,json=body,headers=headers(me))).status_code==409
+    other=await login(client,'beta')
+    assert (await client.post(url,json=body,headers=headers(other))).status_code==404

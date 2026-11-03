@@ -12,14 +12,14 @@ const {transferPhoto,verifyPhoto,retry}=await import(join(dir,'transport.mjs'));
 const item=id=>({id,file:new File(['original'],`${id}.jpg`,{type:'image/jpeg'}),state:'selected'});
 const prepared=()=>({file:new File(['optimized'],'ready.webp',{type:'image/webp',lastModified:1}),preprocessing:{version:2,original_width:100,original_height:100,captured_at_raw:null,captured_timezone:null}});
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
-test('first transfer starts before the whole selection is prepared; one preparation ahead and two confirmations maximum',async()=>{
- const rows=Array.from({length:20},(_,i)=>item(String(i)));let made=0,active=0,peak=0,first=0,confirmed=0,checkPeak=0,checks=0;
+for(const count of [20,50])test(`${count} photos: transfer starts before all preparation, one preparation lane and two confirmations maximum`,async()=>{
+ const rows=Array.from({length:count},(_,i)=>item(String(i)));let made=0,active=0,peak=0,first=0,confirmed=0,checkPeak=0,checks=0;
  await sendPhotos(rows,new AbortController().signal,{
   prepare:async()=>{active++;peak=Math.max(peak,active);await tick();made++;active--;return prepared();},
   transfer:async row=>{if(!first)first=made;await tick();row.transferred=true;},
   verify:async()=>{checks++;checkPeak=Math.max(checkPeak,checks);await tick();checks--;confirmed++;},changed(){}
  });
- assert.ok(first<20);assert.equal(peak,1);assert.ok(checkPeak<=2);assert.equal(confirmed,20);assert.ok(rows.every(row=>row.state==='saved'&&!row.prepared));
+ assert.ok(first<count);assert.equal(peak,1);assert.ok(checkPeak<=2);assert.equal(confirmed,count);assert.ok(rows.every(row=>row.state==='saved'&&!row.prepared));
 });
 test('one optimization failure and one transmission failure preserve those photos while others finish; retry skips saved files',async()=>{
  const rows=[item('a'),item('b'),item('c'),item('d')];let fail=true;const sent=[];
