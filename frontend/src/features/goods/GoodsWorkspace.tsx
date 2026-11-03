@@ -1,3 +1,4 @@
+import {SiteHeader} from '../../components/layout/SiteHeader';
 import {Link} from 'react-router';
 import {GlassButton} from '../../components/ui/GlassButton';
 import {StylePicker} from './design/StylePicker';
@@ -20,9 +21,7 @@ export function GoodsWorkspace(props:GoodsWorkspaceProps){
  const {product,productLabel,loginBusy,setLoginBusy,showLogin,setShowLogin,agreed,setAgreed,remaining,step,setStep,style,setStyle,work,source,sourceAttached,setSourceAttached,selected,draft,setDraft,rows,busy,error,saved,placement,setPlacement,preview,tail,fileInput,pending,catalog,current,src,running,uncertain,ready,upload,generate,finish,newConversation,choose,openPreview,setProduct,setPreview}=useGoodsWorkspace(props);
  const consentControl=consent?.required?<div className="goods-consent"><label><input type="checkbox" checked={agreed} disabled={busy||running} onChange={e=>setAgreed(e.target.checked)}/>사진 업로드와 AI 처리에 동의합니다.</label><details><summary>안내 보기</summary><p>{consent.notice}</p></details></div>:null;
  return <section className="goods-studio" aria-label="굿즈 만들기">
-  <header className="goods-site-header"><Link className="goods-brand" to="/goods" aria-label="Mori 굿즈 만들기"><span className="goods-brand-mark" aria-hidden="true">m</span><span>Mori</span></Link>
-   <div className="goods-header-actions"><button type="button" className="goods-text-button" disabled={busy||running} onClick={()=>void newConversation()}><GoodsIcon name="plus" size={15}/>새 대화</button>{account}</div>
-  </header>
+  <SiteHeader account={account}><button type="button" className="goods-text-button" disabled={busy||running} onClick={()=>void newConversation()}><GoodsIcon name="plus" size={15}/>새 대화</button></SiteHeader>
   <div className="goods-studio-body">
    {saved?<section className="goods-saved"><span className="goods-success-mark"><GoodsIcon name="check" size={26}/></span><h1>내 디자인에 저장했어요</h1><p>이제 굿즈에 담을 사진을 더해 보세요.</p>
     {saved.fake&&<p className="goods-fake-note">개발용 가짜 AI 결과입니다.</p>}
