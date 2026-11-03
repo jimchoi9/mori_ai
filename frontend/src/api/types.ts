@@ -18,4 +18,4 @@ export interface GenerationAccepted { run_id:string; status_url:string; album_ve
 export interface ViewerPage { id:string; position:number; image:MediaRef; caption_text:string }
 export interface Viewer { generation_mode:GenerationMode; album_id:string; title:string; version:number; pages:ViewerPage[]; media_access:MediaAccess[]; music:{track_id:string;url:string;title:string}|null }
 
-export interface UploadPreprocessing { version:1|2; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null }
+export interface UploadPreprocessing { version:1|2; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null; gps?:{latitude:number;longitude:number} }

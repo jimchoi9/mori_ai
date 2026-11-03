@@ -50,6 +50,10 @@ class OrderBody(StrictBody):
     page_ids: list[UUID]=Field(max_length=50)
 
 
+class DateOrderBody(StrictBody):
+    expected_version: StrictInt=Field(ge=1)
+
+
 class CompleteBody(StrictBody):
     thumbnail_sha256: str|None=Field(default=None,pattern=r'^[0-9a-f]{64}$')
     sha256: str|None=Field(default=None,pattern=r'^[0-9a-f]{64}$')
@@ -78,6 +82,9 @@ async def private_user(request: Request):
 async def reserve(request:Request,album_id:UUID,body:ReservationBody,context:AuthContext=Depends(require_user),idempotency_key:str|None=Header(default=None)):
     require_csrf(request,context); validate_query(request,())
     identity=body.model_dump(mode='json')
+    for file in identity['files']:
+        hint=file.get('preprocessing')
+        if hint is not None and hint.get('gps') is None:hint.pop('gps',None)
     if identity.get('replaces_page_id') is None:identity.pop('replaces_page_id',None)
     # Adding an optional field must not invalidate reservations made by older clients.
     for entry in identity['files']:
@@ -153,6 +160,22 @@ async def access(request:Request,album_id:UUID,body:AccessBody,context:AuthConte
     require_csrf(request,context); validate_query(request,())
     async with request.app.state.session_factory() as s,s.begin():
         data=await service.media_access(s,context.user_id,album_id,body.asset_ids,signer(request))
+    return envelope(request,data)
+
+
+@router.post('/albums/{album_id}/date-order')
+async def date_order(request:Request,album_id:UUID,body:DateOrderBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    async with request.app.state.session_factory() as s,s.begin():
+        data=await service.order_by_date(s,context.user_id,album_id,body.expected_version)
+    return envelope(request,data)
+
+
+@router.post('/albums/{album_id}/manual-order')
+async def manual_order(request:Request,album_id:UUID,body:DateOrderBody,context:AuthContext=Depends(require_user)):
+    require_csrf(request,context);validate_query(request,())
+    async with request.app.state.session_factory() as s,s.begin():
+        data=await service.restore_manual_order(s,context.user_id,album_id,body.expected_version)
     return envelope(request,data)
 
 

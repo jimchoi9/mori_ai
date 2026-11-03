@@ -5,6 +5,8 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN node --version && npm --version && npm ci && npm ls --depth=0
 COPY frontend/ ./
 COPY tests/fixtures/media/primary-second.heic /tests/fixtures/media/primary-second.heic
+COPY tests/fixtures/media/capture-primary-second.heic /tests/fixtures/media/capture-primary-second.heic
+COPY tests/fixtures/media/capture-primary-gps.heic /tests/fixtures/media/capture-primary-gps.heic
 RUN npm run build
 RUN ./node_modules/.bin/tsc src/api/client.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/client-check \
     && node tests/upload_headers.test.mjs file:///tmp/client-check/api/client.js \
@@ -28,8 +30,11 @@ RUN node tests/admin_access.test.mjs && node tests/admin_management.test.mjs
 
 RUN node tests/ui_components.test.mjs && node tests/review_navigation.test.mjs && node tests/generation_steps.test.mjs
 
-RUN node tests/upload_preprocess.test.mjs ../src/features/uploads/preprocess.ts \
-    && node tests/upload_preprocess_hook.test.mjs
+RUN ./node_modules/.bin/esbuild src/features/uploads/preprocess.ts --bundle --platform=node --format=esm --outfile=/tmp/upload-preprocess-check.mjs \
+    && node tests/upload_preprocess.test.mjs file:///tmp/upload-preprocess-check.mjs \
+    && node tests/upload_preprocess_hook.test.mjs \
+    && node tests/capture_metadata.test.mjs
+RUN node tests/content_order.test.mjs && node tests/album_flow.test.mjs
 
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js

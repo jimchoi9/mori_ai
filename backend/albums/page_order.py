@@ -50,10 +50,39 @@ async def reorder(session,album,pages):
     return True
 
 
+async def date_ordered(session,album,pages,uploads):
+    """Keep replacement slots and exclude unfinished replacements from visible order."""
+    by_page={u.page_id:u for u in uploads}
+    hidden=[p for p in pages if by_page.get(p.id) and by_page[p.id].replaces_page_id and by_page[p.id].status!='ready']
+    hidden_ids={p.id for p in hidden}
+    replaced={u.page_id:u.replaces_page_id for u in uploads if u.replaces_page_id}
+    indexes={p.id:p.selection_index for p in pages}
+    if replaced:
+        indexes.update((await session.execute(select(Page.id,Page.selection_index).where(Page.album_id==album.id,Page.id.in_(set(replaced.values()))))).all())
+    def key(page):
+        origin=page.id;visited=set()
+        while origin in replaced and origin not in visited:
+            visited.add(origin);origin=replaced[origin]
+        ready=by_page.get(page.id) and by_page[page.id].status=='ready'
+        return (0,page.sort_date or '',indexes.get(origin,page.selection_index)) if ready else (1,'',page.selection_index)
+    return sorted((p for p in pages if p.id not in hidden_ids),key=key)+hidden
+
+
 async def finish_batch(session,album,batch_id):
     uploads=list((await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.batch_id==batch_id,Page.removed_at.is_(None)))).all())
-    if album.order_mode!='date' or any(u.status not in {'ready','rejected','expired'} for u in uploads): return False
+    if album.order_mode!='date' or any(u.replaces_page_id or u.status not in {'ready','rejected','expired'} for u in uploads): return False
     pages=await active_pages(session,album.id)
-    states={u.page_id:u.status for u in (await session.scalars(select(Upload).where(Upload.album_id==album.id))).all()}
-    pages.sort(key=lambda p:(0,p.sort_date or '',p.selection_index) if states.get(p.id)=='ready' else (1,'',p.selection_index))
-    return await reorder(session,album,pages)
+    all_uploads=list((await session.scalars(select(Upload).where(Upload.album_id==album.id))).all())
+    return await reorder(session,album,await date_ordered(session,album,pages,all_uploads))
+
+
+def restored_manual_order(pages, saved, uploads):
+    """Removed photos disappear; replacements inherit a slot; additions append."""
+    ranks={str(page_id):index for index,page_id in enumerate(saved)}
+    replaced={str(u.page_id):str(u.replaces_page_id) for u in uploads if u.replaces_page_id}
+    def key(page):
+        origin=str(page.id);seen=set()
+        while origin not in ranks and origin in replaced and origin not in seen:
+            seen.add(origin);origin=replaced[origin]
+        return (0,ranks[origin]) if origin in ranks else (1,page.selection_index)
+    return sorted(pages,key=key)

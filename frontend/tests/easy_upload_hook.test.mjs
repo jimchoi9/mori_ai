@@ -13,10 +13,10 @@ await build({entryPoints:['src/features/uploads/useEasyUploads.ts'],bundle:true,
  b.onLoad({filter:/.*/,namespace:'stub'},({path})=>({loader:'js',contents:path==='react'?`export const useState=v=>globalThis.hooks.state(v),useRef=v=>globalThis.hooks.ref(v),useEffect=f=>globalThis.hooks.effect(f);`:path==='optimize'?`export const optimizePhoto=(...args)=>globalThis.prepare(...args);`:`export const transferPhoto=(...args)=>globalThis.transfer(...args),verifyPhoto=(...args)=>globalThis.verify(...args);`}));
 }}]});
 const {useEasyUploads}=await import(join(dir,'hook.mjs'));
-function harness(album='a',known=[],user='u'){
+function harness(album='a',known=[],user='u',limit=20){
  const cells=[],cleanups=[];let cursor=0,initial=true;
  const hooks={state(value){const index=cursor++;if(!(index in cells))cells[index]=value;return [cells[index],next=>cells[index]=typeof next==='function'?next(cells[index]):next];},ref(value){const index=cursor++;return cells[index]??={current:value};},effect(work){if(initial)cleanups.push(work());}};
- return {render(){globalThis.hooks=hooks;cursor=0;const result=useEasyUploads(album,user,async()=>{},20,known);initial=false;return result;},close(){cleanups.forEach(f=>f());}};
+ return {render(){globalThis.hooks=hooks;cursor=0;const result=useEasyUploads(album,user,async()=>{},limit,known);initial=false;return result;},close(){cleanups.forEach(f=>f());}};
 }
 const photo=i=>new File(['original'],`${i}.jpg`,{type:'image/jpeg'});
 const response=data=>new Response(JSON.stringify({data}));
@@ -97,5 +97,20 @@ test('cancelling a replacement with a lost confirmation never deletes an already
  globalThis.prepare=async file=>({file});globalThis.transfer=async(_album,item)=>{item.pageId='new-photo';item.transferred=true;};globalThis.verify=async()=>{throw Error('confirmation interrupted');};
  await hook.replace(photo(1),'old-photo');hook=h.render();assert.equal(hook.items[0].state,'failed');visible=true;
  await hook.remove(hook.items[0]);assert.equal(h.render().items[0].state,'saved');assert.equal(deletes,0);h.close();
+});
+test('50-photo selection keeps an excess file, then saves all 50 and retries only an interrupted confirmation',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));const known=[],h=harness('fifty',known,'u',50);
+ let hook=h.render();hook.select(Array.from({length:51},(_,i)=>photo(i)),50);hook=h.render();
+ let prepared=0;const sent=[];let interrupt=true;
+ globalThis.fetch=async()=>response({detail:{pages:known.map(id=>({id}))}});
+ globalThis.prepare=async file=>{prepared++;return {file};};
+ globalThis.transfer=async(_album,item)=>{if(!item.transferred){sent.push(item.id);item.pageId=item.id;item.transferred=true;known.push(item.id);}};
+ globalThis.verify=async(_album,item)=>{if(interrupt&&item.file.name==='25.jpg')throw Error('confirmation interrupted');};
+ await hook.send();assert.equal(prepared,0);assert.equal(h.render().items.length,51);
+ await h.render().remove(h.render().items[50]);await h.render().send();
+ hook=h.render();assert.equal(hook.items.filter(item=>item.state==='saved').length,49);assert.equal(prepared,50);
+ interrupt=false;await hook.send();hook=h.render();
+ assert.equal(hook.items.filter(item=>item.state==='saved').length,50);assert.equal(new Set(sent).size,50);assert.equal(sent.length,50);assert.equal(prepared,50);
+ assert.ok(hook.items.every(item=>!item.prepared));h.close();
 });
 test.after(()=>rm(dir,{recursive:true,force:true}));

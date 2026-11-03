@@ -1,5 +1,7 @@
 # Lightsail 배포 — ai_mori
 
+> 2026-11-02: 공통계약v1.22의 기본 한도는50장이다. 기존 서버 환경 파일에 `EASY_UPLOAD_MAX_PHOTOS=20`이 명시돼 있으면 계속20장이 적용된다.50장 시험 배포 시 사용자가 해당 값을50으로 변경하고 검증된 새 이미지로 배포한다. 배포 후 `/api/v1/client-config`의 `easy_upload.max_photos=50`과 관리 화면의 사진 수 표시가 `현재 장수 / 50`인지 확인한다. 실제 서버 설정 변경/배포는 아직 수행하지 않았다.
+
 ## Android HEIC 웹 수정 반영 — 2026-10-31
 
 S25 Ultra의 실제 HEIC 읽기/미리보기 재검증이 끝나면 USB는 분리해도 된다. USB 진단용 서버·연결은 운영 반영에 필요하지 않다. 웹 코드·HEIC worker·코덱 자산이 새 빌드에 포함돼야 하므로 기존 컨테이너를 단순 restart하는 것으로는 반영되지 않는다.
@@ -192,7 +194,7 @@ NORMALIZED_MAX_BYTES=1000000
 ```dotenv
 GOODS_CHECKOUT_MODE=test
 EASY_UPLOAD_ENABLED=true
-EASY_UPLOAD_MAX_PHOTOS=20
+EASY_UPLOAD_MAX_PHOTOS=50
 ALBUM_CONTENT_ENABLED=true
 ALBUM_CONTENT_CAPTION_PROFILE=luna_1024_v1
 GOODS_DELIVERY_ORIGIN=https://aimori.kro.kr
@@ -231,3 +233,14 @@ sudo bash scripts/lightsail.sh exec -T web python -m backend.access admin-revoke
 기존 열린 세션도 다음 관리 API 요청에서 현재 권한을 다시 확인한다. 승인/취소는 다음 일반 보호 요청에서 반영되며 기존 대기·진행 작업의 취소/비용 정책을 바꾸지 않는다. `ACCESS_MODE=all_authenticated`이면 일반 이용 승인은 접근 제한에 사용되지 않지만 관리자 검사는 유지된다.
 
 추가 env나 프론트 빌드용 비밀키는 없다. 모델 필드가 추가되므로 새 코드 실행 전 기존 배포 절차의 migration을 완료해야 한다. 관리자 정보가 남아 있으면0017 downgrade는 거부되므로 운영에서 DB downgrade로 권한 정보를 지우지 않는다. 이 기능에는 웹 관리자 변경·사용자 삭제·사진 열람·감사 이력 화면이 없다.
+
+## GPS·장소/행동 글귀 선택 — 2026-11-02 미배포
+
+이번작업은migration0018(수동배치)과0019(photo_gps)를포함한다. 새글에장소/행동방식을쓰려면사용자가배포할환경에서 `ALBUM_CONTENT_ENABLED=true`, `ALBUM_CONTENT_CAPTION_PROFILE=luna_places_1024_v1`을선택한다. `luna_1024_v1`은이전짧은글방식이고일반기본mini는그대로다. 이미작성된글/입장한job은바뀌지않는다. GPS추출은추가지도키가필요없다.
+
+서버반영은사용자가PR통합·전체CI/이미지게시후검증된40자리SHA를배포스크립트에전달하는기존절차를따른다. 에이전트는운영서버/환경을변경하지않았다. 실제GPS사진의지명정확도·실휴대폰검증은남아있으며이번표본결과를상용품질확정으로해석하지않는다. GPS행이있는DB는0019 downgrade를거절하므로임의롤백전에자료보존계획이필요하다.
+
+
+### 장소·경험 글귀 v1.25 반영 — 2026-11-03
+
+`ALBUM_CONTENT_CAPTION_PROFILE=luna_places_1024_v1` 선택 환경의 새 job만 `album-place-experience-v1`을 사용한다. 이미 선택 중인 환경이라면 이 코드 배포 후 새 job부터 적용된다. 기존 `album-place-action-v1`·짧은글·mini job과 이미 저장된 글은 보존한다. 모델과단가·전역한도·사진당1호출은유지하며 추가지도키나추가입력은필요없다. 이번 v1.25 자체는 schema변경이 없으나 같은작업브랜치의0018/0019 migration은배포대상이다. 유저편집글/교체글/구job를삭제하거나재생성하지않는다. 에이전트는 운영환경 수정·서버접속·배포를 수행하지 않았다.

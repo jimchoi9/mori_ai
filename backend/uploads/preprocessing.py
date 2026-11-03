@@ -1,8 +1,13 @@
 """Bounded browser hints, checked only after authoritative image validation."""
 from PIL import Image
-from pydantic import Field, StrictInt, StrictStr, model_validator
+from pydantic import Field, StrictFloat, StrictInt, StrictStr, model_validator
 from backend.http.schemas import StrictBody
 from backend.media.contracts import MediaValidationError
+
+
+class PhotoGPS(StrictBody):
+    latitude: StrictFloat = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: StrictFloat = Field(ge=-180, le=180, allow_inf_nan=False)
 
 
 class PreprocessingBody(StrictBody):
@@ -11,6 +16,7 @@ class PreprocessingBody(StrictBody):
     original_height: StrictInt=Field(ge=1,le=40_000_000)
     captured_at_raw: StrictStr|None=Field(default=None,max_length=256)
     captured_timezone: StrictStr|None=Field(default=None,max_length=64)
+    gps: PhotoGPS|None=None
 
     @model_validator(mode='after')
     def pixel_limit(self):

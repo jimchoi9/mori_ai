@@ -12,6 +12,8 @@ from backend.generation.budget import BudgetLedger,BudgetExceeded
 from backend.generation.openai_provider import CAPTION_RESERVATION_USD,ProviderFailure
 from backend.storage.factory import result_store
 from backend.album_content.caption import caption
+from backend.album_content.place_context import load_images
+from backend.album_content.prompts import PLACE_CONTEXT_VERSIONS
 
 
 class ContentWorker:
@@ -59,13 +61,17 @@ class ContentWorker:
                     if image.format!='WEBP' or image.width*image.height>40_000_000:raise ValueError('input')
                     image.load()
             await asyncio.to_thread(validate)
+            references=await load_images(self.store,c.get('place_references',[])) if real else []
             if real:
                 reserved=await self.ledger.reserve(c['attempt'],CAPTION_RESERVATION_USD)
                 if not reserved:return await self.fail(c,'AI_RESULT_UNKNOWN')
             dispatched=await self.dispatch(c)
             if not dispatched:return await self.fail(c,'STATE_CONFLICT',unsent=True)
             if real:
-                response=await caption(self.provider,data,c['config'])
+                if c['config'].get('caption_prompt_version') in PLACE_CONTEXT_VERSIONS:
+                    response=await caption(self.provider,data,c['config'],reference_images=references)
+                else:
+                    response=await caption(self.provider,data,c['config'])
                 payload={'caption':response.caption,'sha':c['sha'],'usage':response.usage,'cost':str(response.cost_usd) if response.cost_usd is not None else None,'request_id':response.request_id}
                 await self.ledger.settle(c['attempt'],response.cost_usd,response.usage,response.request_id)
             else:

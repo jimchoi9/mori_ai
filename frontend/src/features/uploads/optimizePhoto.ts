@@ -1,6 +1,7 @@
 import {photoTask,canvasBlob,readPhoto} from './photoDecoder';
 import type {DecodedPhoto} from './heicDecoder';
-import {captureHints,inspectImage,resizeDimensions,type PreparedFile} from './preprocess';
+import {inspectImage,resizeDimensions,type PreparedFile} from './preprocess';
+import {readCaptureMetadata} from './captureMetadata';
 
 const MAX_BYTES=20*1024*1024,MAX_PIXELS=40_000_000;
 const pause=(signal:AbortSignal)=>new Promise<void>((resolve,reject)=>{
@@ -17,7 +18,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
  const ascii=(from:number,to:number)=>String.fromCharCode(...bytes.slice(from,to));
  const mime=bytes[0]===255&&bytes[1]===216?'image/jpeg':bytes[0]===137&&bytes[1]===80?'image/png':ascii(0,4)==='RIFF'&&ascii(8,12)==='WEBP'?'image/webp':file.type||(/\.hei[cf]$/i.test(file.name)?'image/heic':'');
  if(!['image/jpeg','image/png','image/webp','image/heic','image/heif'].includes(mime))throw new Error('JPEG·PNG·WebP·HEIC 사진을 선택해 주세요. 선택한 파일은 유지돼요.');
- const info=inspectImage(bytes,mime,Number.MAX_SAFE_INTEGER),capture=info??captureHints(bytes,mime);
+ const info=inspectImage(bytes,mime,Number.MAX_SAFE_INTEGER),capture=readCaptureMetadata(bytes,mime);
  if(info&&info.width*info.height>MAX_PIXELS)throw new Error('이 사진 크기를 처리하지 못했어요. 선택한 사진은 유지돼요.');
  const parts:BlobPart[]=[];let offset=0;
  for(const [from,to] of info?.omit??[]){parts.push(file.slice(offset,from));offset=to;}parts.push(file.slice(offset));
@@ -60,7 +61,7 @@ async function optimize(file:File,signal:AbortSignal):Promise<PreparedFile> {
    let thumbnail:Blob|undefined;
    try{const thumb=await encode(480,.8);if(thumb.size<=200_000)thumbnail=thumb;}catch{signal.throwIfAborted();}
    const make=(data:Blob,suffix='')=>new File([data],file.name.replace(/\.[^.]*$/,'')+suffix+'.webp',{type:'image/webp',lastModified:file.lastModified});
-   return {file:make(body),...(thumbnail?{thumbnail:make(thumbnail,'.thumb')}:{ }),preprocessing:{version:2,original_width:originalWidth,original_height:originalHeight,captured_at_raw:capture.date,captured_timezone:capture.timezone}};
+   return {file:make(body),...(thumbnail?{thumbnail:make(thumbnail,'.thumb')}:{ }),preprocessing:{version:2,original_width:originalWidth,original_height:originalHeight,captured_at_raw:capture.date,captured_timezone:capture.timezone,...(capture.gps?{gps:capture.gps}:{})}};
   }catch(error){signal.throwIfAborted();lastError=error;}
   finally{image?.close();if(canvas){canvas.width=0;canvas.height=0;}}
  }

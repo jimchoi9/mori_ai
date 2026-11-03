@@ -60,7 +60,7 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
   return()=>{draft.listeners.delete(update);draft.controller?.abort();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);window.removeEventListener('mori:session-expired',expire);window.removeEventListener('beforeunload',leave);};
  },[draft]);
  function select(files:File[],remaining:number){
-  if(draft.busy)return;
+  if(draft.busy)return [];
   const accepted=/\.(jpe?g|png|webp|heic|heif)$/i;
   rememberBatches();
   draft.items=draft.items.filter(item=>item.state!=='saved'||!item.pageId||!knownIds.current.has(item.pageId));
@@ -68,8 +68,9 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
   const activeItemIds=new Set(draft.items.map(item=>item.id));
   draft.batches=draft.batches.map(batch=>({...batch,photos:batch.photos.filter(photo=>activeItemIds.has(photo.itemId)||!!photo.pageId&&(knownIds.current.has(photo.pageId)||activePageIds.has(photo.pageId)))}))
    .filter(batch=>batch.photos.length);
-  draft.items.push(...files.map(file=>({id:crypto.randomUUID(),file,state:'selected' as const,...(!accepted.test(file.name)?{state:'failed' as const,error:'사진 파일을 선택해 주세요.'}:{})})));
-  setError(files.length>remaining?`${files.length-remaining}장 초과했어요. 사진은 그대로 두었으니 초과한 만큼 선택 해제해 주세요.`:'');changed();
+  const selected=files.map(file=>({id:crypto.randomUUID(),file,state:'selected' as const,...(!accepted.test(file.name)?{state:'failed' as const,error:'사진 파일을 선택해 주세요.'}:{})}));
+  draft.items.push(...selected);
+  setError(files.length>remaining?`${files.length-remaining}장 초과했어요. 사진은 그대로 두었으니 초과한 만큼 선택 해제해 주세요.`:'');changed();return selected;
  }
  async function remove(item:TransferItem){
   if(draft.busy)return;

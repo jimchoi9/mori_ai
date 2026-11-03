@@ -88,7 +88,7 @@ async def reserve(session,owner,album_id,body,key,hashed,settings,signer,csrf):
         asset=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='source',storage_key=storage_key(owner,album_id,page.id,'source'),mime=mime,status='pending')
         session.add(asset); await session.flush(); page.source_asset_id=asset.id
         u=Upload(id=uuid4(),replaces_page_id=replacement,album_id=album_id,page_id=page.id,asset_id=asset.id,batch_id=batch,client_file_id=f.client_file_id,declared_bytes=f.bytes,file_last_modified_at=f.file_last_modified_at,expires_at=expiry,validation_config={'version':1,'media':config(settings),'upload_mime':mime,'storage_mode':signer.mode,'source_lifetime':'temporary',
-            **({'preprocessing':f.preprocessing.model_dump()} if f.preprocessing is not None else {})},created_at=stamp)
+            **({'preprocessing':f.preprocessing.model_dump(exclude={'gps'} if f.preprocessing.gps is None else set())} if f.preprocessing is not None else {})},created_at=stamp)
         if f.thumbnail is not None:
             if mime != 'image/webp': raise APIError(422,'VALIDATION_ERROR')
             thumb=MediaAsset(id=uuid4(),owner_id=owner,album_id=album_id,page_id=page.id,role='upload_thumbnail',storage_key=storage_key(owner,album_id,page.id,'upload_thumbnail'),mime='image/webp',status='pending',sha256=f.thumbnail.sha256)
@@ -161,11 +161,65 @@ async def order(session,owner,album_id,body):
     by_id={p.id:p for p in pages}
     if len(body.page_ids)!=len(pages) or set(body.page_ids)!=set(by_id): raise APIError(422,'VALIDATION_ERROR')
     changed = await reorder(session,parent,[by_id[p] for p in body.page_ids]+hidden)
+    saved=[str(page_id) for page_id in body.page_ids]
+    if parent.manual_page_order!=saved:
+        parent.manual_page_order=saved;changed=True
     if parent.order_mode != 'manual':
         parent.order_mode = 'manual'
         changed = True
     if changed:
         touch(session, parent)
+    if parent.content_enabled:
+        from backend.album_content.service import refresh_manifest
+        await refresh_manifest(session,parent)
+    return await get_album_detail(session,owner,album_id)
+
+
+async def order_by_date(session,owner,album_id,expected):
+    parent=await repo.album(session,owner,album_id);repo.draft(parent,expected)
+    await require_album_access(session,parent)
+    pages=await active_pages(session,album_id)
+    uploads=list((await session.scalars(select(Upload).join(Page,Page.id==Upload.page_id).where(Upload.album_id==album_id,Page.removed_at.is_(None)))).all())
+    if any(u.status in {'reserved','validating'} for u in uploads):
+        raise APIError(409,'STATE_CONFLICT','사진 저장이나 교체가 끝난 뒤 정렬해주세요.')
+    # Include historical replacement links so equal-time photos retain their original slot.
+    history=list((await session.scalars(select(Upload).where(Upload.album_id==album_id))).all())
+    from backend.albums.page_order import date_ordered
+    if parent.order_mode=='manual':
+        from backend.album_content.service import visible_pages
+        shown=await visible_pages(session,parent) if parent.content_enabled else pages
+        parent.manual_page_order=[str(p.id) for p in shown]
+    changed=await reorder(session,parent,await date_ordered(session,parent,pages,history))
+    if parent.order_mode!='date':parent.order_mode='date';changed=True
+    if changed:touch(session,parent)
+    if parent.content_enabled:
+        from backend.album_content.service import refresh_manifest
+        await refresh_manifest(session,parent)
+    return await get_album_detail(session,owner,album_id)
+
+
+async def restore_manual_order(session,owner,album_id,expected):
+    parent=await repo.album(session,owner,album_id);repo.draft(parent,expected)
+    await require_album_access(session,parent)
+    pages=await active_pages(session,album_id)
+    history=list((await session.scalars(select(Upload).where(Upload.album_id==album_id))).all())
+    active_ids={p.id for p in pages}
+    if any(u.page_id in active_ids and u.status in {'reserved','validating'} for u in history):
+        raise APIError(409,'STATE_CONFLICT','사진 저장이나 교체가 끝난 뒤 정렬해주세요.')
+    from backend.albums.page_order import restored_manual_order
+    hidden=[]
+    if parent.content_enabled:
+        from backend.album_content.service import visible_pages
+        shown=await visible_pages(session,parent);shown_ids={p.id for p in shown}
+        hidden=[p for p in pages if p.id not in shown_ids];pages=shown
+    # With no saved arrangement, entering manual mode starts from the current view.
+    ordered=restored_manual_order(pages,parent.manual_page_order,history) if parent.manual_page_order else pages
+    if parent.order_mode=='manual':ordered=pages
+    changed=await reorder(session,parent,ordered+hidden)
+    saved=[str(p.id) for p in ordered]
+    if parent.manual_page_order!=saved:parent.manual_page_order=saved;changed=True
+    if parent.order_mode!='manual':parent.order_mode='manual';changed=True
+    if changed:touch(session,parent)
     if parent.content_enabled:
         from backend.album_content.service import refresh_manifest
         await refresh_manifest(session,parent)

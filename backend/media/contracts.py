@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 class MediaValidationError(Exception):
@@ -17,6 +17,7 @@ class NormalizedImage:
     captured_at_raw: str | None
     captured_timezone: str | None
     sha256: str
+    photo_gps: dict | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True)

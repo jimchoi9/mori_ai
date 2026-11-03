@@ -7,6 +7,8 @@ from backend.album_content.service import refresh_manifest,now
 from backend.album_content.caption import content_snapshot, supported_snapshot
 from backend.generation.repository import lock_claims
 from backend.generation.output_policy import ready_asset
+from backend.album_content import place_context
+from backend.album_content.prompts import PLACE_CONTEXT_VERSIONS
 
 class ContentRepository:
     def __init__(self,sessions,settings):self.sessions,self.settings=sessions,settings
@@ -22,13 +24,23 @@ class ContentRepository:
                 album=await s.scalar(select(Album).where(Album.id==aid).with_for_update(skip_locked=True))
                 if album is None:continue
                 from backend.album_content.service import visible_pages
-                for page in await visible_pages(s,album):
+                pages=await visible_pages(s,album)
+                # Hold ready assets once per album; 50 new jobs must not cause
+                # 50x50 asset queries while the album row is locked.
+                place_assets={}
+                if self.settings.album_content_caption_profile=='luna_places_1024_v1':
+                    place_assets={a.id:a for a in (await s.scalars(select(MediaAsset).where(
+                        MediaAsset.album_id==album.id,MediaAsset.role=='normalized',
+                        MediaAsset.status=='ready',MediaAsset.deleted_at.is_(None)))).all()}
+                for page in pages:
                     if page.caption_text is not None:continue
                     upload=await s.scalar(select(Upload).where(Upload.page_id==page.id))
                     asset=await s.get(MediaAsset,page.normalized_asset_id) if page.normalized_asset_id else None
                     if (upload is None or upload.status!='ready' or upload.replaces_page_id or not ready_asset(asset,album,page,'normalized',ratio=False)):continue
                     if await s.scalar(select(AlbumCaptionJob.id).where(AlbumCaptionJob.page_id==page.id)) is None:
                         config=content_snapshot(self.settings)
+                        if config.get('caption_prompt_version') in PLACE_CONTEXT_VERSIONS:
+                            config['caption_place_context']=place_context.snapshot(album,page,pages,place_assets)
                         s.add(AlbumCaptionJob(album_id=album.id,page_id=page.id,normalized_asset_id=asset.id,input_sha256=asset.sha256,config_snapshot=config))
                 await refresh_manifest(s,album)
 
@@ -60,7 +72,8 @@ class ContentRepository:
             if not ready_asset(asset,album,page,'normalized',ratio=False) or asset.sha256!=job.input_sha256:
                 job.status='failed';job.error_code='MEDIA_SAVE_FAILED';job.lease_until=None;return None
             return {'job':job.id,'album':album.id,'page':page.id,'attempt':job.attempt_id,'fence':job.fence_version,
-                'key':asset.storage_key,'bytes':asset.bytes,'sha':asset.sha256,'config':job.config_snapshot}
+                'key':asset.storage_key,'bytes':asset.bytes,'sha':asset.sha256,'config':job.config_snapshot,
+                'place_references':await place_context.available_references(s,album,job.config_snapshot)}
 
     async def dispatch(self,c):
         async with self.sessions() as s,s.begin():
@@ -68,6 +81,8 @@ class ContentRepository:
             job=await s.scalar(select(AlbumCaptionJob).where(AlbumCaptionJob.id==c['job']).with_for_update())
             page=await s.get(Page,c['page'])
             if (album.deleted_at is not None or page.removed_at is not None or page.caption_text is not None or job.attempt_id!=c['attempt'] or job.fence_version!=c['fence'] or job.status!='running' or job.dispatch_state!='not_sent' or job.lease_until<=now()):return False
+            available=await place_context.available_references(s,album,job.config_snapshot)
+            if any(ref not in available for ref in c.get('place_references',[])):return False
             from backend.access.service import require_access
             from backend.albums.access import require_album_access
             from backend.generation.service import require_consent

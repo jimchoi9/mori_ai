@@ -201,6 +201,7 @@ class ValidationWorker:
                 page.input_is_3_4=(hints.original_width*4==hints.original_height*3) if hints else normalized.input_is_3_4
                 page.captured_at_raw=hints.captured_at_raw if hints else normalized.captured_at_raw
                 page.captured_timezone=hints.captured_timezone if hints else normalized.captured_timezone
+                page.photo_gps=(hints.gps.model_dump() if hints.gps else None) if hints else normalized.photo_gps
                 page.sort_date,page.sort_date_source=sort_date(page.captured_at_raw,u.file_last_modified_at,u.created_at)
                 u.status='ready'; u.error_code=None
                 bump_version(s, page)

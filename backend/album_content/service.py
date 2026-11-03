@@ -24,7 +24,9 @@ async def enable(session,owner,album_id,settings):
         active=await session.scalar(select(Run.id).where(Run.album_id==album.id,Run.status.in_(('queued','running','action_required'))))
         if active is not None:raise APIError(409,'STATE_CONFLICT','진행 중인 기존 작업이 끝난 뒤 관리할 수 있어요.')
         from backend.albums.page_order import bump_version
-        album.content_enabled=True;album.order_mode='manual';bump_version(session,album);album.updated_at=now()
+        # Fresh albums keep their date default. Existing photo order is opt-in only.
+        if album.next_selection_index>1:album.order_mode='manual'
+        album.content_enabled=True;bump_version(session,album);album.updated_at=now()
         await refresh_manifest(session,album)
     return album
 
@@ -77,6 +79,8 @@ async def activate_replacement(session,album,upload,page):
     # Keep the previous position and text. Never enqueue new caption AI on replacement.
     page.caption_text=old.caption_text if old.caption_text is not None else ''
     page.ai_caption=old.ai_caption;page.caption_edited_at=now()
+    # A replacement occupies the same memory, including its chronological position.
+    page.sort_date=old.sort_date;page.sort_date_source=old.sort_date_source
     album.content_manifest=[{**row,'id':str(page.id),'asset_id':str(page.normalized_asset_id),'thumbnail_id':str(page.thumbnail_asset_id),'text':page.caption_text} if row['id']==str(old.id) else row for row in album.content_manifest]
     old.removed_at=now();bump_version(session,old)
     await session.flush()

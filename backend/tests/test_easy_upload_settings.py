@@ -3,10 +3,10 @@ from pydantic import ValidationError
 from backend.settings import Settings
 
 
-def test_easy_upload_defaults_do_not_change_existing_environments():
+def test_easy_upload_stays_opt_in_with_fifty_photo_default():
     settings=Settings(database_url='postgresql+asyncpg://localhost/test')
     assert settings.easy_upload_enabled is False
-    assert settings.easy_upload_max_photos==20
+    assert settings.easy_upload_max_photos==50
 
 
 @pytest.mark.parametrize('limit',['20','50'])
