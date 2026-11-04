@@ -44,3 +44,8 @@ test('losing authentication during confirmation never proves deletion',async()=>
  try{await assert.rejects(albums.removeAlbum('album-a',new AbortController().signal));assert.deepEqual(calls,['GET','DELETE','GET']);}
  finally{globalThis.fetch=oldFetch;}
 });
+test('a changed confirmation snapshot is refused before any destructive request',async()=>{
+ const previous=globalThis.fetch,calls=[];globalThis.fetch=async(_url,options)=>{calls.push(options.method);return new Response(JSON.stringify({data:detail}));};
+ try{await assert.rejects(albums.removeAlbum('album-a',new AbortController().signal,16),error=>error.code==='VERSION_CONFLICT');assert.deepEqual(calls,['GET']);}
+ finally{globalThis.fetch=previous;}
+});

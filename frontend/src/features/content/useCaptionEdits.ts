@@ -4,13 +4,14 @@ import type {Detail,Page} from '../../api/types';
 import {captionValue} from '../generation/flow';
 import {useUnsavedGuard} from '../review/useUnsavedGuard';
 interface Draft {text:string;baseline:string;version:number;error?:string;conflict?:Page}
-export function useCaptionEdits(albumId:string,pages:Page[],refresh:()=>Promise<unknown>){
+export function useCaptionEdits(albumId:string,pages:Page[],refresh:()=>Promise<unknown>,paused=false){
  const [drafts,setDrafts]=useState<Record<string,Draft>>({}),[saving,setSaving]=useState(0);
  const ref=useRef(drafts);ref.current=drafts;
  const active=useRef(new Map<string,Promise<void>>()),alive=useRef(true);
  const controller=useRef(new AbortController());
- useEffect(()=>{alive.current=true;const clear=()=>{controller.current.abort();};window.addEventListener('mori:logout',clear);window.addEventListener('mori:session-expired',clear);return()=>{alive.current=false;clear();window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:session-expired',clear);};},[]);
- useEffect(()=>{setDrafts(old=>{
+ const discarded=useRef(false),discardedWaiters=useRef<Array<()=>void>>([]);
+ useEffect(()=>{alive.current=true;const clear=()=>{controller.current.abort();};window.addEventListener('mori:logout',clear);window.addEventListener('mori:session-expired',clear);return()=>{alive.current=false;clear();discardedWaiters.current.splice(0).forEach(resolve=>resolve());window.removeEventListener('mori:logout',clear);window.removeEventListener('mori:session-expired',clear);};},[]);
+ useEffect(()=>{if(discarded.current)return;setDrafts(old=>{
   const next:Record<string,Draft>={};
   for(const p of pages){const d=old[p.id];
    if(!d||d.text===d.baseline&&!active.current.has(p.id))next[p.id]={text:p.caption_text??'',baseline:p.caption_text??'',version:p.version};
@@ -18,10 +19,16 @@ export function useCaptionEdits(albumId:string,pages:Page[],refresh:()=>Promise<
    else next[p.id]=p.version!==d.version&&p.caption_text!==d.baseline&&!active.current.has(p.id)?{...d,conflict:p,error:'다른 곳에서 글귀가 바뀌었어요.'}:p.caption_text===d.baseline?{...d,version:p.version}:d;
   }return next;
  });},[pages]);
- const dirty=Object.values(drafts).some(d=>d.text!==d.baseline);
+ const dirty=!discarded.current&&Object.values(drafts).some(d=>d.text!==d.baseline);
  useUnsavedGuard(dirty,()=>setDrafts({}));
- function change(id:string,text:string){setDrafts(old=>({...old,[id]:{...old[id],text,error:undefined}}));}
+ useEffect(()=>{if(discarded.current)discardedWaiters.current.splice(0).forEach(resolve=>resolve());},[drafts]);
+ async function discard(){
+  discarded.current=true;controller.current.abort();ref.current={};
+  const settled=new Promise<void>(resolve=>discardedWaiters.current.push(resolve));setDrafts({});await settled;
+ }
+ function change(id:string,text:string){if(!discarded.current)setDrafts(old=>({...old,[id]:{...old[id],text,error:undefined}}));}
  async function save(id:string):Promise<void>{
+  if(paused||discarded.current)return;
   const previous=active.current.get(id);if(previous)return previous;
   const draft=ref.current[id];if(!draft||draft.text===draft.baseline||draft.conflict||!captionValue(draft.text).valid)return;
   const text=captionValue(draft.text).text;
@@ -38,7 +45,7 @@ export function useCaptionEdits(albumId:string,pages:Page[],refresh:()=>Promise<
    }finally{active.current.delete(id);if(alive.current)setSaving(n=>n-1);}
   })();active.current.set(id,work);return work;
  }
- useEffect(()=>{const timer=window.setTimeout(()=>{for(const [id,d] of Object.entries(drafts))if(d.text!==d.baseline&&!d.error&&!d.conflict)void save(id);},800);return()=>clearTimeout(timer);},[drafts]);
+ useEffect(()=>{if(paused||discarded.current)return;const timer=window.setTimeout(()=>{for(const [id,d] of Object.entries(drafts))if(d.text!==d.baseline&&!d.error&&!d.conflict)void save(id);},800);return()=>clearTimeout(timer);},[drafts,paused]);
  async function flush(){
   for(let pass=0;pass<3;pass++){
    await Promise.all([...active.current.values()]);
@@ -51,5 +58,5 @@ export function useCaptionEdits(albumId:string,pages:Page[],refresh:()=>Promise<
   return !Object.values(ref.current).some(d=>d.text!==d.baseline||d.conflict);
  }
  function resolve(id:string,keep:boolean){setDrafts(old=>{const d=old[id],p=d.conflict!;return {...old,[id]:{text:keep?d.text:p.caption_text??'',baseline:p.caption_text??'',version:p.version}};});}
- return {drafts,dirty,saving,change,save,flush,resolve};
+ return {drafts,dirty,saving,change,save,flush,resolve,discard};
 }

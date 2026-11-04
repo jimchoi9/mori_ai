@@ -29,7 +29,7 @@ test('ready album cover opens the book while its secondary link opens photo mana
  const t=setup();env.albums=[{id:'ready',title:'추억',page_count:3,status:'draft',content_enabled:true,content_ready:true}];
  const tree=t.render(),card=nodes(tree).find(node=>node.props?.destination);
  assert.equal(card.props.destination,'/albums/ready/view');
- const manage=nodes(card.props.menu).find(node=>node.type==='link');assert.equal(manage.props.to,'/albums/ready/manage');assert.match(manage.props['aria-label'],/사진 관리/);
+ const manage=nodes(card.props.menu).find(node=>node.type==='link');assert.equal(manage.props.to,'/albums/ready/manage');assert.match(manage.props['aria-label'],/앨범 관리/);assert.equal(nodes(tree).some(node=>node.type==='details'),false);
 });
 test('empty and unprepared albums never open an empty viewer; published legacy books still open normally',()=>{
  for(const [album,destination,enabled=true] of [

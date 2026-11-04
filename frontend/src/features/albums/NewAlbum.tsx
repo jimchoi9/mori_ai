@@ -5,7 +5,7 @@ import {api,errorText} from '../../api/client';
 import type {Album,Config} from '../../api/types';
 import {requestIntents} from '../generation/flow';
 import {usePrivateRequest} from '../generation/usePrivateRequest';
-import {stageNewAlbumUploads} from '../uploads/useEasyUploads';
+import {stageNewAlbumUploads} from '../uploads/easyDrafts';
 import '../uploads/easyUpload.css';
 import '../content/content.css';
 

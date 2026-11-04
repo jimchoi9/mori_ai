@@ -4,21 +4,10 @@ import type {Detail} from '../../api/types';
 import {sendPhotos} from './easyQueue';
 import {optimizePhoto} from './optimizePhoto';
 import {transferPhoto,verifyPhoto,type TransferItem} from './easyTransport';
-import type {UploadBatch} from './uploadMessages';
 
 const TITLE_NOTICE_TIMEOUT_MS=5000;
-interface Draft {notifications:Set<AbortController>;items:TransferItem[];batches:UploadBatch[];activeIds:string[];busy:boolean;controller?:AbortController;listeners:Set<()=>void>;startIds?:string[]}
-const drafts=new Map<string,Draft>();
-/** Handoff after explicit native selection; no File is placed in navigation state. */
-export function stageNewAlbumUploads(userId:string,albumId:string,files:File[]){
- const key=`${userId}:${albumId}`;
- if(drafts.get(key)?.items.length)throw new Error('이미 고른 사진이 있어요. 앨범에서 확인해 주세요.');
- const items:TransferItem[]=files.map(file=>({id:crypto.randomUUID(),file,state:'selected'}));
- drafts.set(key,{notifications:new Set(),items,batches:[],activeIds:[],busy:false,listeners:new Set(),startIds:items.map(item=>item.id)});
-}
-export function hasUploadDraft(userId:string,albumId:string){return drafts.get(`${userId}:${albumId}`)?.items.some(item=>!item.replacesPageId&&item.state!=='saved')??false;}
-function clearDrafts(){for(const draft of drafts.values()){draft.controller?.abort();for(const request of draft.notifications)request.abort();draft.notifications.clear();draft.items=[];draft.batches=[];draft.activeIds=[];draft.startIds=undefined;draft.busy=false;draft.listeners.forEach(f=>f());}drafts.clear();}
-window.addEventListener('mori:logout',clearDrafts);window.addEventListener('mori:clear-private-memory',clearDrafts);
+export {stageNewAlbumUploads,hasUploadDraft,discardAlbumUploads} from './easyDrafts';
+import {drafts} from './easyDrafts';
 
 export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<unknown>,maxPhotos:20|50,knownPageIds:readonly string[]=[]){
  const key=`${userId}:${albumId}`;

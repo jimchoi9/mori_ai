@@ -7,7 +7,7 @@ import {join} from 'node:path';
 
 const dir=await mkdtemp(join(tmpdir(),'new-album-'));
 await build({entryPoints:['src/features/albums/NewAlbum.tsx'],bundle:true,platform:'node',format:'esm',jsx:'automatic',outfile:join(dir,'new.mjs'),plugins:[{name:'new-album',setup(b){
- b.onResolve({filter:/\.css$|^react(\/jsx-runtime)?$|^react-router$|^@tanstack\/react-query$|api\/client$|usePrivateRequest$|useEasyUploads$/},a=>({path:a.path,namespace:'mock'}));
+ b.onResolve({filter:/\.css$|^react(\/jsx-runtime)?$|^react-router$|^@tanstack\/react-query$|api\/client$|usePrivateRequest$|easyDrafts$/},a=>({path:a.path,namespace:'mock'}));
  b.onLoad({filter:/.*/,namespace:'mock'},a=>({contents:
   a.path.endsWith('.css')?'':
   a.path==='react/jsx-runtime'?`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment='fragment';`:
@@ -15,7 +15,7 @@ await build({entryPoints:['src/features/albums/NewAlbum.tsx'],bundle:true,platfo
   a.path==='react-router'?`export const Link='link',useNavigate=()=>(path,options)=>env.events.push({navigate:path,options});`:
   a.path==='@tanstack/react-query'?`export const useQuery=()=>({data:{album_content_enabled:env.enabled,easy_upload:{max_photos:20}}}),useQueryClient=()=>({invalidateQueries:async()=>env.events.push('invalidate')});`:
   /usePrivateRequest$/.test(a.path)?`export const usePrivateRequest=()=>env.request;`:
-  /useEasyUploads$/.test(a.path)?`export const stageNewAlbumUploads=(user,album,files)=>env.events.push({stage:{user,album,files}});`:
+  /easyDrafts$/.test(a.path)?`export const stageNewAlbumUploads=(user,album,files)=>env.events.push({stage:{user,album,files}});`:
   `export const api=(...args)=>env.api(...args),errorText=e=>e.message;`}));
 }}]});
 const {NewAlbum}=await import(join(dir,'new.mjs'));

@@ -12,7 +12,7 @@ await build({entryPoints:['src/features/uploads/useEasyUploads.ts'],bundle:true,
  b.onResolve({filter:/\.\/easyTransport$/},()=>({path:'transport',namespace:'stub'}));
  b.onLoad({filter:/.*/,namespace:'stub'},({path})=>({loader:'js',contents:path==='react'?`export const useState=v=>globalThis.hooks.state(v),useRef=v=>globalThis.hooks.ref(v),useEffect=f=>globalThis.hooks.effect(f);`:path==='optimize'?`export const optimizePhoto=(...args)=>globalThis.prepare(...args);`:`export const transferPhoto=(...args)=>globalThis.transfer(...args),verifyPhoto=(...args)=>globalThis.verify(...args);`}));
 }}]});
-const {useEasyUploads,stageNewAlbumUploads}=await import(join(dir,'hook.mjs'));
+const {useEasyUploads,stageNewAlbumUploads,discardAlbumUploads}=await import(join(dir,'hook.mjs'));
 function harness(album='a',known=[],user='u',limit=20){
  const cells=[],cleanups=[];let cursor=0,initial=true;
  const hooks={state(value){const index=cursor++;if(!(index in cells))cells[index]=value;return [cells[index],next=>cells[index]=typeof next==='function'?next(cells[index]):next];},ref(value){const index=cursor++;return cells[index]??={current:value};},effect(work){if(initial)cleanups.push(work());}};
@@ -156,6 +156,11 @@ test('a repeated handoff cannot overwrite an existing album photo draft',()=>{
  window.dispatchEvent(new Event('mori:logout'));stageNewAlbumUploads('u','protected-handoff',[photo(1)]);
  assert.throws(()=>stageNewAlbumUploads('u','protected-handoff',[photo(2)]),/이미 고른 사진/);
  const h=harness('protected-handoff');assert.equal(h.render().items[0].file.name,'1.jpg');h.close();
+});
+test('confirmed album deletion discards only its owner-scoped files and leaves other albums retryable',()=>{
+ window.dispatchEvent(new Event('mori:logout'));const a=harness('deleted',[],'owner'),b=harness('other',[],'owner'),c=harness('deleted',[],'another');
+ a.render().select([photo(1)],20);b.render().select([photo(2)],20);c.render().select([photo(3)],20);
+ discardAlbumUploads('owner','deleted');assert.equal(a.render().items.length,0);assert.equal(b.render().items[0].file.name,'2.jpg');assert.equal(c.render().items[0].file.name,'3.jpg');a.close();b.close();c.close();
 });
 test('failed first upload stays available for explicit retry; another owner cannot receive it',async()=>{
  window.dispatchEvent(new Event('mori:logout'));let attempts=0;

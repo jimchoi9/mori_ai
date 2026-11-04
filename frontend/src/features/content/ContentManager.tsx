@@ -1,5 +1,6 @@
 import {AlbumSaveState,AlbumUploadActivity,PhotoAddButton} from './AlbumUploadActivity';
 import {AlbumTitle} from '../albums/AlbumTitle';
+import {AlbumDeleteButton} from '../albums/AlbumDeleteButton';
 import {albumMeta} from '../albums/albumMeta';
 import {useEffect,useRef,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router';
@@ -10,6 +11,7 @@ import {albumPath} from '../generation/flow';
 import {UploadPhoto} from '../uploads/UploadPhoto';
 import {UploadInspector} from '../uploads/UploadInspector';
 import {useEasyUploads} from '../uploads/useEasyUploads';
+import {discardAlbumUploads} from '../uploads/easyDrafts';
 import {useCaptionEdits} from './useCaptionEdits';
 import {usePhotoReorder} from './usePhotoReorder';
 import {usePhotoOrder} from './reorder/usePhotoOrder';
@@ -19,22 +21,23 @@ const noPages:Page[]=[];
 export function ContentManager({userId}:{userId:string}){
  const {albumId=''}=useParams(),navigate=useNavigate(),cache=useQueryClient();
  const activity=useRef({gesture:false,writing:false}),stopDrag=useRef(()=>{});
+ const [deleteOpen,setDeleteOpen]=useState(false);
  const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  const query=useQuery({queryKey:['album',userId,albumId],enabled:!!config.data,retry:false,
   queryFn:async({signal})=>{const d=await api<Detail>(`/albums/${albumId}`,{signal});return !d.detail.album.content_enabled&&config.data?.album_content_enabled?api<Detail>(`/albums/${albumId}/content`,{method:'POST',body:{},signal}):d;},
-  refetchOnWindowFocus:()=>!activity.current.gesture&&!activity.current.writing,
-  refetchOnReconnect:()=>!activity.current.gesture&&!activity.current.writing,
-  refetchInterval:q=>!activity.current.gesture&&!activity.current.writing&&!document.hidden&&(q.state.data?.detail.album.title_pending||q.state.data?.detail.pages.some(p=>['reserved','validating'].includes(p.upload_status)||p.caption_text===null&&['waiting','queued','running'].includes(p.caption_status??'')))?1800:false});
+  refetchOnWindowFocus:()=>!deleteOpen&&!activity.current.gesture&&!activity.current.writing,
+  refetchOnReconnect:()=>!deleteOpen&&!activity.current.gesture&&!activity.current.writing,
+  refetchInterval:q=>!deleteOpen&&!activity.current.gesture&&!activity.current.writing&&!document.hidden&&(q.state.data?.detail.album.title_pending||q.state.data?.detail.pages.some(p=>['reserved','validating'].includes(p.upload_status)||p.caption_text===null&&['waiting','queued','running'].includes(p.caption_status??'')))?1800:false});
  const storedPages=query.data?.detail.pages??noPages,album=query.data?.detail.album;
  const refresh=async()=>{await query.refetch();await cache.invalidateQueries({queryKey:['albums',userId]});};
  const upload=useEasyUploads(albumId,userId,refresh,config.data?.easy_upload?.max_photos??50,storedPages.map(p=>p.id));
- const edits=useCaptionEdits(albumId,storedPages,refresh);
+ const edits=useCaptionEdits(albumId,storedPages,refresh,deleteOpen);
  const [editing,setEditing]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[preview,setPreview]=useState<string|null>(null),[menu,setMenu]=useState<string|null>(null);
  const [edited,setEdited]=useState(false),[finishing,setFinishing]=useState(false);
  const list=useRef<HTMLOListElement>(null),replacement=upload.items.filter(i=>i.replacesPageId&&i.state!=='saved');
- const allowOrder=()=>!busy&&!upload.busy&&!finishing&&!storedPages.some(p=>['reserved','validating'].includes(p.upload_status));
+ const allowOrder=()=>!deleteOpen&&!busy&&!upload.busy&&!finishing&&!storedPages.some(p=>['reserved','validating'].includes(p.upload_status));
  const order=usePhotoOrder({albumId,userId,pages:storedPages,activity,allow:allowOrder,flush:edits.flush,saved:()=>{if(editing)setEdited(true);},failed:()=>stopDrag.current()});
- const pages=order.pages,locked=busy||upload.busy||finishing||order.busy;
+ const pages=order.pages,locked=deleteOpen||busy||upload.busy||finishing||order.busy;
  const drag=usePhotoReorder(list,{ids:pages.map(p=>p.id),allowed:allowOrder,blocked:()=>locked||edits.saving>0,
   phase:interacting=>{activity.current.gesture=interacting;},arm:()=>{order.dismiss();setMenu(null);},
   drop:(id,before)=>{void order.move(id,before);},handleTap:id=>setMenu(current=>current===id?null:id)});
@@ -54,10 +57,10 @@ export function ContentManager({userId}:{userId:string}){
  const captionFailed=Object.values(edits.drafts).some(d=>d.error||d.conflict);
  const selected=pages.find(p=>p.id===preview);
  const count=pages.length,savedCount=pages.filter(p=>p.upload_status==='ready').length,max=config.data?.easy_upload?.max_photos??50;
- if(config.isError||query.isError)return <section><p role="alert">{errorText(config.error??query.error)}</p><button onClick={()=>void query.refetch()}>다시 불러오기</button></section>;
+ if(config.isError||query.isError)return <section><Link className="easy-upload-back" to="/albums">내 앨범으로 돌아가기</Link><p role="alert">{errorText(config.error??query.error)}</p><button onClick={()=>void query.refetch()}>다시 불러오기</button></section>;
  if(!album)return <p role="status">사진·글귀를 불러오는 중…</p>;
  return <section className="content-manager">
-  <header className="content-heading"><Link className="easy-upload-back" to="/albums" aria-label="내 앨범으로 돌아가기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg><span>내 앨범</span></Link><AlbumTitle album={album} userId={userId} disabled={controlsLocked}/><span aria-label={`저장된 사진 ${savedCount}장, 최대 ${max}장`}>{savedCount} / {max}</span></header>
+  <header className="content-heading"><div className="album-management-navigation"><Link className="easy-upload-back" to="/albums" aria-label="내 앨범으로 돌아가기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg><span>내 앨범</span></Link><AlbumDeleteButton albumId={albumId} albumTitle={album.title} userId={userId} disabled={busy||upload.busy||finishing||order.busy||drag.interacting||edits.saving>0} pendingCount={upload.items.filter(item=>item.state!=='saved').length} unsavedChanges={edits.dirty} onOpenChange={open=>{drag.stop();setMenu(null);setDeleteOpen(open);}} onDeleted={async()=>{discardAlbumUploads(userId,albumId);await edits.discard();}}/></div><AlbumTitle album={album} userId={userId} disabled={controlsLocked}/><span aria-label={`저장된 사진 ${savedCount}장, 최대 ${max}장`}>{savedCount} / {max}</span></header>
   <p className="album-capture-period">{albumMeta(album)}</p>
   <div className="content-order-controls">{album.content_ready&&<Link className="content-watch" to={`/albums/${albumId}/view`} onClick={e=>{if(controlsLocked||edits.dirty||edits.saving){e.preventDefault();setError('저장이 끝난 뒤 감상해 주세요.');}}}>감상하기 →</Link>}<label className="content-sort"><span className="sr-only">사진 정렬</span><select aria-label="사진 정렬" value={query.data?.detail.order_mode??'date'} disabled={controlsLocked||pages.some(p=>['reserved','validating'].includes(p.upload_status))} onChange={e=>{const mode=e.target.value;void mutate(fresh=>api(`/albums/${albumId}/${mode==='date'?'date-order':'manual-order'}`,{method:'POST',body:{expected_version:fresh.detail.album.version}}));}}><option value="date">촬영순</option><option value="manual">직접 배치</option></select></label></div>
   <AlbumUploadActivity upload={upload} pages={pages} max={max} canLeave={!editing&&!controlsLocked&&!edits.dirty&&!edits.saving}/>
