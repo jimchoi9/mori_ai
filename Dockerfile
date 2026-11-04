@@ -67,6 +67,7 @@ RUN node tests/album_view_route.test.mjs \
     && node tests/nfc_revisit.test.mjs \
     && node tests/nfc_loading.test.mjs \
     && node tests/nfc_music.test.mjs \
+    && node tests/nfc_ending.test.mjs \
     && node tests/nfc_photo_layout.test.mjs
 
 FROM python:3.12-slim-bookworm AS backend-base

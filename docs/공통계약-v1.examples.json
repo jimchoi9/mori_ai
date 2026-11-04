@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.32",
+  "contract_version": "1.33",
   "client_config": {
     "data": {
       "album_min_photos": 1,

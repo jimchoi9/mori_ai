@@ -20,7 +20,7 @@ function setup(){
  globalThis.Image=class{dataset={};decode(){return Promise.resolve();}};
  const closed=[],enters=[],retained=[],remembered=[];
  globalThis.env={entry:{id:'11111111-1111-4111-8111-111111111111',key:'k'.repeat(43)},expired:0,retained,remembered,close:t=>{closed.push(t);return Promise.resolve();},
-  enter:async(e,signal)=>{enters.push({e,signal});return {state:'ready',session_token:'session-'+enters.length,expires_at:new Date(0).toISOString(),pages:[{id:'p',text:'new',src:'/media'}]};},
+  enter:async(e,signal)=>{enters.push({e,signal});return {state:'ready',album_title:'앨범의 실제 이름',session_token:'session-'+enters.length,expires_at:new Date(0).toISOString(),pages:[{id:'p',text:'new',src:'/media'}]};},
   preload:async()=>({pages:[{text:'new',src:'blob:photo'}],music:null})};
  globalThis.h={ref(v){const i=index++;return cells[i]??={current:v};},state(v){const i=index++;if(!(i in cells))cells[i]=v;return [cells[i],n=>{cells[i]=typeof n==='function'?n(cells[i]):n;dirty=true;}];},effect(f,deps){const i=index++,old=cells[i];if(!old||deps.some((v,j)=>!Object.is(v,old[j]))){cells[i]=deps;effects.push(()=>{cleanups[i]?.();cleanups[i]=f();});}}};
  function render(){index=0;dirty=false;tree=NfcExperience();while(effects.length)effects.shift()();}
@@ -29,6 +29,7 @@ function setup(){
 }
 test('an expired transfer timestamp never closes an already loaded book or forces a new tag',async()=>{
  const h=setup();try{await h.settle();assert.ok(nodes(h.tree).some(n=>n.type==='book'));assert.equal(h.enters.length,1);assert.equal(h.remembered.length,1);assert.equal(h.retained.length,1);
+  assert.equal(nodes(h.tree).find(n=>n.type==='book').props.title,'앨범의 실제 이름');
   assert.deepEqual([...h.timers.values()].map(t=>t.delay),[900]);for(const t of [...h.timers.values()])t.f();await h.settle();assert.ok(nodes(h.tree).some(n=>n.type==='book'));assert.equal(h.closed.length,0);assert.equal(nodes(h.tree).some(n=>n.type==='button'),false);
  }finally{h.cleanup();}
 });

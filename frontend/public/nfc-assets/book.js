@@ -1,10 +1,12 @@
 // Selected from the user-provided Mori NFC prototype. See README.md for provenance.
-window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage }) => {
+window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage, ending, startIndex=0 }) => {
   host.classList.add('book-reader');
   host.innerHTML = '<div id="book-frame"></div><div class="book-position" aria-live="polite"></div>';
   const frame = host.querySelector('#book-frame'), position = host.querySelector('.book-position');
+  const total=chapters.length+(ending?1:0);
+  const showPosition=()=>{host.dataset.page=String(currentPage);host.dataset.ending=String(currentPage>=chapters.length);position.hidden=currentPage>=chapters.length;position.textContent=position.hidden?'':(currentPage+1)+' / '+chapters.length;for(const cover of host.querySelectorAll('.book-end-page')){cover.inert=!position.hidden;cover.setAttribute('aria-hidden',String(!position.hidden));}};
   let destroyed=false;
-  let book, portrait, pageWidth, pageHeight, bookWidth, currentPage = 0;
+  let book, portrait, pageWidth, pageHeight, bookWidth, currentPage = Math.max(0,Math.min(total-1,startIndex));
   let gesture = null, hover = null, animating = false, idle = false;
   let idleTimer = 0, idleFrame = 0, finishFrame = 0, resizeTimer = 0, copyFrame = 0;
   const fitCopy=()=>{for(const copy of host.querySelectorAll(".story-copy")){if(!copy.clientHeight)continue;const text=copy.querySelector("p");text.style.fontSize="";text.style.lineHeight="";let size=parseFloat(getComputedStyle(text).fontSize);while(copy.scrollHeight>copy.clientHeight+1&&size>14){text.style.fontSize=(--size)+"px";text.style.lineHeight="1.5";}}};
@@ -18,7 +20,7 @@ window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage }) => {
   const scheduleIdle = () => {
     if(destroyed)return;
     clearTimeout(idleTimer);
-    if (!touchCapable() || currentPage === chapters.length-1) return;
+    if (!touchCapable() || currentPage === total-1) return;
     idleTimer = setTimeout(() => {
       if (gesture || hover || animating || idle || document.hidden) return;
       idle = true;host.dataset.cornerHint = reduced ? 'still' : 'breeze';
@@ -53,11 +55,12 @@ window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage }) => {
     });
     let pages=stories;
     if(!portrait)pages=stories.flatMap((story,index)=>{story.querySelector('.story-copy').remove();const words=page('story-page story-text-page','');words.append(storyText(chapters[index]));return [story,words];});
+    if(ending){const parts=portrait?['full']:['cover','actions'];for(const part of parts){const cover=page('book-end-page book-end-'+part,'');cover.append(ending(part));pages.push(cover);}}
     target.append(...pages);
     book = new St.PageFlip(target, { width: pageWidth, height: pageHeight, size: 'fixed', startPage: currentPage * (portrait ? 1 : 2), usePortrait: portrait, showCover: false, useMouseEvents: false, mobileScrollSupport: true, showPageCorners: true, pageTurnInteractionZone: 'edges', pageTurnEdgeWidthRatio: .2, allowTapFlip: false, drawShadow: true, maxShadowOpacity: .3, flippingTime: reduced ? 1 : 600 });
-    book.on('flip', event => {currentPage = Math.floor(event.data / (portrait ? 1 : 2));host.dataset.page = String(currentPage);position.textContent = (currentPage+1)+' / '+chapters.length;clearIdle();onPage(currentPage);scheduleCopy();});
+    book.on('flip', event => {currentPage = Math.floor(event.data / (portrait ? 1 : 2));showPosition();clearIdle();onPage(currentPage);scheduleCopy();});
     book.on('changeState', event => {host.dataset.bookState = event.data;animating = event.data === 'flipping';if (event.data === 'read') scheduleIdle();});
-    book.on('init', scheduleIdle);book.loadFromHTML(pages);host.dataset.page = String(currentPage);host.dataset.bookReady = 'true';position.textContent = (currentPage+1)+' / '+chapters.length;onPage(currentPage);scheduleCopy();
+    book.on('init', scheduleIdle);book.loadFromHTML(pages);host.dataset.bookReady = 'true';showPosition();onPage(currentPage);scheduleCopy();
   }
   const pointFor = event => {const rect = frame.getBoundingClientRect();return { x: event.clientX - rect.left, y: event.clientY - rect.top };};
   const continueFold = (end, target) => {
@@ -72,20 +75,22 @@ window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage }) => {
   };
   const clearHover = () => {const active = hover;hover = null;if (active) continueFold(active.point, active.backward ? -1 : bookWidth + 1);};
   frame.addEventListener('pointerdown', event => {
+    if(event.target.closest('a,button,input,textarea,select'))return;
     clearIdle();
     if (gesture || animating || event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
     const start = pointFor(event), backward = portrait ? start.x <= pageWidth * .4 : start.x < pageWidth;
-    if ((backward && currentPage === 0) || (!backward && currentPage === chapters.length-1)) return;
+    if ((backward && currentPage === 0) || (!backward && currentPage === total-1)) return;
     hover = null;gesture = { id: event.pointerId, start, last: start, dragging: false, backward, started: performance.now(), distance: 0 };
     frame.setPointerCapture(event.pointerId);event.preventDefault();book.startUserTouch(start);
   });
   frame.addEventListener('pointermove', event => {
+    if(!gesture&&event.target.closest('a,button,input,textarea,select'))return;
     const point = pointFor(event);
     if (!gesture) {
       if (event.pointerType !== 'mouse' || event.buttons !== 0 || animating || !matchMedia('(any-hover: hover)').matches) return;
       if (!portrait) {book.userMove(point, false);return;}
       const backward = point.x < pageWidth / 2, nearEdge = point.x > 0 && point.x < bookWidth && point.y > 0 && point.y < pageHeight && (point.x <= pageWidth * .2 || point.x >= pageWidth * .8);
-      if (!nearEdge || (backward && currentPage === 0) || (!backward && currentPage === chapters.length-1)) {clearHover();return;}
+      if (!nearEdge || (backward && currentPage === 0) || (!backward && currentPage === total-1)) {clearHover();return;}
       if (hover && hover.backward !== backward) {clearHover();return;}
       if (!hover) book.startUserTouch({ x: backward ? -8 : bookWidth + 8, y: point.y });
       hover = { point, backward };book.userMove(point, true);return;
@@ -119,9 +124,9 @@ window.createMemoryBook = (host, { reduced, chapters, onTurn, onPage }) => {
   addEventListener('resize', resize);visualViewport?.addEventListener('resize', resize);
   const visibility=()=>{if(document.hidden)clearIdle();else scheduleIdle();};
   document.addEventListener('visibilitychange',visibility);
-  const turn=offset=>{if(animating)return;const target=currentPage+offset;if(target<0||target>=chapters.length)return;clearIdle();onTurn(target);if(offset<0)book.flipPrev('bottom');else book.flipNext('bottom');};
-  const key=event=>{if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();turn(event.key==='ArrowRight'?1:-1);}};
+  const turn=offset=>{if(animating)return;const target=currentPage+offset;if(target<0||target>=total)return;clearIdle();onTurn(target);if(offset<0)book.flipPrev('bottom');else book.flipNext('bottom');};
+  const key=event=>{if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||event.target?.closest?.('a,button,input,textarea,select'))return;if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();turn(event.key==='ArrowRight'?1:-1);}};
   addEventListener('keydown',key);
   rebuild();
-  return {destroy(){destroyed=true;clearIdle();clearTimeout(idleTimer);clearTimeout(resizeTimer);cancelAnimationFrame(finishFrame);cancelAnimationFrame(copyFrame);removeEventListener('resize',resize);visualViewport?.removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);removeEventListener('keydown',key);book?.destroy();host.replaceChildren();}};
+  return {first(){if(destroyed)return;clearIdle();book.turnToPage(0);currentPage=0;showPosition();onPage(0);scheduleIdle();},destroy(){destroyed=true;clearIdle();clearTimeout(idleTimer);clearTimeout(resizeTimer);cancelAnimationFrame(finishFrame);cancelAnimationFrame(copyFrame);removeEventListener('resize',resize);visualViewport?.removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);removeEventListener('keydown',key);book?.destroy();host.replaceChildren();}};
 };
