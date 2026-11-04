@@ -1,0 +1,14 @@
+.trial-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 20px;background:#f0f2eb;border-bottom:1px solid #dfe5d9;color:#52644f;font-size:12px;line-height:1.5}.trial-bar p{margin:0}.trial-bar a{flex:none;display:inline-flex;align-items:center;min-height:44px;color:inherit}
+.trial-intro{max-width:480px;margin:32px auto 0}.trial-intro h1{font-size:27px;line-height:1.4;letter-spacing:-.6px;margin:0 0 14px}.trial-intro p{font-size:16px;line-height:1.7;color:#687464;margin:0 0 28px}
+.trial-scenarios{display:grid;gap:14px}.trial-scenarios button{min-height:56px;text-align:left;padding:14px 18px;background:#fffef9;border:1px solid #d5ddcd;border-radius:12px;color:#344d3c;box-shadow:none;backdrop-filter:none;font:inherit;font-size:16px}.trial-scenarios button:first-child{background:#3d5944;border-color:#3d5944;color:white}
+.trial-login{max-width:400px;margin:48px auto}.trial-login h1{font-size:28px;margin:0 0 16px}.trial-login p{font-size:16px;line-height:1.7;color:#687464}.trial-login button{width:100%;min-height:50px;background:#3d5944;color:#fff;border:0;border-radius:10px;font:inherit;box-shadow:none;backdrop-filter:none;margin:14px 0}.trial-login a{display:flex;align-items:center;justify-content:center;min-height:48px;color:#52644f}
+.trial-account{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#edf0e7;color:#3d5944;font-size:17px}.trial-source-note{font-size:13px;line-height:1.7;color:#687464;margin:0 0 20px}
+.nfc-experience .book-end-page{background:#ead8bb;color:#65533f}
+.book-end-content{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;text-align:center}
+.book-end-mark{font:400 64px/1 Georgia,serif;color:#776953}.book-end-content h2{font-size:21px;line-height:1.5;font-weight:500;letter-spacing:-.4px;overflow-wrap:anywhere;margin:4px 0 22px;max-width:290px}
+.book-end-buttons{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(240px,100%)}
+.book-end-buttons button,.book-end-buttons a{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:50px;font:inherit;font-size:16px;border:0;border-radius:10px;box-shadow:none;backdrop-filter:none;text-decoration:none;padding:12px 16px;cursor:pointer;touch-action:manipulation}
+.book-end-buttons button{background:#3d5944;color:#fff}.book-end-buttons a{background:transparent;color:#65533f}
+.book-end-buttons button:focus-visible,.book-end-buttons a:focus-visible{outline:3px solid #7b9b73;outline-offset:3px}
+.nfc-experience .book-landscape .book-end-actions{border-left:1px solid #d8c6a8}
+@media(max-height:500px){.book-end-content{padding:16px;gap:10px}.book-end-mark{font-size:44px}.book-end-content h2{font-size:18px;margin:0 0 14px}.book-end-buttons{gap:6px}}
