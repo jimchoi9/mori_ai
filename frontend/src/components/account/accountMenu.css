@@ -1,0 +1,9 @@
+.mori-account-menu{position:relative;z-index:8}
+.mori-site-header .mori-account-menu>summary{width:44px;height:44px;border:1px solid #dce2d7;background:#edf0e8;color:#35513e;box-shadow:none;font-size:16px}
+.mori-account-menu>summary::-webkit-details-marker{display:none}
+.mori-account-menu:is(.app-account,.goods-account)>div{top:calc(100% + 8px);width:min(228px,calc(100vw - 40px));min-width:0;padding:8px;border:1px solid #e0e4dc;border-radius:16px;background:#fff;box-shadow:0 12px 32px #263d3114}
+.mori-account-menu:is(.app-account,.goods-account)>div>p{margin:0;padding:10px 12px;color:#626b62;font-size:13px;line-height:1.5}
+.mori-account-menu:is(.app-account,.goods-account) nav{display:grid;gap:2px;margin:0;padding:0}
+.mori-account-menu:is(.app-account,.goods-account) nav a{min-height:44px;padding:9px 12px;border-radius:8px;text-decoration:none;color:#293e30;font-size:15px;font-weight:500;line-height:1.5}
+.mori-account-menu nav a:hover,.mori-account-menu nav a[aria-current=page]{background:#edf2e9;color:#315541}
+.mori-account-menu:is(.app-account,.goods-account)>div>button{display:block;width:100%;min-height:44px;margin:6px 0 0;padding:9px 12px;border:0;border-top:1px solid #edf0e9;border-radius:0;background:transparent;box-shadow:none;text-align:left;font-size:15px;font-weight:500;line-height:1.5}

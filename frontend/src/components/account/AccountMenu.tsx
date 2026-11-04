@@ -1,5 +1,6 @@
 import {useEffect,useRef} from 'react';
 import {Link,useLocation} from 'react-router';
+import './accountMenu.css';
 export function AccountMenu({name,goods,onLogout}:{name:string;goods:boolean;onLogout:()=>void}){
  const ref=useRef<HTMLDetailsElement>(null),location=useLocation();
  const friendly=name.trim()&&name!=='사용자'?name.trim():null;
@@ -10,5 +11,16 @@ export function AccountMenu({name,goods,onLogout}:{name:string;goods:boolean;onL
   document.addEventListener('pointerdown',outside);document.addEventListener('keydown',escape);
   return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',escape);};
  },[]);
- return <details ref={ref} className={goods?'goods-account':'app-account'}><summary aria-label="계정 메뉴">{friendly?.slice(0,1)??'나'}</summary><div><p>{friendly?`${friendly}님`:'내 계정'}</p><nav aria-label="내 프로필 메뉴"><Link to="/albums" onClick={event=>{if(location.pathname==='/albums')event.preventDefault();if(ref.current)ref.current.open=false;}}>홈</Link><Link to="/goods">굿즈 만들기</Link><Link to="/designs">내 디자인</Link><Link to="/albums">내 앨범</Link></nav><button className="text" onClick={onLogout}>로그아웃</button></div></details>;
+ return <details ref={ref} className={`${goods?'goods-account':'app-account'} mori-account-menu`}>
+  <summary aria-label="계정 메뉴">{friendly?.slice(0,1)??'나'}</summary>
+  <div>
+   <p>{friendly?`${friendly}님`:'내 계정'}</p>
+   <nav aria-label="내 프로필 메뉴">
+    <Link to="/albums" aria-current={location.pathname==='/albums'?'page':undefined} onClick={event=>{if(location.pathname==='/albums')event.preventDefault();if(ref.current)ref.current.open=false;}}>내 앨범</Link>
+    <Link to="/goods">굿즈 만들기</Link>
+    <Link to="/designs">내 디자인</Link>
+   </nav>
+   <button className="text" onClick={onLogout}>로그아웃</button>
+  </div>
+ </details>;
 }
