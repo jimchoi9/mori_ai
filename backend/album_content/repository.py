@@ -2,7 +2,7 @@
 from datetime import timedelta
 from uuid import uuid4
 from sqlalchemy import select,func,or_
-from backend.models import Album,Page,Upload,MediaAsset,AlbumCaptionJob,Task
+from backend.models import Album,Page,Upload,MediaAsset,AlbumCaptionJob,AlbumTitleJob,Task
 from backend.album_content.service import refresh_manifest,now
 from backend.album_content.caption import content_snapshot, supported_snapshot
 from backend.generation.repository import lock_claims
@@ -49,6 +49,7 @@ class ContentRepository:
             await lock_claims(s)
             count=await s.scalar(select(func.count()).select_from(Task).where(Task.stage=='caption',Task.status=='running',Task.lease_until>now()))
             count+=await s.scalar(select(func.count()).select_from(AlbumCaptionJob).where(AlbumCaptionJob.status=='running',AlbumCaptionJob.lease_until>now()))
+            count+=await s.scalar(select(func.count()).select_from(AlbumTitleJob).where(AlbumTitleJob.status=='running',AlbumTitleJob.lease_until>now()))
             if count>=4:return None
             job=await s.scalar(select(AlbumCaptionJob).join(Album,Album.id==AlbumCaptionJob.album_id).where(
                 Album.content_enabled.is_(True),Album.deleted_at.is_(None),Album.status!='deleted',AlbumCaptionJob.status=='queued',

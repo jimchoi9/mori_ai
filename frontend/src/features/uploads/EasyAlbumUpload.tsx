@@ -1,3 +1,5 @@
+import {AlbumTitle} from '../albums/AlbumTitle';
+import {albumMeta} from '../albums/albumMeta';
 import {useEffect,useRef,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -69,8 +71,9 @@ export function EasyAlbumUpload({userId,maxPhotos}:{userId:string;maxPhotos:20|5
  return <section className="easy-upload-screen" aria-label="사진 보내기">
   <header className="easy-upload-heading">
    <Link className="easy-upload-back" to="/albums" aria-label="내 사진첩으로">‹</Link>
-   <h1>{album.title}</h1><span>최대 {maxPhotos}장</span>
+   <AlbumTitle album={album} userId={userId} disabled={locked}/><span>최대 {maxPhotos}장</span>
   </header>
+  <p className="album-capture-period">{albumMeta(album)}</p>
   {detail.data.detail.order_mode==='date'&&<p className="easy-upload-hint">앨범에는 촬영 시간순으로 정리돼요. 촬영시간이 없으면 파일 수정시간을 사용해요.</p>}
   <div className="easy-message-log" aria-label="앨범 사진과 보낸 사진">
    {!pages.length&&!messages.length&&<div className="easy-guide" role="note">이 앨범에 사진을 골라 보내주세요.</div>}

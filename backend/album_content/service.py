@@ -31,9 +31,9 @@ async def enable(session,owner,album_id,settings):
     return album
 
 
-async def visible_pages(session,album):
+async def visible_pages(session,album,*,uploads=None):
     pages=await albums.album_pages(session,album.id)
-    uploads={u.page_id:u for u in await albums.page_uploads(session,album.id)}
+    uploads={u.page_id:u for u in (uploads if uploads is not None else await albums.page_uploads(session,album.id))}
     return [p for p in pages if not(uploads.get(p.id) and uploads[p.id].replaces_page_id and uploads[p.id].status!='ready')]
 
 

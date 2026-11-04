@@ -42,7 +42,6 @@ async def test_checkout(session, owner_id, design_id, expected_version, key, set
         if revision is None or revision.status != 'ready' or not revision.result_key:
             raise APIError(409, 'STATE_CONFLICT')
         album = await insert_album(session, owner_id)
-        album.title = '굿즈 테스트 사진첩'
         album.management_pending = gift
         token = secrets.token_urlsafe(32) if gift else None
         purchase = GoodsTestPurchase(owner_id=owner_id, design_id=design_id,

@@ -1,4 +1,6 @@
 import {AlbumSaveState,AlbumUploadActivity,PhotoAddButton} from './AlbumUploadActivity';
+import {AlbumTitle} from '../albums/AlbumTitle';
+import {albumMeta} from '../albums/albumMeta';
 import {useEffect,useRef,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -22,7 +24,7 @@ export function ContentManager({userId}:{userId:string}){
   queryFn:async({signal})=>{const d=await api<Detail>(`/albums/${albumId}`,{signal});return !d.detail.album.content_enabled&&config.data?.album_content_enabled?api<Detail>(`/albums/${albumId}/content`,{method:'POST',body:{},signal}):d;},
   refetchOnWindowFocus:()=>!activity.current.gesture&&!activity.current.writing,
   refetchOnReconnect:()=>!activity.current.gesture&&!activity.current.writing,
-  refetchInterval:q=>!activity.current.gesture&&!activity.current.writing&&!document.hidden&&q.state.data?.detail.pages.some(p=>['reserved','validating'].includes(p.upload_status)||p.caption_text===null&&['waiting','queued','running'].includes(p.caption_status??''))?1800:false});
+  refetchInterval:q=>!activity.current.gesture&&!activity.current.writing&&!document.hidden&&(q.state.data?.detail.album.title_pending||q.state.data?.detail.pages.some(p=>['reserved','validating'].includes(p.upload_status)||p.caption_text===null&&['waiting','queued','running'].includes(p.caption_status??'')))?1800:false});
  const storedPages=query.data?.detail.pages??noPages,album=query.data?.detail.album;
  const refresh=async()=>{await query.refetch();await cache.invalidateQueries({queryKey:['albums',userId]});};
  const upload=useEasyUploads(albumId,userId,refresh,config.data?.easy_upload?.max_photos??50,storedPages.map(p=>p.id));
@@ -55,8 +57,9 @@ export function ContentManager({userId}:{userId:string}){
  if(config.isError||query.isError)return <section><p role="alert">{errorText(config.error??query.error)}</p><button onClick={()=>void query.refetch()}>다시 불러오기</button></section>;
  if(!album)return <p role="status">사진·글귀를 불러오는 중…</p>;
  return <section className="content-manager">
-  <header className="content-heading"><Link className="easy-upload-back" to="/albums" aria-label="내 책장">‹</Link><h1>{album.title}</h1><span aria-label={`저장된 사진 ${savedCount}장, 최대 ${max}장`}>{savedCount} / {max}</span></header>
-  <div className="content-order-controls"><label className="content-sort"><span className="sr-only">사진 정렬</span><select aria-label="사진 정렬" value={query.data?.detail.order_mode??'date'} disabled={controlsLocked||pages.some(p=>['reserved','validating'].includes(p.upload_status))} onChange={e=>{const mode=e.target.value;void mutate(fresh=>api(`/albums/${albumId}/${mode==='date'?'date-order':'manual-order'}`,{method:'POST',body:{expected_version:fresh.detail.album.version}}));}}><option value="date">촬영순</option><option value="manual">직접 배치</option></select></label></div>
+  <header className="content-heading"><Link className="easy-upload-back" to="/albums" aria-label="내 앨범">‹</Link><AlbumTitle album={album} userId={userId} disabled={controlsLocked}/><span aria-label={`저장된 사진 ${savedCount}장, 최대 ${max}장`}>{savedCount} / {max}</span></header>
+  <p className="album-capture-period">{albumMeta(album)}</p>
+  <div className="content-order-controls">{album.content_ready&&<Link className="content-watch" to={`/albums/${albumId}/view`} onClick={e=>{if(controlsLocked||edits.dirty||edits.saving){e.preventDefault();setError('저장이 끝난 뒤 감상해 주세요.');}}}>감상하기 →</Link>}<label className="content-sort"><span className="sr-only">사진 정렬</span><select aria-label="사진 정렬" value={query.data?.detail.order_mode??'date'} disabled={controlsLocked||pages.some(p=>['reserved','validating'].includes(p.upload_status))} onChange={e=>{const mode=e.target.value;void mutate(fresh=>api(`/albums/${albumId}/${mode==='date'?'date-order':'manual-order'}`,{method:'POST',body:{expected_version:fresh.detail.album.version}}));}}><option value="date">촬영순</option><option value="manual">직접 배치</option></select></label></div>
   <AlbumUploadActivity upload={upload} pages={pages} max={max} canLeave={!editing&&!controlsLocked&&!edits.dirty&&!edits.saving}/>
   {(error||order.error)&&<p role="alert">{error||order.error}</p>}
   {replacement.map(item=><div key={item.id} className="content-replacement" role="status">{upload.busy?'사진을 바꾸고 있어요.':<>{item.error??'사진 교체를 확인해주세요.'}<button onClick={()=>void upload.send([item.id])}>다시 시도</button><button onClick={()=>void upload.remove(item)}>취소</button></>}</div>)}

@@ -21,7 +21,7 @@ async def find_album(session, owner_id, album_id, *, lock=False):
 
 
 async def insert_album(session, owner_id):
-    album = Album(owner_id=owner_id, title='나의 사진첩', status='draft', version=1)
+    album = Album(owner_id=owner_id, title='새 앨범', title_source='pending', status='draft', version=1)
     session.add(album)
     await session.flush()
     return album

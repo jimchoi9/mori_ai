@@ -34,7 +34,7 @@ RUN ./node_modules/.bin/esbuild src/features/uploads/preprocess.ts --bundle --pl
     && node tests/upload_preprocess.test.mjs file:///tmp/upload-preprocess-check.mjs \
     && node tests/upload_preprocess_hook.test.mjs \
     && node tests/capture_metadata.test.mjs
-RUN node tests/photo_order.test.mjs && node tests/content_order.test.mjs && node tests/album_save_state.test.mjs && node tests/album_flow.test.mjs
+RUN node tests/photo_order.test.mjs && node tests/content_order.test.mjs && node tests/album_save_state.test.mjs && node tests/album_flow.test.mjs && node tests/album_title.test.mjs
 
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
