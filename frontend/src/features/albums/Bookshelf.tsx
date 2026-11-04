@@ -1,4 +1,5 @@
-import {albumMeta} from './albumMeta';
+import {albumPeriod} from './albumMeta';
+import './bookshelf.css';
 import {Link,useNavigate} from 'react-router';
 import {AlbumCard} from './AlbumCard';
 import {ScreenHeader} from '../../components/layout/ScreenHeader';
@@ -14,7 +15,7 @@ function Cover({album,access,renew}:{album:Album;access?:MediaAccess;renew:()=>v
  const [failed,setFailed]=useState(false);
  useEffect(()=>setFailed(false),[access?.url]);
  useEffect(()=>{if(!access)return;const timer=window.setTimeout(renew,Math.max(1000,Date.parse(access.expires_at)-Date.now()-10000));return()=>window.clearTimeout(timer);},[access?.url]);
- return <div className="cover">{access && !failed ? <img src={access.url} alt={`${album.title} 표지`} onError={()=>{setFailed(true);renew();}}/> : <><span aria-hidden="true">▤</span><span>{album.page_count}장의 기억</span></>}</div>;
+ return <div className={`cover${album.page_count===0?' cover-empty':''}`}>{access && !failed ? <img src={access.url} alt={`${album.title} 표지`} onError={()=>{setFailed(true);renew();}}/> : album.page_count===0 ? <><span className="cover-add" aria-hidden="true">＋</span><span className="cover-add-label">사진 추가</span></> : <><span aria-hidden="true">▤</span><span>사진 {album.page_count}장</span></>}</div>;
 }
 export function Bookshelf({userId}: {userId:string}) {
  const navigate=useNavigate(),creating=useRef(false),[createBusy,setCreateBusy]=useState(false);
@@ -37,5 +38,30 @@ export function Bookshelf({userId}: {userId:string}) {
   catch(e){if(!request.current.signal.aborted){setError(errorText(e));await albums.refetch();}}finally{if(!request.current.signal.aborted)setDeletingId(null);}
  }
  const items = albums.data?.pages.flatMap(p=>p.items) ?? [];
- return <section className="bookshelf-screen"><ScreenHeader title="내 앨범" trailing={<button className="album-create" disabled={createBusy||!!deletingId} onClick={()=>void create()}>{createBusy?'만드는 중…':'＋ 새 앨범'}</button>}/><div className="albums-goods-link"><Link to="/goods">사진으로 굿즈 만들기 →</Link></div>{error && <p role="alert">{error}</p>}{albums.isPending && <p role="status">앨범을 불러오고 있어요…</p>}{albums.isError && <div role="alert"><p>{errorText(albums.error)}</p><button onClick={()=>void albums.refetch()}>앨범 다시 불러오기</button></div>}{!albums.isPending && !albums.isError && !items.length && <div className="empty"><div className="memory-cards" aria-hidden="true"><span/><span/></div><h2>아직 앨범이 없어요</h2><p>좋아하는 사진을 담아 나만의 추억책을 만들어 보세요.</p><button disabled={createBusy} onClick={()=>void create()}>첫 앨범 만들기</button></div>}<div className="books">{items.map(album=><AlbumCard key={album.id} title={album.title} meta={albumMeta(album)} destination={config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album)} cover={<Cover album={album} access={albums.data?.pages.flatMap(p=>p.media_access).find(a=>a.asset_id===album.cover?.asset_id)} renew={()=>void albums.refetch()}/>} status={album.status==='published'?undefined:albumLabels[album.status]??album.status} menu={<><Link className="album-watch" aria-label={`${album.title} 감상하기`} to={`/albums/${album.id}/view`} hidden={!album.content_ready&&album.status!=='published'}>감상하기</Link><details className="book-options"><summary aria-label={`${album.title} 사진첩 더보기`}>···</summary><button className="text danger" disabled={!!deletingId} aria-label={`${album.title} 사진첩 삭제`} onClick={()=>void remove(album)}>{deletingId===album.id?'삭제 중…':'사진첩 삭제'}</button></details></>}/>)}</div>{albums.hasNextPage && <button className="secondary" disabled={albums.isFetchingNextPage} onClick={()=>void albums.fetchNextPage()}>사진첩 더 보기</button>}</section>;
+ return <section className="bookshelf-screen">
+  <ScreenHeader title="내 앨범" trailing={items.length>0||albums.isPending ? <button className="album-create" disabled={createBusy||!!deletingId} onClick={()=>void create()}>{createBusy?'만드는 중…':'＋ 새 앨범'}</button> : undefined}/>
+  {error && <p role="alert">{error}</p>}
+  {albums.isPending && <p role="status">앨범을 불러오고 있어요…</p>}
+  {albums.isError && <div role="alert"><p>{errorText(albums.error)}</p><button onClick={()=>void albums.refetch()}>앨범 다시 불러오기</button></div>}
+  {!albums.isPending && !albums.isError && !items.length && <div className="empty album-empty-state">
+   <h2>아직 앨범이 없어요</h2><p>사진을 담으면 추억책으로 볼 수 있어요.</p>
+   <button className="album-create" disabled={createBusy} onClick={()=>void create()}>첫 앨범 만들기</button>
+  </div>}
+  <div className="books">{items.map(album=>{
+   const management=config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album);
+   const ready=album.content_ready||album.status==='published',period=albumPeriod(album.capture_period);
+   return <AlbumCard key={album.id} title={album.title}
+    meta={<>{period&&<span>{period}</span>}<span>사진 {album.page_count}장</span></>}
+    destination={management}
+    cover={<Cover album={album} access={albums.data?.pages.flatMap(p=>p.media_access).find(a=>a.asset_id===album.cover?.asset_id)} renew={()=>void albums.refetch()}/>}
+    status={['processing','action_required'].includes(album.status)?albumLabels[album.status]:undefined}
+    menu={<>
+     {ready ? <Link className="album-watch" aria-label={`${album.title} 감상하기`} to={`/albums/${album.id}/view`}>감상하기 <span aria-hidden="true">↗</span></Link>
+      : <Link className="album-watch" aria-label={`${album.title} ${album.page_count===0?'사진 추가':'사진 관리'}`} to={management}>{album.page_count===0?'사진 추가':'사진 관리'} <span aria-hidden="true">↗</span></Link>}
+     <details className="book-options"><summary aria-label={`${album.title} 사진첩 더보기`}>···</summary><button className="text danger" disabled={!!deletingId} aria-label={`${album.title} 사진첩 삭제`} onClick={()=>void remove(album)}>{deletingId===album.id?'삭제 중…':'사진첩 삭제'}</button></details>
+    </>}/>;
+  })}</div>
+  {albums.hasNextPage && <button className="secondary" disabled={albums.isFetchingNextPage} onClick={()=>void albums.fetchNextPage()}>사진첩 더 보기</button>}
+  <footer className="albums-goods-link"><Link to="/goods">사진으로 굿즈 만들기 <span aria-hidden="true">↗</span></Link></footer>
+ </section>;
 }
