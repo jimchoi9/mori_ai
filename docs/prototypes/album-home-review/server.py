@@ -60,7 +60,7 @@ def main():
             self.wfile.write(body)
 
     print(f'http://{args.lan}:{args.port}{prefix}', flush=True)
-    ThreadingHTTPServer(('0.0.0.0', args.port), Handler).serve_forever()
+    ThreadingHTTPServer((args.lan, args.port), Handler).serve_forever()
 
 
 if __name__ == '__main__':

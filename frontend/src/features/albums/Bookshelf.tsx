@@ -24,6 +24,8 @@ export function Bookshelf({userId}: {userId:string}) {
  const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  const albums = useInfiniteQuery({queryKey:['albums',userId],initialPageParam:'',queryFn:({pageParam,signal}) => api<{items:Album[];next_cursor:string|null;media_access:MediaAccess[]}>(`/albums${pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''}`,{signal}),getNextPageParam:last => last.next_cursor ?? undefined,refetchInterval:q=>!document.hidden&&q.state.data?.pages.some(page=>page.items.some(album=>album.title_pending))?1800:false,refetchIntervalInBackground:false});
  async function create(){
+  if(config.data?.album_content_enabled){navigate('/albums/new');return;}
+  if(!config.data)return;
   if(creating.current)return;creating.current=true;setCreateBusy(true);setError('');
   const scope=`create-album:${userId}`,intent=requestIntents.get(scope,{});
   try{const data=await api<{album:Album}>('/albums',{method:'POST',body:intent.body,key:intent.key,signal:request.current.signal});
@@ -39,13 +41,14 @@ export function Bookshelf({userId}: {userId:string}) {
  }
  const items = albums.data?.pages.flatMap(p=>p.items) ?? [];
  return <section className="bookshelf-screen">
-  <ScreenHeader title="내 앨범" trailing={items.length>0||albums.isPending ? <button className="album-create" disabled={createBusy||!!deletingId} onClick={()=>void create()}>{createBusy?'만드는 중…':'＋ 새 앨범'}</button> : undefined}/>
+  <ScreenHeader title="내 앨범" trailing={items.length>0||albums.isPending ? <button className="album-create" disabled={!config.data||createBusy||!!deletingId} onClick={()=>void create()}>{createBusy?'만드는 중…':'＋ 새 앨범'}</button> : undefined}/>
   {error && <p role="alert">{error}</p>}
+  {config.isError&&<div role="alert"><p>{errorText(config.error)}</p><button onClick={()=>void config.refetch()}>설정 다시 불러오기</button></div>}
   {albums.isPending && <p role="status">앨범을 불러오고 있어요…</p>}
   {albums.isError && <div role="alert"><p>{errorText(albums.error)}</p><button onClick={()=>void albums.refetch()}>앨범 다시 불러오기</button></div>}
   {!albums.isPending && !albums.isError && !items.length && <div className="empty album-empty-state">
    <h2>아직 앨범이 없어요</h2><p>사진을 담으면 추억책으로 볼 수 있어요.</p>
-   <button className="album-create" disabled={createBusy} onClick={()=>void create()}>첫 앨범 만들기</button>
+   <button className="album-create" disabled={!config.data||createBusy} onClick={()=>void create()}>첫 앨범 만들기</button>
   </div>}
   <div className="books">{items.map(album=>{
    const management=config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album);

@@ -50,6 +50,7 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
 
 RUN node tests/album_view_route.test.mjs \
     && node tests/album_home.test.mjs \
+    && node tests/new_album.test.mjs \
     && node tests/owner_book.test.mjs \
     && node tests/album_purchase_access.test.mjs \
     && node tests/easy_upload_queue.test.mjs \

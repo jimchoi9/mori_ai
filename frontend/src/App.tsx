@@ -3,6 +3,7 @@ import {AccountMenu} from './components/account/AccountMenu';
 import {lazy,Suspense} from 'react';
 const AdminGate=lazy(()=>import('./features/admin/AdminGate').then(m=>({default:m.AdminGate})));
 const ContentManager=lazy(()=>import('./features/content/ContentManager').then(m=>({default:m.ContentManager})));
+const NewAlbum=lazy(()=>import('./features/albums/NewAlbum').then(m=>({default:m.NewAlbum})));
 
 import {NfcExperience} from './features/nfc/NfcExperience';
 import {AlbumMemoryViewer} from './features/nfc/AlbumMemoryViewer';
@@ -42,6 +43,7 @@ export default function App(){
      <Route path="/designs" element={<Designs userId={me.user.id}/>}/>
      <Route path="/designs/:designId" element={<DesignDetail key={me.user.id} userId={me.user.id}/>}/>
      <Route path="/albums" element={<Bookshelf userId={me.user.id}/>}/>
+     <Route path="/albums/new" element={<Suspense fallback={<p role="status">사진 추가 화면을 준비하고 있어요…</p>}><NewAlbum key={me.user.id} userId={me.user.id}/></Suspense>}/>
      <Route path="/albums/:albumId/manage" element={<Suspense fallback={<p role="status">사진·글귀를 불러오는 중…</p>}><AlbumScreen Screen={ContentManager} userId={me.user.id}/></Suspense>}/>
      <Route path="/albums/:albumId/edit" element={<AlbumScreen Screen={AlbumEditor} userId={me.user.id}/>}/>
      <Route path="/albums/:albumId/progress" element={<AlbumScreen Screen={GenerationProgress} userId={me.user.id}/>}/>
