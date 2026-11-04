@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mori · 앨범 삭제 보호 체험</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <aside class="trial-bar" aria-label="체험 방식 선택">
+    <p>삭제 보호 체험 · 실제 앨범은 삭제되지 않습니다.</p>
+    <div class="trial-modes"><button type="button" data-mode="check" aria-pressed="true">체크로 확인</button><button type="button" data-mode="type" aria-pressed="false">‘삭제’ 입력</button></div>
+    <button type="button" class="trial-reset" data-reset>예시 초기화</button>
+  </aside>
+  <main id="main-content">
+    <header class="mori-site-header"><a class="mori-home-brand" href="#albums" aria-label="Mori · 내 앨범"><span class="mori-home-mark" aria-hidden="true">m</span><span>Mori</span></a></header>
+    <section class="bookshelf-screen"><header class="mori-screen-header"><div><h1>내 앨범</h1></div></header><div class="books" id="albums"></div></section>
+  </main>
+  <dialog class="album-settings" aria-labelledby="dialog-title"></dialog>
+  <script type="module" src="preview.js"></script>
+</body>
+</html>
