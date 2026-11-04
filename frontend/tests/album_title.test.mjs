@@ -25,7 +25,13 @@ test('capture period stays separate and missing dates show only photo count',()=
  assert.equal(albumMeta({page_count:3,capture_period:{start:'2026-10-11',end:'2026-10-11'}}),'2026.10.11 · 사진 3장');
  assert.equal(albumMeta({page_count:1,capture_period:null}),'사진 1장');
 });
-test('rename is visible on the title and cancellation sends no mutation',()=>{
+test('title text is not a rename target; only the separate edit button opens the dialog',()=>{
+ init();const title=find('h1'),text=nodes(title).find(n=>n.type==='span');
+ assert.equal(title.props.onClick,undefined);assert.equal(text.props.onClick,undefined);assert.equal(text.props.children,album.title);
+ assert.equal(nodes(title).filter(n=>n.type==='button').length,1);assert.equal(find('form'),undefined);
+ open();assert.ok(find('form'));
+});
+test('explicit rename cancellation sends no mutation',()=>{
  init();open();type('기장 여행');find('button',p=>p.children==='취소').props.onClick();assert.equal(find('form'),undefined);assert.deepEqual(events,[]);
 });
 test('background title updates do not erase typing; save uses captured revision',async()=>{

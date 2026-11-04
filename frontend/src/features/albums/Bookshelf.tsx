@@ -51,16 +51,15 @@ export function Bookshelf({userId}: {userId:string}) {
    <button className="album-create" disabled={!config.data||createBusy} onClick={()=>void create()}>첫 앨범 만들기</button>
   </div>}
   <div className="books">{items.map(album=>{
-   const management=config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album);
-   const ready=album.content_ready||album.status==='published',period=albumPeriod(album.capture_period);
+   const management=config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:album.status==='published'&&!album.content_enabled?`/albums/${album.id}/review`:albumPath(album);
+   const ready=album.page_count>0&&(album.content_ready||album.status==='published'),period=albumPeriod(album.capture_period);
    return <AlbumCard key={album.id} title={album.title}
     meta={<>{period&&<span>{period}</span>}<span>사진 {album.page_count}장</span></>}
-    destination={management}
+    destination={ready?`/albums/${album.id}/view`:management}
     cover={<Cover album={album} access={albums.data?.pages.flatMap(p=>p.media_access).find(a=>a.asset_id===album.cover?.asset_id)} renew={()=>void albums.refetch()}/>}
     status={['processing','action_required'].includes(album.status)?albumLabels[album.status]:undefined}
     menu={<>
-     {ready ? <Link className="album-watch" aria-label={`${album.title} 감상하기`} to={`/albums/${album.id}/view`}>감상하기 <span aria-hidden="true">↗</span></Link>
-      : <Link className="album-watch" aria-label={`${album.title} ${album.page_count===0?'사진 추가':'사진 관리'}`} to={management}>{album.page_count===0?'사진 추가':'사진 관리'} <span aria-hidden="true">↗</span></Link>}
+     <Link className="album-watch" aria-label={`${album.title} ${album.page_count===0?'사진 추가':'사진 관리'}`} to={management}>{album.page_count===0?'사진 추가':'사진 관리'} <span aria-hidden="true">↗</span></Link>
      <details className="book-options"><summary aria-label={`${album.title} 사진첩 더보기`}>···</summary><button className="text danger" disabled={!!deletingId} aria-label={`${album.title} 사진첩 삭제`} onClick={()=>void remove(album)}>{deletingId===album.id?'삭제 중…':'사진첩 삭제'}</button></details>
     </>}/>;
   })}</div>

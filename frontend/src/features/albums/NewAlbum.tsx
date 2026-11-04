@@ -42,7 +42,7 @@ export function NewAlbum({userId}:{userId:string}){
  if(!config.data)return <p role="status">사진 추가 화면을 준비하고 있어요…</p>;
  if(!config.data.album_content_enabled)return <section><p>사진 추가 기능을 이용할 수 없어요.</p><Link to="/albums">내 앨범</Link></section>;
  return <section className="content-manager new-album-screen">
-  <header className="content-heading"><Link className="easy-upload-back" to="/albums" aria-label="내 앨범">‹</Link><h1>새 앨범</h1><span aria-label={`저장된 사진 0장, 최대 ${max}장`}>0 / {max}</span></header>
+  <header className="content-heading"><Link className="easy-upload-back" to="/albums" aria-label="내 앨범으로 돌아가기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg><span>내 앨범</span></Link><h1>새 앨범</h1><span aria-label={`저장된 사진 0장, 최대 ${max}장`}>0 / {max}</span></header>
   {error&&<p role="alert">{error}</p>}
   {files.length>0&&<p role="status">사진 {files.length}장을 골랐어요.{busy?' 앨범을 준비하고 있어요.':''}</p>}
   {!busy&&error&&files.length>0&&files.length<=max&&<button onClick={()=>void start(files)}>다시 시도</button>}
