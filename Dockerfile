@@ -34,13 +34,13 @@ RUN ./node_modules/.bin/esbuild src/features/uploads/preprocess.ts --bundle --pl
     && node tests/upload_preprocess.test.mjs file:///tmp/upload-preprocess-check.mjs \
     && node tests/upload_preprocess_hook.test.mjs \
     && node tests/capture_metadata.test.mjs
-RUN node tests/content_order.test.mjs && node tests/album_flow.test.mjs
+RUN node tests/photo_order.test.mjs && node tests/content_order.test.mjs && node tests/album_save_state.test.mjs && node tests/album_flow.test.mjs
 
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
 
 RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
-    && node tests/goods_checkout.test.mjs && node tests/goods_purchase.test.mjs \
+    && node tests/goods_checkout.test.mjs && node tests/goods_purchase_review.test.mjs && node tests/goods_purchase.test.mjs \
     && node tests/goods_upload.test.mjs && node tests/goods_workspace.test.mjs \
     && node tests/goods_mockup.test.mjs \
     && node tests/goods_catalog.test.mjs \
@@ -57,8 +57,11 @@ RUN node tests/album_purchase_access.test.mjs \
     && node tests/upload_messages.test.mjs \
     && node tests/iphone_webp.test.mjs \
     && node tests/nfc_access.test.mjs \
+    && node tests/nfc_entry.test.mjs \
+    && node tests/nfc_revisit.test.mjs \
     && node tests/nfc_loading.test.mjs \
-    && node tests/nfc_music.test.mjs
+    && node tests/nfc_music.test.mjs \
+    && node tests/nfc_photo_layout.test.mjs
 
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1

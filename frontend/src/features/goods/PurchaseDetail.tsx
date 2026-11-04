@@ -3,6 +3,7 @@ import {Link, Navigate, useLocation, useParams} from 'react-router';
 import {api,errorText} from '../../api/client';
 import type {AlbumStatus,Config,Detail} from '../../api/types';
 import {ScreenHeader} from '../../components/layout/ScreenHeader';
+import {PurchaseCompletionNotice} from './purchase/PurchaseCompletionNotice';
 import './goods.css';
 
 interface Purchase {
@@ -45,7 +46,7 @@ export function PurchaseDetail({userId}:{userId:string}){
     <p>{p.gift?'QR을 열고 로그인한 뒤 내 앨범 만들기를 확정해 주세요. 최초 확정 계정에 등록됩니다.':'QR을 열고 앨범 관리계정으로 로그인해 주세요.'}</p><p className="hint">감상용 NFC와는 다른 사진 관리 주소예요.</p>
     {p.link_expires_at&&<p className="hint">같은 Wi-Fi에서 사용하는 개발용 주소입니다. {new Date(p.link_expires_at).toLocaleString('ko-KR')}까지 유효하며, 주소가 바뀌면 여기서 새 QR을 받아 주세요.</p>}
     <a className="button-link secondary" href={p.files.qr} download="mori-upload-qr.png">QR 저장</a>
-   </>:<p role="status">휴대폰 접속 주소를 준비 중이에요. 위의 사진 추가는 바로 이용할 수 있어요.</p>}
+   </>:<p role="status">{p.gift?'선물 등록 주소를 준비하고 있어요. 잠시 후 다시 확인해 주세요.':'휴대폰 접속 주소를 준비 중이에요. 위의 사진 추가는 바로 이용할 수 있어요.'}</p>}
   </details>}
   {!orderDetails&&<Link className="purchase-back" to={`/purchases/${p.id}?details=1`}>구매한 굿즈·주문 내역</Link>}
   <p className="hint purchase-test-note">테스트 구매입니다. 실제 요금 청구·제작·배송은 진행되지 않습니다.</p>
@@ -53,10 +54,12 @@ export function PurchaseDetail({userId}:{userId:string}){
 }
 export function PurchasePhotos({userId}:{userId:string}){
  const {purchaseId=''}=useParams();const query=usePurchase(purchaseId,userId),p=query.data;
+ const location=useLocation(),completed=location.state?.purchaseCompleted;
+ const nextState=p&&completed?.userId===userId&&completed.purchaseId===p.id?{purchaseCompleted:{userId,purchaseId:p.id,albumId:p.album_id}}:undefined;
  const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  if(config.isPending)return <p role="status">내 사진첩으로 이동하고 있어요…</p>;
- if(p?.can_manage&&config.data?.album_content_enabled&&p.album_status!=='deleted'&&!['processing','action_required'].includes(p.album_status))return <Navigate to={`/albums/${p.album_id}/manage`} replace/>;
- if(p?.album_status==='draft'&&p.can_manage)return <Navigate to={`/albums/${p.album_id}/edit`} replace/>;
+ if(p?.can_manage&&config.data?.album_content_enabled&&p.album_status!=='deleted'&&!['processing','action_required'].includes(p.album_status))return <Navigate to={`/albums/${p.album_id}/manage`} state={nextState} replace/>;
+ if(p?.album_status==='draft'&&p.can_manage)return <Navigate to={`/albums/${p.album_id}/edit`} state={nextState} replace/>;
  if(p)return <Navigate to={`/purchases/${p.id}`} replace/>;
  return <section className="purchase-detail">{query.isError?<p role="alert">{errorText(query.error)} <button onClick={()=>void query.refetch()}>다시 불러오기</button></p>:<p role="status">내 사진첩으로 이동하고 있어요…</p>}</section>;
 }
@@ -66,5 +69,7 @@ export function PurchaseReturn({userId}:{userId:string}){
  const query=useQuery({queryKey:['album-purchase',userId,id],enabled:!!id,retry:false,
   queryFn:({signal})=>api<{purchase_id:string|null;return_path?:string|null}>(`/goods/purchases/by-album/${id}`,{signal})});
  const path=query.data?.return_path??`/purchases/${query.data?.purchase_id}`;
- return id&&query.data?.purchase_id?<p className="goods-return"><Link to={path.startsWith('/purchases/')?`${path}?details=1`:path}>‹ 구매한 굿즈·주문 내역</Link></p>:null;
+ const completed=location.state?.purchaseCompleted;
+ const showCompleted=!!id&&completed?.userId===userId&&completed.albumId===id&&completed.purchaseId===query.data?.purchase_id&&/^\/albums\/[0-9a-f-]{36}\/(manage|edit)$/.test(location.pathname);
+ return id&&query.data?.purchase_id?<>{showCompleted&&<PurchaseCompletionNotice key={completed.purchaseId}/>}<p className="goods-return"><Link to={path.startsWith('/purchases/')?`${path}?details=1`:path}>‹ 구매한 굿즈·주문 내역</Link></p></>:null;
 }

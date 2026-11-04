@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Mori · 구매부터 사진 채우기까지</title><link rel="stylesheet" href="style.css">
+</head><body>
+<aside class="lab" aria-label="동선 비교 체험 설정"><div class="lab-inner">
+ <div class="lab-tools"><label>흐름<select id="flow"><option value="short">단계를 합친 안</option><option value="current">현재 구조 비교</option></select></label><label>굿즈<select id="product"><option value="magnet">마그네틱</option><option value="keyring">키링</option></select></label><button type="button" id="restart">처음부터 체험</button></div>
+ <details class="lab-options"><summary>로그인·구매 완료 방식도 체험하기</summary><div class="lab-tools"><label>계정<select id="account"><option value="member">로그인한 상태</option><option value="guest">비회원</option></select></label><label>단계를 합친 안의 구매 완료 후<select id="ending"><option value="direct">완료 안내와 함께 앨범으로</option><option value="receipt">완료 화면에서 사진 채우기</option></select></label></div></details>
+ <p class="lab-note">모든 그림과 동작은 샘플입니다. 실제 로그인·결제·주문·저장·AI 호출은 없습니다.</p><p class="lab-progress" id="lab-progress" role="status"></p>
+ <button id="recipient-demo" class="lab-recipient" type="button" hidden>선물받는 분의 등록 화면 체험</button>
+</div></aside>
+<main class="shell" id="app"></main>
+<script type="module" src="flow.js"></script>
+</body></html>

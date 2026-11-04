@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.25",
+  "contract_version": "1.27",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1893,7 +1893,7 @@
       ],
       "music_url": "/api/v1/nfc/music"
     },
-    "viewer_url_after_entry": "/nfc/view",
+    "viewer_url_after_entry": "/nfc/11111111-1111-4111-8111-111111111111#key=WRITING_SECRET_FROM_PRIVATE_PRODUCTION_SPEC",
     "new_goods_summary": {
       "nfc_required": true
     },
@@ -1906,6 +1906,13 @@
         "status": 403,
         "code": "NFC_REQUIRED"
       }
+    },
+    "revisit_policy": {
+      "entry": "accepted_tag_id_and_key_in_localStorage_and_bookmarkable_fragment",
+      "transfer_session": "current_tab_memory_only; expires_at_limits_transfer_not_loaded_viewing",
+      "viewing_time_limit": null,
+      "reload": "enter_automatically_for_latest_snapshot",
+      "explicit_book_restore": "matching_saved_tag_only"
     }
   },
   "easy_upload_internal_validation": {
@@ -1959,7 +1966,7 @@
     "publication": "automatic_when_current_visible_pages_are_ready",
     "editing_period_limit": null,
     "replacement_caption": "preserve_without_ai",
-    "nfc_session": "pinned_to_issued_asset_ids_2h_in_tab_memory",
+    "nfc_session": "pinned_transfer_grant_2h_in_memory; entry_persisted_for_unrestricted_revisit",
     "worker_policy": {
       "caption_lanes_per_worker": 2,
       "caption_global_limit_including_legacy": 4,

@@ -26,7 +26,7 @@ export default function App(){
  const location=useLocation();const goods=location.pathname==='/'||location.pathname==='/goods';
  const [error,setError]=useState('');
  if(location.pathname==='/admin')return <Suspense fallback={<p role="status">관리자 화면을 준비하고 있어요…</p>}><AdminGate/></Suspense>;
- if(location.pathname.startsWith('/nfc/'))return <NfcExperience/>;
+ if(location.pathname.startsWith('/nfc/'))return <NfcExperience key={location.key}/>;
  return <><GiftTokenCapture/><a className="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" className={goods?'goods-root':undefined} tabIndex={-1}>
   <AuthGate allowGuest={goods}>{(me,logout,agree,resume)=>{
    const account=me.guest?<Link className="goods-login-link" to="/login">로그인</Link>:<AccountMenu name={me.user.display_name} goods={goods} onLogout={()=>{if(window.dispatchEvent(new Event('mori:before-logout',{cancelable:true})))void logout().catch(e=>setError(errorText(e)));}}/>;

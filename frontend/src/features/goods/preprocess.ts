@@ -1,49 +1,51 @@
 import {inspectImage,resizeDimensions} from '../uploads/preprocess';
+import {photoTask,readPhoto,canvasBlob} from '../uploads/photoDecoder';
+import type {DecodedPhoto} from '../uploads/heicDecoder';
+import {inspectGoodsSource} from './sourceImage';
 
-export const goodsSourceAccept='image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif';
-const text=(bytes:Uint8Array)=>String.fromCharCode(...bytes);
-// Only a single basic VP8/VP8L image with no metadata is a browser candidate.
-// Extended WebP (ICC, EXIF, animation, HDR) remains on the server path.
-function inspectWebp(bytes:Uint8Array){
- try{
-  const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
-  if(text(bytes.subarray(0,4))!=='RIFF'||text(bytes.subarray(8,12))!=='WEBP'||d.getUint32(4,true)+8!==bytes.length)return null;
-  const kind=text(bytes.subarray(12,16)),size=d.getUint32(16,true);
-  if(20+size+(size%2)!==bytes.length)return null;
-  let width=0,height=0;
-  if(kind==='VP8 '&&size>=10&&!(bytes[20]&1)&&text(bytes.subarray(23,26))==='\x9d\x01\x2a'){width=d.getUint16(26,true)&16383;height=d.getUint16(28,true)&16383;}
-  if(kind==='VP8L'&&size>=5&&bytes[20]===47){const bits=d.getUint32(21,true);if(bits>>>29)return null;width=(bits&16383)+1;height=((bits>>>14)&16383)+1;}
-  if(!width||!height||width*height>12_000_000)return null;
-  return {width,height,orientation:1,omit:[] as [number,number][]};
- }catch{return null;}
-}
-export async function prepareGoodsSource(file:File,signal:AbortSignal):Promise<File>{
+export const goodsSourceAccept='image/png,image/jpeg,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif';
+const MAX_BYTES=20*1024*1024,MAX_PIXELS=40_000_000;
+
+/** Goods keep their own output policy, sharing the album decoder/encoder and single lane. */
+async function prepare(file:File,signal:AbortSignal):Promise<File>{
  signal.throwIfAborted();
- if(file.size>20*1024*1024)throw Error('20MiB 이하 사진 1장을 선택해 주세요.');
- let bitmap:ImageBitmap|undefined,canvas:HTMLCanvasElement|undefined;
- try{
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||typeof createImageBitmap!=='function'||typeof document==='undefined')return file;
-  const bytes=new Uint8Array(await file.arrayBuffer());signal.throwIfAborted();
-  const info=file.type==='image/webp'?inspectWebp(bytes):inspectImage(bytes,file.type,file.type==='image/jpeg'?40_000_000:12_000_000);
-  if(!info)return file;
-  const pieces:BlobPart[]=[];let start=0;
-  for(const [from,to] of info.omit){pieces.push(file.slice(start,from));start=to;}pieces.push(file.slice(start));
-  const [decodedWidth,decodedHeight]=resizeDimensions(info.width,info.height);
-  // Resize requests bound returned surfaces, not decoder peak RAM. High-resolution
-  // PNG/WebP remain server-only; JPEG peak usage still needs device validation.
-  bitmap=await createImageBitmap(new Blob(pieces,{type:file.type}),{resizeWidth:decodedWidth,resizeHeight:decodedHeight,resizeQuality:'high'});
-  signal.throwIfAborted();
-  if(bitmap.width!==decodedWidth||bitmap.height!==decodedHeight)return file;
-  const rotated=info.orientation>=5,width=rotated?decodedHeight:decodedWidth,height=rotated?decodedWidth:decodedHeight;
-  canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-  const ctx=canvas.getContext('2d');if(!ctx)return file;
-  const matrices=[[1,0,0,1,0,0],[-1,0,0,1,width,0],[-1,0,0,-1,width,height],[1,0,0,-1,0,height],[0,1,1,0,0,0],[0,1,-1,0,width,0],[0,-1,-1,0,width,height],[0,-1,1,0,0,height]];
-  const m=matrices[info.orientation-1];ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);ctx.drawImage(bitmap,0,0,decodedWidth,decodedHeight);
-  const blob=await new Promise<Blob|null>(resolve=>canvas!.toBlob(resolve,'image/webp',.85));signal.throwIfAborted();
-  if(!blob||blob.type!=='image/webp'||!blob.size||blob.size>=file.size)return file;
-  const header=new Uint8Array(await blob.slice(0,12).arrayBuffer());signal.throwIfAborted();
-  if(text(header.subarray(0,4))!=='RIFF'||text(header.subarray(8,12))!=='WEBP')return file;
-  return new File([blob],file.name.replace(/\.[^.]*$/,'')+'.webp',{type:'image/webp',lastModified:file.lastModified});
- }catch{signal.throwIfAborted();return file;}
- finally{bitmap?.close();if(canvas){canvas.width=0;canvas.height=0;}}
+ if(file.size>MAX_BYTES)throw Error('20MiB 이하 사진 1장을 선택해 주세요.');
+ const bytes=new Uint8Array(await file.arrayBuffer());signal.throwIfAborted();
+ const source=inspectGoodsSource(bytes),info=inspectImage(bytes,source.mime,Number.MAX_SAFE_INTEGER);
+ const width=info?.width??source.width,height=info?.height??source.height;
+ if(width&&height&&width*height>MAX_PIXELS)throw Error('4,000만 화소 이하 사진을 선택해 주세요.');
+ const pieces:BlobPart[]=[];let start=0;
+ for(const [from,to] of info?.omit??[]){pieces.push(file.slice(start,from));start=to;}pieces.push(file.slice(start));
+ const blob=new Blob(pieces,{type:source.mime});
+ const size=info?resizeDimensions(info.width,info.height):null;
+ let last:unknown,stage='decode';
+ for(let attempt=0;attempt<2;attempt++){
+  let image:DecodedPhoto|undefined,canvas:HTMLCanvasElement|undefined;
+  try{
+   stage='decode';signal.throwIfAborted();
+   image=await readPhoto(blob,signal,!!info&&attempt===0,2048,15000,size?{width:size[0],height:size[1]}:undefined);
+   signal.throwIfAborted();
+   if(!image.width||!image.height||image.width*image.height>MAX_PIXELS)throw Error('4,000만 화소 이하 사진을 선택해 주세요.');
+   const orientation=info?.orientation??1,rotated=orientation>=5;
+   const [w,h]=resizeDimensions(rotated?image.height:image.width,rotated?image.width:image.height);
+   canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+   const ctx=canvas.getContext('2d');if(!ctx)throw Error('사진 준비 공간을 만들지 못했어요.');
+   const matrices=[[1,0,0,1,0,0],[-1,0,0,1,w,0],[-1,0,0,-1,w,h],[1,0,0,-1,0,h],[0,1,1,0,0,0],[0,1,-1,0,w,0],[0,-1,-1,0,w,h],[0,-1,1,0,0,h]];
+   const m=matrices[orientation-1];ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);
+   ctx.drawImage(image.image,0,0,rotated?h:w,rotated?w:h);
+   stage='encode';
+   const output=await canvasBlob(canvas,.85,signal);signal.throwIfAborted();
+   if(!output||output.type!=='image/webp'||!output.size||output.size>MAX_BYTES)throw Error('사진 압축 실패');
+   const header=new Uint8Array(await output.slice(0,12).arrayBuffer());signal.throwIfAborted();
+   if(String.fromCharCode(...header.slice(0,4))!=='RIFF'||String.fromCharCode(...header.slice(8,12))!=='WEBP')throw Error('사진 압축 실패');
+   return new File([output],file.name.replace(/\.[^.]*$/,'')+'.webp',{type:'image/webp',lastModified:file.lastModified});
+  }catch(error){signal.throwIfAborted();last=error;}
+  finally{image?.close();if(canvas){canvas.width=0;canvas.height=0;}}
+ }
+ if(last instanceof Error&&/색상|화소|크기/.test(last.message))throw last;
+ throw Error(stage==='encode'?'사진을 압축하지 못했어요. 다시 시도해 주세요. (E1)':'사진을 읽지 못했어요. 다시 시도해 주세요. (D1)');
+}
+
+export function prepareGoodsSource(file:File,signal:AbortSignal):Promise<File>{
+ return photoTask(()=>prepare(file,signal),signal);
 }

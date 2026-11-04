@@ -35,7 +35,7 @@ test('test checkout explains no charge and blocks double clicks until album is r
  finish();await first;
  // onClick is intentionally fire-and-forget; wait for the fetch continuation.
  await new Promise(r=>setTimeout(r,0));
- assert.deepEqual(navigation,['/purchases/purchase']);h.dispose();
+ assert.deepEqual(navigation,['/purchases/purchase/photos']);h.dispose();
 });
 
 test('lost response retry keeps the same request key and frozen design version',async()=>{
@@ -46,7 +46,7 @@ test('lost response retry keeps the same request key and frozen design version',
  action(tree).props.onClick();await new Promise(r=>setTimeout(r,0));
  assert.equal(calls[0].headers['Idempotency-Key'],calls[1].headers['Idempotency-Key']);
  assert.equal(calls[0].body,calls[1].body);assert.equal(JSON.parse(calls[1].body).expected_version,1);
- assert.deepEqual(navigation,['/purchases/purchase']);h.dispose();
+ assert.deepEqual(navigation,['/purchases/purchase/photos']);h.dispose();
 });
 
 test('disabled mode never exposes a checkout and existing receipt opens the correct album stage',()=>{

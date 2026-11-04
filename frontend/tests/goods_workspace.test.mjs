@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {build} from 'esbuild';
-await build({entryPoints:['src/features/goods/GoodsWorkspace.tsx'],bundle:true,platform:'node',format:'esm',jsx:'automatic',loader:{'.css':'empty'},outfile:'goods-workspace-check.mjs',plugins:[{name:'hooks',setup(b){b.onResolve({filter:/^(react|react\/jsx-runtime|react-router|@tanstack\/react-query)$/},a=>({path:a.path,namespace:'harness'}));b.onLoad({filter:/.*/,namespace:'harness'},a=>({contents:a.path==='react'?`export const useRef=v=>hooks.ref(v),useState=v=>hooks.state(v),useEffect=(f,d)=>hooks.effect(f,d),useLayoutEffect=useEffect;`:a.path==='react/jsx-runtime'?`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment='fragment';`:a.path==='react-router'?`export const Link='link',useLocation=()=>({pathname:'/goods'}),useBlocker=()=>({state:'unblocked'}),useNavigate=()=>()=>{};`:`export const useQuery=()=>({data:{styles:[]},isError:false}),useQueryClient=()=>({invalidateQueries:async()=>{}});`}));}}]});
+await build({entryPoints:['src/features/goods/GoodsWorkspace.tsx'],bundle:true,platform:'node',format:'esm',jsx:'automatic',loader:{'.css':'empty'},outfile:'goods-workspace-check.mjs',plugins:[{name:'hooks',setup(b){b.onResolve({filter:/^(react|react\/jsx-runtime|react-router|@tanstack\/react-query)$/},a=>({path:a.path,namespace:'harness'}));b.onLoad({filter:/.*/,namespace:'harness'},a=>({contents:a.path==='react'?`export const useRef=v=>hooks.ref(v),useState=v=>hooks.state(v),useEffect=(f,d)=>hooks.effect(f,d),useLayoutEffect=useEffect;`:a.path==='react/jsx-runtime'?`export const jsx=(type,props,key)=>({type,props,key}),jsxs=jsx,Fragment='fragment';`:a.path==='react-router'?`export const Link='link',useLocation=()=>({pathname:'/goods'}),useBlocker=()=>({state:'unblocked'}),useNavigate=()=>()=>{};`:`export const useQuery=()=>({data:{styles:[]},isError:false}),useQueryClient=()=>({invalidateQueries:async()=>{}});`}));}}]});
 const {GoodsWorkspace}=await import('../goods-workspace-check.mjs');
 function harness(props={}){let index=0,mounted=true,updatesAfterUnmount=0;const cells=[],effects=[],pending=[];
  globalThis.hooks={ref(v){const i=index++;return cells[i]??={current:v};},state(v){const i=index++;if(!(i in cells))cells[i]=v;return [cells[i],next=>{if(!mounted)updatesAfterUnmount++;cells[i]=typeof next==='function'?next(cells[i]):next;}];},effect(f,deps){const i=index++,prev=effects[i];if(!prev||deps?.some((v,j)=>v!==prev.deps[j])){pending.push(()=>{prev?.cleanup?.();effects[i]={deps,cleanup:f()};});}}};
@@ -8,16 +8,17 @@ function harness(props={}){let index=0,mounted=true,updatesAfterUnmount=0;const 
 function nodes(tree){if(!tree||typeof tree!=='object')return [];if(Array.isArray(tree))return tree.flatMap(nodes);return [tree,...nodes(tree.props?.children)];}
 const find=(tree,match)=>{const n=nodes(tree).find(match);assert.ok(n,'expected UI element');return n;};
 const component=(tree,name)=>find(tree,n=>n.type?.name===name);
-function labelText(value){if(typeof value==='string')return value;if(value==null||typeof value!=='object')return '';if(Array.isArray(value))return value.map(labelText).join('');return value?.props?.['aria-hidden']? '':labelText(value?.props?.children);}
+function labelText(value){if(typeof value==='string'||typeof value==='number')return String(value);if(value==null||typeof value!=='object')return '';if(Array.isArray(value))return value.map(labelText).join('');return value?.props?.['aria-hidden']? '':labelText(value?.props?.children);}
 const button=(tree,label)=>find(tree,n=>(n.type==='button'||n.type?.name==='GlassButton')&&(n.props?.['aria-label']===label||labelText(n.props?.children)===label));
 const generate=async h=>{find(h.render(),n=>n.type==='form').props.onSubmit({preventDefault(){}});for(let i=0;i<8;i++)await tick();return h.render();};
 const tick=()=>new Promise(r=>setTimeout(r,0));
 const reply=data=>new Response(JSON.stringify({data}),{headers:{'Content-Type':'application/json'}});
-function environment(){globalThis.window=new EventTarget();window.location={origin:'http://localhost'};window.confirm=()=>true;window.setTimeout=()=>0;globalThis.Image=class{set src(v){if(v)queueMicrotask(()=>this.onload?.());}};delete globalThis.createImageBitmap;const calls=[];let count=0;const config={failure:null,wait:null};globalThis.fetch=async(url,options={})=>{calls.push({url,...options});if(options.method==='DELETE'){if(config.discardWait&&url.endsWith('/old')){const wait=config.discardWait;config.discardWait=null;return wait();}return new Response(null,{status:204});}if(url==='/api/v1/goods/work'){const id=++count===1?'old':'new';if(id==='new'&&config.createWait)return config.createWait(options,id);return reply({id});}if(url.endsWith('/source')){if(url.includes('/new/')&&options.method==='PUT'&&config.wait)return config.wait(options.signal);if(url.includes('/new/')&&config.failure==='network')throw TypeError('offline');if(url.includes('/new/')&&config.failure===options.method)return new Response(JSON.stringify({error:{code:'IMAGE_DECODE_FAILED'}}),{status:config.status??422});if(options.method==='PUT')return new Response(null,{status:204});if(url.includes('/new/')&&config.failure==='preview')throw TypeError('offline');return new Response(new Blob(['webp'],{type:'image/webp'}));}if(url.endsWith('/revisions')&&options.method==='POST')return reply({id:'revision'});return reply({revisions:[{id:'revision',request_key:'k',parent_id:null,message:'old request',style:'book',status:'ready',image_url:'/revision.png',error_code:null,fake:false}]});};return {calls,config};}
-async function select(h,file=new File(['heic'],'x.HEIC')){let tree=h.render();const input=find(tree,n=>n.type==='input'&&n.props.type==='file');input.props.onChange({target:{files:[file],value:'photo'}});for(let i=0;i<8;i++)await tick();return h.render();}
-async function existing(h){let tree=h.render();component(tree,'StylePicker').props.onSelect('book');tree=h.render();await select(h);await tick();tree=h.render();find(tree,n=>n.type==='textarea').props.onChange({target:{value:'a travel memory'}});tree=h.render();tree=await generate(h);component(tree,'RevisionHistory').props.onPreview('revision');tree=h.render();component(tree,'GoodsMockup').props.onChange({holeX:.3,holeY:.2,widthMm:60});tree=h.render();button(tree,'대화에서 더 수정하기').props.onClick();return h.render();}
+function environment(){globalThis.window=new EventTarget();window.location={origin:'http://localhost'};window.scrollY=0;window.scrollTo=()=>{};window.confirm=()=>true;window.setTimeout=()=>0;globalThis.Image=class{set src(v){if(v)queueMicrotask(()=>this.onload?.());}};globalThis.createImageBitmap=async(_blob,options)=>({width:options?.resizeWidth??30,height:options?.resizeHeight??40,close(){}});globalThis.document={createElement(){return {width:0,height:0,getContext(){return {transform(){},drawImage(){}};},toBlob(done){done(new Blob([new Uint8Array([82,73,70,70,4,0,0,0,87,69,66,80])],{type:'image/webp'}));}};}};const calls=[];let count=0;const config={failure:null,wait:null};globalThis.fetch=async(url,options={})=>{calls.push({url,...options});if(options.method==='DELETE'){if(config.discardWait&&url.endsWith('/old')){const wait=config.discardWait;config.discardWait=null;return wait();}return new Response(null,{status:204});}if(url==='/api/v1/goods/work'){const id=++count===1?'old':'new';if(id==='new'&&config.createWait)return config.createWait(options,id);return reply({id});}if(url.endsWith('/source')){if(url.includes('/new/')&&options.method==='PUT'&&config.wait)return config.wait(options.signal);if(url.includes('/new/')&&config.failure==='network')throw TypeError('offline');if(url.includes('/new/')&&config.failure===options.method)return new Response(JSON.stringify({error:{code:'IMAGE_DECODE_FAILED'}}),{status:config.status??422});if(options.method==='PUT')return new Response(null,{status:204});if(url.includes('/new/')&&config.failure==='preview')throw TypeError('offline');return new Response(new Blob(['webp'],{type:'image/webp'}));}if(url.endsWith('/complete')){if(config.complete)return config.complete(options);const body=JSON.parse(options.body);return reply({id:'design',version:1,product:body.product,placement:body.placement,image_url:'/revision.png',album_id:null,production_started:false,fake:false});}if(url.endsWith('/revisions')&&options.method==='POST')return reply({id:'revision'});return reply({revisions:config.revisions??[{id:'revision',request_key:'k',parent_id:null,message:'old request',style:'book',status:'ready',image_url:'/revision.png',error_code:null,fake:false}]});};return {calls,config};}
+async function select(h,file=new File([new Uint8Array([255,216,255,192,0,17,8,0,40,0,30,3,1,17,0,2,17,0,3,17,0,255,218,0,2])],'x.jpg',{type:'image/jpeg'})){let tree=h.render();const input=find(tree,n=>n.type==='input'&&n.props.type==='file');input.props.onChange({target:{files:[file],value:'photo'}});for(let i=0;i<8;i++)await tick();return h.render();}
+async function existing(h){let tree=h.render();component(tree,'StylePicker').props.onSelect('book');tree=h.render();await select(h);await tick();tree=h.render();find(tree,n=>n.type==='textarea').props.onChange({target:{value:'a travel memory'}});tree=h.render();tree=await generate(h);component(tree,'RevisionHistory').props.onPreview('revision');tree=h.render();component(tree,'GoodsMockup').props.onChange({holeX:.3,holeY:.2,widthMm:60});tree=h.render();component(tree,'GoodsPurchaseReview').props.onBack();return h.render();}
+function inspect(h){let tree=h.render();const history=component(tree,'RevisionHistory').props;history.onPreview(history.selectedId);tree=h.render();const review=component(tree,'GoodsPurchaseReview').props;const child=review.children;const value=child.type?.name==='GoodsMockup'?child.props:{src:child.props.src,product:review.product,interactive:false};review.onBack();h.render();return value;}
 test('workspace failed source PUT or preview leaves original revision, source and placement usable',async()=>{
- for(const failure of ['PUT','preview']){const e=environment(),h=harness();let tree=await existing(h);const before=component(tree,'GoodsMockup').props;e.config.failure=failure;tree=await select(h);const after=component(tree,'GoodsMockup').props;assert.equal(after.src,before.src);assert.deepEqual(after.placement,{holeX:.3,holeY:.2,widthMm:60});assert.equal(component(tree,'RevisionHistory').props.selectedId,'revision');assert.equal(button(tree,'이미지 만들기').props.disabled,true);assert.ok(e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/new')));assert.ok(!e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/old')));assert.ok(nodes(tree).some(n=>n.props?.role==='alert'));h.unmount();}
+ for(const failure of ['PUT','preview']){const e=environment(),h=harness();let tree=await existing(h);const before=inspect(h);e.config.failure=failure;tree=await select(h);const after=inspect(h);assert.equal(after.src,before.src);assert.deepEqual(after.placement,{holeX:.3,holeY:.2,widthMm:60});assert.equal(component(tree,'RevisionHistory').props.selectedId,'revision');assert.equal(button(tree,'이미지 만들기').props.disabled,true);assert.ok(e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/new')));assert.ok(!e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/old')));assert.ok(nodes(tree).some(n=>n.props?.role==='alert'));h.unmount();}
 });
 test('workspace unmount aborts pending upload and disposes candidate without stale state updates',async()=>{
  const e=environment(),h=harness();await existing(h);let observed;e.config.wait=signal=>new Promise((_,reject)=>{observed=signal;signal.addEventListener('abort',()=>reject(signal.reason),{once:true});});const pending=select(h);await tick();assert.ok(observed);h.unmount();assert.equal(observed.aborted,true);await pending;assert.equal(h.late,0);assert.ok(e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/new')));assert.ok(e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/old')));
@@ -34,11 +35,11 @@ test('workspace replacement failures preserve source, revisions, selection, draf
  for(const failure of [401,403,422,500,503,'network','preprocess']){
   const e=environment(),h=harness();let tree=await existing(h);
   find(tree,n=>n.type==='textarea').props.onChange({target:{value:'keep this request'}});tree=h.render();
-  const before=component(tree,'GoodsMockup').props,history=component(tree,'RevisionHistory').props;
+  const before=inspect(h),history=component(tree,'RevisionHistory').props;
   e.config.failure=failure==='network'?'network':'PUT';e.config.status=typeof failure==='number'?failure:422;
   tree=await select(h,failure==='preprocess'?new File([new Uint8Array(20*1024*1024+1)],'large.jpg',{type:'image/jpeg'}):undefined);
-  assert.equal(component(tree,'GoodsMockup').props.src,before.src,String(failure));
-  assert.deepEqual(component(tree,'GoodsMockup').props.placement,before.placement);
+  assert.equal(inspect(h).src,before.src,String(failure));
+  assert.deepEqual(inspect(h).placement,before.placement);
   assert.deepEqual(component(tree,'RevisionHistory').props.items,history.items);
   assert.equal(component(tree,'RevisionHistory').props.selectedId,history.selectedId);
   assert.equal(find(tree,n=>n.type==='textarea').props.value,'keep this request');
@@ -92,22 +93,19 @@ test('leaving during new-conversation cleanup ignores its late response',async()
 });
 
 test('switching to magnet reuses the selected artwork without another AI request',async()=>{
- const e=environment(),h=harness();let tree=await existing(h);const old=component(tree,'GoodsMockup').props;
+ const e=environment(),h=harness();let tree=await existing(h);const old=inspect(h);
  const before=e.calls.filter(c=>c.url.endsWith('/revisions')&&c.method==='POST').length;
  button(tree,'마그네틱').props.onClick();tree=h.render();
- assert.equal(component(tree,'StylePicker').props.product,'magnet');assert.equal(component(tree,'GoodsMockup').props.product,'magnet');assert.equal(component(tree,'GoodsMockup').props.interactive,false);
- assert.equal(component(tree,'GoodsMockup').props.src,old.src);assert.equal(e.calls.filter(c=>c.url.endsWith('/revisions')&&c.method==='POST').length,before);
+ assert.equal(component(tree,'StylePicker').props.product,'magnet');const magnet=inspect(h);assert.equal(magnet.product,'magnet');assert.equal(magnet.interactive,false);
+ assert.equal(inspect(h).src,old.src);assert.equal(e.calls.filter(c=>c.url.endsWith('/revisions')&&c.method==='POST').length,before);
  find(tree,n=>n.type==='textarea').props.onChange({target:{value:'마그네틱으로 더 다듬기'}});await generate(h);
  assert.equal(JSON.parse(e.calls.filter(c=>c.url.endsWith('/revisions')&&c.method==='POST').at(-1).body).product,'magnet');h.unmount();
 });
 test('magnet choice survives save-login resume and is sent on completion',async()=>{
  const e=environment(),h=harness({resume:{work_id:'old',revision_id:'revision',product:'magnet',placement:{holeX:.5,holeY:0,widthMm:50}}});
- h.render();for(let i=0;i<4;i++)await tick();let tree=h.render();const preview=component(tree,'GoodsMockup').props;
- assert.equal(preview.product,'magnet');
- assert.equal(component(tree,'StylePicker').props.selected,'book');
- // Simulate the renderer confirming this exact product/placement, then save.
- preview.onPreview({status:'ready',key:JSON.stringify([preview.src,preview.product,.5,0,50])});tree=h.render();
- button(tree,'디자인 완성하고 저장').props.onClick();for(let i=0;i<4;i++)await tick();
+ h.render();for(let i=0;i<4;i++)await tick();let tree=h.render();const review=component(tree,'GoodsPurchaseReview').props;
+ assert.equal(review.product,'magnet');assert.equal(review.ready,true);
+ await review.onSave();for(let i=0;i<4;i++)await tick();
  const sent=e.calls.find(c=>c.url.endsWith('/complete'));assert.equal(JSON.parse(sent.body).product,'magnet');h.unmount();
 });
 
@@ -144,4 +142,39 @@ test('blank input and text-only descriptions hide recommendations without disabl
  find(tree,n=>n.type==='textarea').props.onChange({target:{value:'바닷가의 작은 등대'}});tree=h.render();
  assert.ok(!nodes(tree).some(n=>n.type?.name==='PromptSuggestions'));
  assert.equal(button(tree,'이미지 만들기').props.disabled,false);h.unmount();
+});
+
+test('choosing an edit target preserves the draft without scrolling, focusing or generating',async()=>{
+ const e=environment();e.config.revisions=[{id:'revision',message:'first',style:'book',status:'ready',image_url:'/first.png'},{id:'second',message:'second',style:'book',status:'ready',image_url:'/second.png'}];
+ const h=harness();let tree=await existing(h),jumps=0,focuses=0;
+ find(tree,n=>n.type==='textarea').props.onChange({target:{value:'입력한 수정 요청 보존'}});tree=h.render();
+ const before=e.calls.filter(c=>c.method==='POST'&&c.url.endsWith('/revisions')).length;
+ const tail=find(tree,n=>n.type==='div'&&n.props.ref);tail.props.ref.current={scrollIntoView(){jumps++;}};
+ window.scrollTo=()=>{jumps++;};document.getElementById=()=>({focus(){focuses++;},scrollIntoView(){jumps++;}});
+ component(tree,'RevisionHistory').props.onSelect('second');tree=h.render();
+ assert.equal(component(tree,'RevisionHistory').props.selectedId,'second');
+ assert.equal(find(tree,n=>n.type==='textarea').props.value,'입력한 수정 요청 보존');
+ assert.ok(nodes(tree).some(n=>n.type==='span'&&labelText(n.props.children)==='시안 2 수정 중'));
+ assert.equal(jumps,0);assert.equal(focuses,0);
+ assert.equal(e.calls.filter(c=>c.method==='POST'&&c.url.endsWith('/revisions')).length,before);
+ assert.equal(button(tree,'이미지 만들기').props.className,'goods-send');
+ h.unmount();
+});
+
+test('save response loss freezes completion settings and a committed design stays in the same confirmation',async()=>{
+ const e=environment(),h=harness();await existing(h);let tree=h.render();
+ component(tree,'RevisionHistory').props.onPreview('revision');tree=h.render();const first=component(tree,'GoodsPurchaseReview');assert.equal(first.key,'old');
+ let attempt=0;e.config.complete=async options=>{attempt++;if(attempt===1)throw TypeError('lost response');const body=JSON.parse(options.body);return reply({id:'design',version:1,product:body.product,placement:body.placement,image_url:'/revision.png',album_id:null,production_started:false});};
+ assert.equal(await first.props.onSave(),null);tree=h.render();assert.equal(component(tree,'GoodsPurchaseReview').props.saveLocked,true);
+ component(tree,'GoodsMockup').props.onChange({holeX:.8,holeY:.8,widthMm:30});tree=h.render();
+ const saved=await component(tree,'GoodsPurchaseReview').props.onSave();assert.equal(saved.id,'design');tree=h.render();
+ const after=component(tree,'GoodsPurchaseReview');assert.equal(after.type,first.type);assert.equal(after.key,first.key);assert.equal(after.props.design.id,'design');
+ const sent=e.calls.filter(c=>c.url.endsWith('/complete'));assert.equal(sent.length,2);assert.equal(sent[0].body,sent[1].body);
+ h.unmount();assert.ok(!e.calls.some(c=>c.method==='DELETE'&&c.url.endsWith('/old')));
+});
+
+test('purchase confirmation opens at the top and explicit back restores the conversation position',async()=>{
+ environment();const h=harness();await existing(h);const scroll=[];window.scrollY=720;window.scrollTo=options=>{scroll.push(options.top);window.scrollY=options.top;};
+ component(h.render(),'RevisionHistory').props.onPreview('revision');let tree=h.render();assert.equal(scroll.at(-1),0);
+ component(tree,'GoodsPurchaseReview').props.onBack();h.render();assert.equal(scroll.at(-1),720);h.unmount();
 });

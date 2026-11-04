@@ -5,7 +5,7 @@ import {build} from 'esbuild';
 await build({entryPoints:['src/features/goods/PurchaseDetail.tsx'],bundle:true,platform:'node',format:'esm',jsx:'automatic',outfile:'goods-purchase-check.mjs',plugins:[{name:'harness',setup(b){
  b.onResolve({filter:/\.css$/},a=>({path:a.path,namespace:'style'}));b.onLoad({filter:/.*/,namespace:'style'},()=>({contents:''}));
  b.onResolve({filter:/^(react|react\/jsx-runtime|react-router|@tanstack\/react-query)$/},a=>({path:a.path,namespace:'harness'}));
- b.onLoad({filter:/.*/,namespace:'harness'},a=>({contents:a.path==='react/jsx-runtime'?`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment='fragment';`:a.path==='react-router'?`export const Link='link',Navigate='navigate',useParams=()=>({purchaseId:'purchase'}),useLocation=()=>({pathname:'/albums/00000000-0000-0000-0000-000000000001/edit',search:globalThis.search??''});`:a.path==='react'?`export const forwardRef=f=>f;`:`export const useQuery=o=>{globalThis.queries?.push(o);return o.queryKey[0]==='client-config'?globalThis.configQuery??{}:o.queryKey[0]==='purchase-album'?globalThis.albumQuery??{}:query;};`}));
+ b.onLoad({filter:/.*/,namespace:'harness'},a=>({contents:a.path==='react/jsx-runtime'?`export const jsx=(type,props)=>({type,props}),jsxs=jsx,Fragment='fragment';`:a.path==='react-router'?`export const Link='link',Navigate='navigate',useParams=()=>({purchaseId:'purchase'}),useLocation=()=>({pathname:globalThis.pathname??'/albums/00000000-0000-0000-0000-000000000001/edit',search:globalThis.search??'',state:globalThis.navigationState});`:a.path==='react'?`export const forwardRef=f=>f,useEffect=()=>{},useState=v=>[v,()=>{}];`:`export const useQuery=o=>{globalThis.queries?.push(o);return o.queryKey[0]==='client-config'?globalThis.configQuery??{}:o.queryKey[0]==='purchase-album'?globalThis.albumQuery??{}:query;};`}));
 }}]});
 const {PurchaseDetail,PurchasePhotos,PurchaseReturn}=await import('../goods-purchase-check.mjs');
 function nodes(t){if(!t||typeof t!=='object')return [];if(Array.isArray(t))return t.flatMap(nodes);return [t,...nodes(t.props?.children)];}
@@ -77,3 +77,23 @@ test('processing albums keep their progress destination and gift return path is 
  assert.equal(nodes(PurchaseReturn({userId:'user'})).find(n=>n.type==='link').props.to,'/gifts/purchase');
 });
 test.after(()=>unlink('goods-purchase-check.mjs'));
+
+test('only a matching user and verified purchase forwards the completion notice to photos',()=>{
+ content([]);globalThis.navigationState={purchaseCompleted:{userId:'user',purchaseId:'purchase'}};
+ let next=PurchasePhotos({userId:'user'});assert.equal(next.props.to,'/albums/album/manage');
+ assert.deepEqual(next.props.state,{purchaseCompleted:{userId:'user',purchaseId:'purchase',albumId:'album'}});
+ globalThis.navigationState={purchaseCompleted:{userId:'other',purchaseId:'purchase'}};
+ assert.equal(PurchasePhotos({userId:'user'}).props.state,undefined);
+ globalThis.query.data={...purchase,can_manage:false,gift:true};
+ assert.equal(PurchasePhotos({userId:'user'}).props.to,'/purchases/purchase');globalThis.navigationState=undefined;
+});
+test('album completion feedback requires the server-resolved purchase and current actor',()=>{
+ const albumId='00000000-0000-0000-0000-000000000001';globalThis.pathname=`/albums/${albumId}/manage`;
+ globalThis.query={data:{purchase_id:'purchase'}};
+ globalThis.navigationState={purchaseCompleted:{userId:'user',purchaseId:'purchase',albumId}};
+ const notice=tree=>nodes(tree).some(n=>n.type?.name==='PurchaseCompletionNotice');
+ assert.equal(notice(PurchaseReturn({userId:'user'})),true);
+ assert.equal(notice(PurchaseReturn({userId:'other'})),false);
+ query.data={purchase_id:'different'};assert.equal(notice(PurchaseReturn({userId:'user'})),false);
+ globalThis.navigationState=undefined;globalThis.pathname=undefined;
+});

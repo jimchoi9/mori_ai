@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import {captureEntry,clearEntry,enter,close,readerLibrary,type Entry,type NfcBook} from './api';
+import {enter,close,readerLibrary,NfcSessionExpired,type NfcBook} from './api';
+import {captureEntry,retainEntry,rememberEntry,type Entry} from './entry';
 import {preloadMemories} from './preloadMemories';
 import {LoadingScene} from './LoadingScene';
 import {MemoryBook,type Chapter} from './MemoryBook';
@@ -7,6 +8,7 @@ import './nfc.css';
 export function NfcExperience(){
  const entry=useRef<Entry|null|undefined>(undefined);if(entry.current===undefined)entry.current=captureEntry();
  const grant=useRef<NfcBook|null>(null),urls=useRef<string[]>([]);
+ const renewing=useRef(false);
  const [attempt,setAttempt]=useState(0),[state,setState]=useState<'loading'|'ready'|'preparing'|'error'|'ended'>(entry.current?'loading':'ended');
  const [error,setError]=useState(''),[previews,setPreviews]=useState<(string|null)[]>([]);
  const [progress,setProgress]=useState({loaded:0,total:0}),[showLoading,setShowLoading]=useState(!!entry.current);
@@ -16,9 +18,9 @@ export function NfcExperience(){
   return()=>{document.body.classList.remove('nfc-mode');delete document.documentElement.dataset.nfc;document.title=previousTitle;if(previous)theme?.setAttribute('content',previous);};
  },[]);
  useEffect(()=>{
-  clearEntry();
+  if(entry.current)retainEntry(entry.current);
   if(!entry.current)return;
-  const controller=new AbortController();let alive=true,expiry:ReturnType<typeof setTimeout>|undefined,exit:ReturnType<typeof setTimeout>|undefined;
+  const controller=new AbortController();let alive=true,exit:ReturnType<typeof setTimeout>|undefined;
   const release=()=>{urls.current.forEach(URL.revokeObjectURL);urls.current=[];};
   const end=()=>{controller.abort();if(grant.current){void close(grant.current.session_token);grant.current=null;}release();if(alive){setBook(null);setState('ended');}};
   const makeUrl=(blob:Blob)=>{controller.signal.throwIfAborted();const url=URL.createObjectURL(blob);urls.current.push(url);return url;};
@@ -26,9 +28,9 @@ export function NfcExperience(){
   void(async()=>{
    try{
     const data=await enter(entry.current!,controller.signal);if(!alive)return;
+    rememberEntry(entry.current!);
     if(data.state==='preparing'){setState('preparing');return;}
     grant.current=data;
-    expiry=setTimeout(end,Math.max(0,Date.parse(data.expires_at)-Date.now()));
     setPreviews(Array(Math.min(4,data.pages.length)).fill(null));
     setProgress({loaded:0,total:data.pages.length});
     const [loaded]=await Promise.all([preloadMemories(data,controller.signal,makeUrl,
@@ -39,10 +41,12 @@ export function NfcExperience(){
     if(!chapters.length)throw Error('아직 담긴 추억이 없어요.');
     await Promise.all(chapters.slice(0,2).map(async p=>{p.media.src=p.src;await p.media.decode();}));
     if(alive){setBook({chapters,music});setState('ready');exit=setTimeout(()=>{if(alive)setShowLoading(false);},900);}
-   }catch(e){if(alive&&!controller.signal.aborted){controller.abort();release();if(grant.current){void close(grant.current.session_token);grant.current=null;}clearTimeout(expiry);setError(e instanceof Error?e.message:'추억을 불러오지 못했어요.');setState('error');}}
+   }catch(e){if(alive&&!controller.signal.aborted){controller.abort();release();if(grant.current){void close(grant.current.session_token);grant.current=null;}if(e instanceof NfcSessionExpired&&!renewing.current){renewing.current=true;setAttempt(n=>n+1);return;}setError(e instanceof Error?e.message:'추억을 불러오지 못했어요.');setState('error');}}
   })();
-  addEventListener('pagehide',end);
-  return()=>{alive=false;clearTimeout(expiry);clearTimeout(exit);removeEventListener('pagehide',end);end();};
+  const restore=(event:PageTransitionEvent)=>{if(event.persisted){renewing.current=false;setAttempt(n=>n+1);}};
+  addEventListener('pagehide',end);addEventListener('pageshow',restore);
+  return()=>{alive=false;clearTimeout(exit);removeEventListener('pagehide',end);removeEventListener('pageshow',restore);end();};
  },[attempt]);
- return <main className="nfc-experience">{showLoading&&['loading','ready'].includes(state)&&<LoadingScene previews={previews} leaving={state==='ready'} loaded={progress.loaded} total={progress.total}/>}<div className={state==='ready'?'nfc-book-open':'nfc-book-hidden'}>{book&&<MemoryBook chapters={book.chapters} music={book.music}/>}</div>{!['loading','ready'].includes(state)&&<section className="nfc-message"><small>THE MOMENTS WE KEEP</small><h1>{state==='preparing'?'추억을 담고 있어요.':state==='ended'?'그날의 온기를 다시.':'잠시 기다려 주세요.'}</h1><p>{state==='preparing'?'앨범이 완성되면 굿즈의 NFC를 태그해 주세요.':state==='ended'?'굿즈의 NFC를 태그하면 추억책이 열립니다.':error}</p>{state==='error'&&<button type="button" onClick={()=>setAttempt(n=>n+1)}>다시 불러오기</button>}</section>}</main>;
+ const reload=()=>{renewing.current=false;setAttempt(n=>n+1);};
+ return <main className="nfc-experience">{showLoading&&['loading','ready'].includes(state)&&<LoadingScene previews={previews} leaving={state==='ready'} loaded={progress.loaded} total={progress.total}/>}<div className={state==='ready'?'nfc-book-open':'nfc-book-hidden'}>{book&&<MemoryBook chapters={book.chapters} music={book.music}/>}</div>{!['loading','ready'].includes(state)&&<section className="nfc-message"><small>THE MOMENTS WE KEEP</small><h1>{state==='preparing'?'추억을 담고 있어요.':state==='ended'?'추억책을 열어 주세요.':'잠시 기다려 주세요.'}</h1><p>{state==='preparing'?'사진이 준비되면 다시 불러와 주세요.':state==='ended'?'감상 링크나 굿즈의 NFC로 처음 한 번 열면 다음에도 다시 볼 수 있어요.':error}</p>{entry.current&&<button type="button" onClick={reload}>다시 불러오기</button>}</section>}</main>;
 }
