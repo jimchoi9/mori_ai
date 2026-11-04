@@ -65,14 +65,28 @@ async def summary(session, album):
     period=capture_period(pages,uploads)
     return {'capture_period':period,'title_pending':bool(album.content_enabled and session.info.get('album_title_generation_enabled',True) and album.title_source=='pending' and album.title_seed is not None), 'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
         **({'content_enabled':True,'content_ready':bool(album.content_manifest)} if album.content_enabled else {}),
-        'nfc_required':not album.legacy_access, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
+        'nfc_required':False, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}
 
 
-async def create_album(session, user_id, key, hashed):
-    # Independent album creation is closed, including historical idempotency replays.
-    # Checkout creates its one album and receipt together in a single transaction.
-    raise APIError(403, 'PURCHASE_REQUIRED', '굿즈를 구매하면 전용 사진첩이 만들어집니다.')
+async def create_album(session, user_id, key, hashed, settings):
+    from backend.access.service import require_access
+    from backend.http.idempotency import replay
+    await require_access(session, settings, user_id)
+    if await repo.lock_owner(session, user_id) is None:
+        not_found()
+    # Owner lock also serializes retries: a lost response never creates two albums.
+    previous = await repo.find_record(session, user_id, 'POST /api/v1/albums', key)
+    if previous is not None:
+        return replay(previous, hashed)
+    album = await repo.insert_album(session, user_id)
+    album.title = '새 앨범'
+    album.title_source = 'pending'
+    album.content_enabled = bool(settings.album_content_enabled)
+    await session.flush()
+    data = {'album': await summary(session, album)}
+    await repo.save_record(session, user_id, 'POST /api/v1/albums', key, hashed, album.id, 201, data)
+    return 201, data
 
 
 def encode_cursor(album):

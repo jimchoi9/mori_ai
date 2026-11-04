@@ -15,7 +15,7 @@ export type TaskStatus = 'queued'|'running'|'retry_wait'|'succeeded'|'failed'|'u
 export interface TaskView { stage:'caption'|'image_transform'|'optimize'; status:TaskStatus; completion_kind:'provider'|'passthrough'|'local'|null; error_code:string|null; retryable:boolean }
 export interface GenerationView { generation_mode:GenerationMode; run_id:string; album_id:string; album_status:AlbumStatus; run_status:'queued'|'running'|'action_required'|'succeeded'|'cancelled'; total_pages:number; completed_pages:number; failed_pages:number; unknown_pages:number; pending_pages:number; progress_percent:number; can_resume:boolean; poll_after_ms:number|null; pages:{page_id:string;tasks:TaskView[]}[] }
 export interface GenerationAccepted { run_id:string; status_url:string; album_version:number }
-export interface ViewerPage { id:string; position:number; image:MediaRef; caption_text:string }
+export interface ViewerPage { id:string; position:number; image:MediaRef; thumbnail?:MediaRef|null; caption_text:string }
 export interface Viewer { generation_mode:GenerationMode; album_id:string; title:string; version:number; pages:ViewerPage[]; media_access:MediaAccess[]; music:{track_id:string;url:string;title:string}|null }
 
 export interface UploadPreprocessing { version:1|2; original_width:number; original_height:number; captured_at_raw:string|null; captured_timezone:string|null; gps?:{latitude:number;longitude:number} }

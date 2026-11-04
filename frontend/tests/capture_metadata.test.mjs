@@ -108,7 +108,7 @@ test('GPS uses primary HEIC item and supports PNG/WebP metadata',()=>{
  assert.deepEqual(captureHints(joinBytes(text('RIFF'),new Uint8Array([n&255,n>>>8,0,0]),text('WEBP'),chunk),'image/webp'),want);
 });
 test('bad GPS is discarded without losing valid capture time',()=>{
- for(const mutate of [d=>d.setUint32(194,0,true),d=>d.setUint32(190,91,true),d=>d.setUint32(202,0,true),d=>d.setUint32(214,181,true),d=>d.setUint32(154,99999,true),d=>d.setUint8(142,88)]){
+ for(const mutate of [d=>d.setUint32(194,0,true),d=>d.setUint32(190,91,true),d=>d.setUint32(202,0,true),d=>d.setUint32(214,181,true),d=>d.setUint32(154,99999,true),d=>d.setUint8(142,88),d=>{d.setUint8(142,0);d.setUint32(194,0,true)}]){
   const raw=gpsTiff();mutate(new DataView(raw.buffer));assert.deepEqual(captureHints(jpegExif(raw),'image/jpeg'),expected);
  }
 });

@@ -1,5 +1,30 @@
 # mori_ai 에이전트 공통 작업 규칙
 
+## GPS 문구 채택·실제 UI 직접 테스트 재개 — 2026-11-04
+
+사용자가 실제3사진의v3비교를보고 ‘좋아이렇게진행하자’고수락했다. GPS문구기준을확정하고 홈=내앨범/구매없는생성/각앨범공통감상의휴대폰직접테스트로넘어간다. 이수락을운영배포확인으로해석하지않는다. 사용자UIUX정상확인전원격push/PR/배포보류는유지한다.
+
+실제시험URL은같은Wi-Fi https://192.168.0.40:18188/ (alpha개발로그인). 신규로컬컨테이너mori-album-first-live-review-web/worker가기존승인로컬PG·미디어·USD3원장을이어쓴다. 기존web/worker컨테이너/이미지는중지상태로보존. 제목0020migration전private백업과27테이블전체행digest보존확인,기존제목은legacy기본만추가. web은mori-ai:album-first-mobile-20261104,worker는mori-ai:place-evidence-v3-20261104/신규promptv3/실AItrue/메일false. 현재인증서는3일용이며기기/시스템신뢰설정을변경하지않았다. 설정/키/백업은Gitignore output/album-first-live-review에만보관한다. 상세재실행·검증/주의범위는개발운영최신절.
+
+실제393폭에서앨범감상버튼이제목에겹치는문제를발견해책장카드의동작행을본문아래정상흐름으로옮겼다. frontend329/타입/Vite통과,320/393/1024폭가로넘침·겹침0확인. 새빈앨범생성→관리진입→그앨범만삭제와기존5장공통뷰어진입확인. 개인사진추가·추가유료AI·메일·운영변경0. 휴대폰선택/수정/순서/감상·실기기인수는사용자대기다.
+
+## GPS 웹 기준 확정·신규 문구 v3 — 2026-11-04
+
+사용자는 웹 유지/GPS 유무와 근거에 따른 자연스러운 장소 표현을 채택했다. 실제 USB 조회에서 S25 Ultra Android17의 Chrome156은 ACCESS_MEDIA_LOCATION 선언 없음·AppOps ignore, 카톡26.9.1은 granted/allow를 확인했다. 같은 사진의 Chrome GPS0/Kakao유효GPS와 일치한다. 이번 기기의 사진 전달 경로 결과이며 모든 Android/파일로 일반화하지 않는다. USB 조회는 끝났고 분리해도 된다.
+
+새 장소 job만 album-place-experience-v3, 지침을 GPS 유무로 분리하고 장소 특정→종류→행동으로 근거에 맞춘다. GPS만으로 상호 확정/체인 지점 추측/배경 간판을 방문으로 변경/시간 근접만으로 reference 장소 복사는 금지한다. 기존 v1/v2 지침·저장글·편집/교체글·사진당1호출/모델/원장/최대2 references 유지, 새 지도·OCR API/원본 재전송/추가 UI 없음. 공통v1.30, API/DB migration 변경 없음. 검증/실제 문구 비교 상태는 개발운영 최신 절. 사용자의 실제 테스트 확인 전 push/PR/운영 배포 금지를 유지한다.
+
+## 사용자 GPS 확정·직접 UI 테스트 후 배포 — 2026-11-04 최신 지시
+
+- 사용자가 배포 단계로 넘어가려는 진행을 중단했다. 순서는 **GPS/공간에서 원인·해결 확정 → 사용자가 UIUX 직접 테스트 → 사용자가 정상 동작 확인 후 배포 진행**이다. 이전의 즉시 PR/배포 진행 계획은 이 지시로 대체한다. 원격 push/PR 제출/merge/운영 배포는 아직 없으며, 사용자의 확인 전에 수행하지 않는다. 로컬 코드·격리 시험 서버는 보존하고 UI 추가 진행은 보류한다.
+- 확정된 반복 문구 원인: place_caption.assemble v1에서 장소명 전부null/setting=공간이면 공간에서를 강제로 붙인다. 새 v2의 문구 조합 수정·mock/회귀는 완료했지만 기존20글귀는 미변경이며 운영 미반영이다. 이 수정만으로 GPS 누락 원인이 해결됐다고 주장하지 않는다.
+- 실제 집계20건의저장GPS없음/제공HEIC의NUL방향·nonfinite좌표/유효GPS합성HEIC의실제브라우저→DB보존을구분한다. 제공파일의유효좌표부재는확정이나기기원본부터없었는지전달과정에서제거됐는지는미확정이다. ‘원본GPS없음’이나‘웹파서가유효GPS누락’으로단정하지않는다.
+- Android 공식 MediaStore 문서의 EXTRA_REQUEST_LOCATION_METADATA_ACCESS는 ACTION_PICK_IMAGES에서 기본 위치정보 redaction을 명시한다: https://developer.android.com/reference/android/provider/MediaStore#EXTRA_REQUEST_LOCATION_METADATA_ACCESS . AOSP MediaProvider 문서도 위치메타데이터 redaction을 명시한다: https://source.android.com/docs/core/media/media-provider . Chromium SelectFileDialog에사진선택경로가있다. 기기·선택경로에의한제거는이번사례의가설이며아직실기기대조로확정하지않았다. 기기별발생질문을보냈고GPS확인부터진행한다.
+
+## 앨범 중심 서비스 전환·배포 승인 — 2026-11-04
+
+사용자 최신 지시로 GPS/공간에서 문제와 홈=내앨범·구매 없는 생성·각 앨범의 공통 책 감상을 구현하고 점검 후 배포한다. 이번 지시는 이전 서버 접속/배포 금지 인계를 해당 작업에 한해 대체한다. 작업 브랜치 feat/album-first-experience에서 누적 UX와 최신985565d의 제목/촬영기간을 보존해 통합한다. PR·검사/이미지 게시 확인 후 검증된 전체SHA를 기존 Lightsail 배포 스크립트로 반영한다. 다른 서비스/DB 초기화/비용 원장 리셋/키 출력은 수행하지 않는다. API/권한/신규caption v2는 공통v1.29, 새 migration 없음. 기존 글은 재작성하지 않는다. 현재 검증·배포 진행 상태는 개발운영 최신 절을 따른다.
+
 ## 굿즈 추가 변경 보류·기존 수정분 먼저 테스트 — 2026-11-04
 
 - 사용자 최신 지시: ‘사진첨부는 이전에 수정이 진행됐던 것 같아서 테스트 해보고 다시 손보고, AI 추천은 그대로 가자. 지금 굿즈 만들기는 일단 수정된 것만 테스트를 해볼게.’

@@ -1,12 +1,12 @@
 import {albumMeta} from './albumMeta';
-import {Link} from 'react-router';
+import {Link,useNavigate} from 'react-router';
 import {AlbumCard} from './AlbumCard';
 import {ScreenHeader} from '../../components/layout/ScreenHeader';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient, useQuery } from '@tanstack/react-query';
 import { api, errorText } from '../../api/client';
 import type { Album, MediaAccess, Config } from '../../api/types';
-import { albumPath } from '../generation/flow';
+import { albumPath,requestIntents } from '../generation/flow';
 import { usePrivateRequest } from '../generation/usePrivateRequest';
 import { removeAlbum } from './removeAlbum';
 const albumLabels:Record<string,string>={draft:'초안',processing:'생성 중',action_required:'확인 필요',review_ready:'결과 확인',published:'완성'};
@@ -17,15 +17,25 @@ function Cover({album,access,renew}:{album:Album;access?:MediaAccess;renew:()=>v
  return <div className="cover">{access && !failed ? <img src={access.url} alt={`${album.title} 표지`} onError={()=>{setFailed(true);renew();}}/> : <><span aria-hidden="true">▤</span><span>{album.page_count}장의 기억</span></>}</div>;
 }
 export function Bookshelf({userId}: {userId:string}) {
+ const navigate=useNavigate(),creating=useRef(false),[createBusy,setCreateBusy]=useState(false);
  const [deletingId,setDeletingId]=useState<string|null>(null);const cache=useQueryClient();
  const request=usePrivateRequest();const [error,setError] = useState('');
  const config=useQuery({queryKey:['client-config',userId],queryFn:({signal})=>api<Config>('/client-config',{signal})});
  const albums = useInfiniteQuery({queryKey:['albums',userId],initialPageParam:'',queryFn:({pageParam,signal}) => api<{items:Album[];next_cursor:string|null;media_access:MediaAccess[]}>(`/albums${pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''}`,{signal}),getNextPageParam:last => last.next_cursor ?? undefined,refetchInterval:q=>!document.hidden&&q.state.data?.pages.some(page=>page.items.some(album=>album.title_pending))?1800:false,refetchIntervalInBackground:false});
+ async function create(){
+  if(creating.current)return;creating.current=true;setCreateBusy(true);setError('');
+  const scope=`create-album:${userId}`,intent=requestIntents.get(scope,{});
+  try{const data=await api<{album:Album}>('/albums',{method:'POST',body:intent.body,key:intent.key,signal:request.current.signal});
+   if(request.current.signal.aborted)return;requestIntents.finish(scope);void cache.invalidateQueries({queryKey:['albums',userId]}).catch(()=>undefined);
+   if(!request.current.signal.aborted)navigate(albumPath(data.album));
+  }catch(e){if(!request.current.signal.aborted)setError(errorText(e));}
+  finally{creating.current=false;if(!request.current.signal.aborted)setCreateBusy(false);}
+ }
  async function remove(album:Album){
   if(deletingId||!window.confirm(`${album.title} 사진첩과 모든 사진을 삭제할까요?`))return;setDeletingId(album.id);setError('');
   try{await removeAlbum(album.id,request.current.signal);if(!request.current.signal.aborted)await cache.invalidateQueries({queryKey:['albums',userId]});}
   catch(e){if(!request.current.signal.aborted){setError(errorText(e));await albums.refetch();}}finally{if(!request.current.signal.aborted)setDeletingId(null);}
  }
  const items = albums.data?.pages.flatMap(p=>p.items) ?? [];
- return <section className="bookshelf-screen"><ScreenHeader title="내 앨범"/>{error && <p role="alert">{error}</p>}{albums.isPending && <p role="status">앨범을 불러오고 있어요…</p>}{albums.isError && <div role="alert"><p>{errorText(albums.error)}</p><button onClick={()=>void albums.refetch()}>앨범 다시 불러오기</button></div>}{!albums.isPending && !albums.isError && !items.length && <div className="empty"><div className="memory-cards" aria-hidden="true"><span/><span/></div><h2>아직 앨범이 없어요</h2><p>굿즈를 구매하면 전용 사진첩이 생겨요. 좋아하는 사진으로 채워 보세요.</p><Link className="button-link" to="/goods">굿즈 만들기</Link></div>}<div className="books">{items.map(album=><AlbumCard key={album.id} title={album.title} meta={albumMeta(album)} destination={config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album)} cover={<Cover album={album} access={albums.data?.pages.flatMap(p=>p.media_access).find(a=>a.asset_id===album.cover?.asset_id)} renew={()=>void albums.refetch()}/>} status={album.status==='published'?undefined:albumLabels[album.status]??album.status} menu={<details className="book-options"><summary aria-label={`${album.title} 사진첩 더보기`}>···</summary><button className="text danger" disabled={!!deletingId} aria-label={`${album.title} 사진첩 삭제`} onClick={()=>void remove(album)}>{deletingId===album.id?'삭제 중…':'사진첩 삭제'}</button></details>}/>)}</div>{albums.hasNextPage && <button className="secondary" disabled={albums.isFetchingNextPage} onClick={()=>void albums.fetchNextPage()}>사진첩 더 보기</button>}</section>;
+ return <section className="bookshelf-screen"><ScreenHeader title="내 앨범" trailing={<button className="album-create" disabled={createBusy||!!deletingId} onClick={()=>void create()}>{createBusy?'만드는 중…':'＋ 새 앨범'}</button>}/><div className="albums-goods-link"><Link to="/goods">사진으로 굿즈 만들기 →</Link></div>{error && <p role="alert">{error}</p>}{albums.isPending && <p role="status">앨범을 불러오고 있어요…</p>}{albums.isError && <div role="alert"><p>{errorText(albums.error)}</p><button onClick={()=>void albums.refetch()}>앨범 다시 불러오기</button></div>}{!albums.isPending && !albums.isError && !items.length && <div className="empty"><div className="memory-cards" aria-hidden="true"><span/><span/></div><h2>아직 앨범이 없어요</h2><p>좋아하는 사진을 담아 나만의 추억책을 만들어 보세요.</p><button disabled={createBusy} onClick={()=>void create()}>첫 앨범 만들기</button></div>}<div className="books">{items.map(album=><AlbumCard key={album.id} title={album.title} meta={albumMeta(album)} destination={config.data?.album_content_enabled&&album.page_count>0&&!['processing','action_required'].includes(album.status)?`/albums/${album.id}/manage`:albumPath(album)} cover={<Cover album={album} access={albums.data?.pages.flatMap(p=>p.media_access).find(a=>a.asset_id===album.cover?.asset_id)} renew={()=>void albums.refetch()}/>} status={album.status==='published'?undefined:albumLabels[album.status]??album.status} menu={<><Link className="album-watch" aria-label={`${album.title} 감상하기`} to={`/albums/${album.id}/view`} hidden={!album.content_ready&&album.status!=='published'}>감상하기</Link><details className="book-options"><summary aria-label={`${album.title} 사진첩 더보기`}>···</summary><button className="text danger" disabled={!!deletingId} aria-label={`${album.title} 사진첩 삭제`} onClick={()=>void remove(album)}>{deletingId===album.id?'삭제 중…':'사진첩 삭제'}</button></details></>}/>)}</div>{albums.hasNextPage && <button className="secondary" disabled={albums.isFetchingNextPage} onClick={()=>void albums.fetchNextPage()}>사진첩 더 보기</button>}</section>;
 }

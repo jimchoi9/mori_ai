@@ -28,23 +28,24 @@ async def seed_legacy_album(client, me):
 
 
 @pytest.mark.asyncio
-async def test_legacy_serialization_and_new_creation_closed(client, db):
+async def test_legacy_serialization_and_independent_creation_replay(client, db):
     me = await login(client)
     album = await seed_legacy_album(client, me)
     detail = await client.get('/api/v1/albums/' + album['id'])
     assert detail.status_code == 200
     assert detail.json()['data']['detail']['album'] == album
     assert set(album) == {'id','title','status','version','nfc_required','page_count','cover','created_at','updated_at','published_at','capture_period','title_pending'}
-    # Existing albums and even old idempotency records do not mint a new grant.
+    # Historical operation keys still detect a different request body.
     async with db() as s, s.begin():
         s.add(IdempotencyRecord(owner_id=UUID(me['user']['id']), operation='POST /api/v1/albums',
             key='create-1', request_hash='a'*64, resource_id=UUID(album['id']), http_status=201,
             response_body={'album':album}))
-    for key in ['create-1', 'new']:
-        response = await create(client, me, key)
-        assert response.status_code == 403 and response.json()['error']['code'] == 'PURCHASE_REQUIRED'
+    assert (await create(client, me, 'create-1')).status_code == 409
+    response = await create(client, me, 'new')
+    assert response.status_code == 201
+    assert (await create(client, me, 'new')).json()['data'] == response.json()['data']
     async with db() as s:
-        assert await s.scalar(select(func.count()).select_from(Album)) == 1
+        assert await s.scalar(select(func.count()).select_from(Album)) == 2
 
 
 @pytest.mark.asyncio
@@ -68,13 +69,14 @@ async def test_required_key_strict_body_uuid_query_and_csrf(client):
 
 
 @pytest.mark.asyncio
-async def test_parallel_independent_creates_never_allocate_album(client, db):
+async def test_parallel_independent_creates_allocate_once_per_key(client, db):
     me = await login(client)
     replies = await asyncio.gather(create(client, me), create(client, me), create(client, me, 'other'))
-    assert all(r.status_code == 403 and r.json()['error']['code'] == 'PURCHASE_REQUIRED' for r in replies)
+    assert all(r.status_code == 201 for r in replies)
+    assert replies[0].json()['data']==replies[1].json()['data']
     async with db() as s:
-        assert await s.scalar(select(func.count()).select_from(Album)) == 0
-        assert await s.scalar(select(func.count()).select_from(IdempotencyRecord)) == 0
+        assert await s.scalar(select(func.count()).select_from(Album)) == 2
+        assert await s.scalar(select(func.count()).select_from(IdempotencyRecord)) == 2
 
 
 @pytest.mark.asyncio
@@ -84,7 +86,7 @@ async def test_legacy_owner_scope(client, db):
     beta = await login(client, 'beta')
     assert (await client.get('/api/v1/albums/' + a)).status_code == 404
     assert (await client.delete('/api/v1/albums/' + a + '?expected_version=1', headers=headers(beta))).status_code == 404
-    assert (await create(client, beta)).status_code == 403
+    assert (await create(client, beta)).status_code == 201
 
 
 @pytest.mark.asyncio
@@ -123,9 +125,9 @@ async def test_delete_version_access_outbox_and_fence(client, db):
     deleted=await client.delete('/api/v1/albums/'+a+'?expected_version=1', headers=headers(me))
     assert deleted.status_code == 202 and deleted.json()['data'] == {'album_id':a,'status':'deleted'}
     assert (await client.get('/api/v1/albums/'+a)).status_code == 404
-    assert (await create(client, me)).status_code == 403
+    assert (await create(client, me)).status_code == 201
     assert (await client.delete('/api/v1/albums/'+a+'?expected_version=1',headers=headers(me))).status_code == 404
-    assert (await client.get('/api/v1/albums')).json()['data']['items'] == []
+    assert all(item['id']!=a for item in (await client.get('/api/v1/albums')).json()['data']['items'])
     async with db() as s:
         row=await s.get(Album,UUID(a)); assert row.status=='deleted' and row.deleted_at and row.version==2
         run=await s.scalar(select(Run)); task=await s.scalar(select(Task))

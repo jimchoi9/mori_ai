@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.28",
+  "contract_version": "1.30",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1871,15 +1871,6 @@
     },
     "existing_four_snapshot_behavior": "Preserve image_concurrency=4; global admission cap=2; do not cancel existing running leases"
   },
-  "purchase_required_error": {
-    "error": {
-      "code": "PURCHASE_REQUIRED",
-      "message": "굿즈를 구매하면 전용 사진첩이 만들어집니다.",
-      "retryable": false,
-      "details": {}
-    },
-    "request_id": "example-request"
-  },
   "nfc_appreciation": {
     "tag_url": "https://service.example/nfc/11111111-1111-4111-8111-111111111111#key=WRITING_SECRET_FROM_PRIVATE_PRODUCTION_SPEC",
     "entry_body": {
@@ -1905,16 +1896,12 @@
     },
     "viewer_url_after_entry": "/nfc/11111111-1111-4111-8111-111111111111#key=WRITING_SECRET_FROM_PRIVATE_PRODUCTION_SPEC",
     "new_goods_summary": {
-      "nfc_required": true
+      "nfc_required": false
     },
     "errors": {
       "no_session": {
         "status": 401,
         "code": "NFC_SESSION_REQUIRED"
-      },
-      "owner_viewer": {
-        "status": 403,
-        "code": "NFC_REQUIRED"
       }
     },
     "revisit_policy": {
@@ -1923,6 +1910,13 @@
       "viewing_time_limit": null,
       "reload": "enter_automatically_for_latest_snapshot",
       "explicit_book_restore": "matching_saved_tag_only"
+    },
+    "owner_viewer": {
+      "route": "/albums/{id}/view",
+      "api": "GET /api/v1/albums/{id}/viewer",
+      "auth": "owner_login",
+      "rendering": "same_memory_book_as_nfc",
+      "no_tag_secret": true
     }
   },
   "easy_upload_internal_validation": {
@@ -2054,7 +2048,7 @@
   },
   "album_place_caption_policy": {
     "profile": "luna_places_1024_v1",
-    "caption_prompt_version": "album-place-experience-v1",
+    "caption_prompt_version": "album-place-experience-v2",
     "current_edge": 1024,
     "reference_edge": 512,
     "max_references": 2,
@@ -2112,7 +2106,7 @@
           "published_at": "2026-11-03T00:10:00Z",
           "content_enabled": true,
           "content_ready": true,
-          "nfc_required": true,
+          "nfc_required": false,
           "capture_period": {
             "start": "2026-10-11",
             "end": "2026-10-13"
@@ -2131,5 +2125,29 @@
         "accepted": true
       }
     }
+  },
+  "independent_album_creation": {
+    "request": {
+      "method": "POST",
+      "path": "/api/v1/albums",
+      "body": {},
+      "Idempotency-Key": "example-new-album"
+    },
+    "response_status": 201,
+    "response": {
+      "album": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "title": "새 앨범",
+        "status": "draft",
+        "version": 1,
+        "page_count": 0,
+        "content_enabled": true,
+        "content_ready": false,
+        "nfc_required": false
+      }
+    },
+    "home": "/albums",
+    "after_create": "/albums/11111111-1111-4111-8111-111111111111/manage",
+    "entitlement": "authenticated_owner_and_registered_management; no_purchase_required"
   }
 }

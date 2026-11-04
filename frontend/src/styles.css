@@ -237,3 +237,11 @@ textarea:disabled { opacity: .65; }
 /* The empty bookshelf has no scrolling grid to float over. Keep its message unobscured. */
 .bookshelf-screen .empty { padding: 24px 16px; }
 .bookshelf-screen:has(.empty) .shelf-action { position: relative; bottom: auto; margin-top: 0; }
+
+.bookshelf-screen .album-create{min-height:44px;padding:10px 16px;background:#3d5944;color:#fff;border:0;border-radius:12px;font:inherit;font-size:14px;box-shadow:none;backdrop-filter:none}.albums-goods-link{display:flex;justify-content:flex-end;margin:-8px 0 24px;font-size:13px}.albums-goods-link a,.album-watch,.content-watch{color:#416349;text-decoration:none}.album-card-menu{display:flex;align-items:center;gap:8px}.album-watch{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:6px 12px;border:1px solid #cdd7c7;border-radius:10px;background:#fafbf6;font-size:13px}.album-watch[hidden]{display:none}.content-watch{margin-right:auto;display:inline-flex;align-items:center;min-height:44px;font-size:14px}.bookshelf-screen .mori-header-trailing{flex:none}
+.bookshelf-screen .album-card{display:flex;flex-direction:column}
+.bookshelf-screen .album-card-link{flex:1}
+.bookshelf-screen .album-card h2{margin-right:4px}
+.bookshelf-screen .album-card-menu{position:static;margin-top:10px}
+.bookshelf-screen .album-card-menu .album-watch{flex:1;min-width:0}
+.bookshelf-screen .album-card-menu .book-options{flex:none;margin-left:auto}

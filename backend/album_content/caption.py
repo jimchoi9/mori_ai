@@ -16,7 +16,10 @@ from backend.generation.openai_provider import (
     ProviderFailure, ProviderResult, _accounting, _caption, _valid_webp,
 )
 from backend.generation.service import config_snapshot
-from backend.album_content.prompts import instructions, SHORT_MEMORY_VERSION, PLACE_EXPERIENCE_VERSION, PLACE_CONTEXT_VERSIONS
+from backend.album_content.prompts import (
+    instructions, SHORT_MEMORY_VERSION, PLACE_EXPERIENCE_VERSION,
+    PLACE_CONTEXT_VERSIONS, STRUCTURED_PLACE_VERSIONS, NATURAL_PLACE_VERSIONS,
+)
 
 LUNA_PROFILE = {
     'caption_model': 'gpt-6-luna',
@@ -80,7 +83,7 @@ async def caption(provider, data, config, *, reference_images=()):
     except (KeyError, ValueError):
         raise ProviderFailure('AI_TEMPORARY_FAILURE', dispatch_state='not_sent') from None
     places = config.get('caption_prompt_version') in PLACE_CONTEXT_VERSIONS
-    structured = config.get('caption_prompt_version') == PLACE_EXPERIENCE_VERSION
+    structured = config.get('caption_prompt_version') in STRUCTURED_PLACE_VERSIONS
     from backend.album_content.place_context import coarse_gps, valid_context
     if (places and not valid_context(config.get('caption_place_context'))) or (not places and ('caption_place_context' in config or reference_images)):
         raise ProviderFailure('AI_TEMPORARY_FAILURE', dispatch_state='not_sent')
@@ -116,7 +119,7 @@ async def caption(provider, data, config, *, reference_images=()):
     if structured:
         from backend.album_content.place_caption import parse_caption
         try:
-            output = parse_caption(output)
+            output = parse_caption(output, omit_unknown_place=config.get('caption_prompt_version') in NATURAL_PLACE_VERSIONS)
         except (ValueError, TypeError):
             output = None
     text = _caption(output)

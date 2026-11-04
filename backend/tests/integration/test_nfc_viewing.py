@@ -22,7 +22,7 @@ async def purchased(client,db,tmp_path,*,completed=True):
         await drain(runner)
         detail=(await client.get(f'/api/v1/albums/{aid}')).json()['data']['detail']
         response=await publish(client,me,aid,detail['album']['version']);assert response.status_code==200
-        assert response.json()['data']['album']['nfc_required'] is True
+        assert response.json()['data']['album']['nfc_required'] is False
     async with db() as s:
         tag=await s.scalar(select(GoodsNfcTag).where(GoodsNfcTag.purchase_id==UUID(p['id'])))
         return me,p,str(tag.id),tag.write_token
@@ -36,7 +36,8 @@ async def enter(client,tid,key,*,origin=True):
 async def test_anonymous_reader_and_owner_management_are_separate(client,db,tmp_path):
     me,p,tid,key=await purchased(client,db,tmp_path)
     viewer=await client.get(f"/api/v1/albums/{p['album_id']}/viewer")
-    assert viewer.status_code==403 and viewer.json()['error']['code']=='NFC_REQUIRED'
+    assert viewer.status_code==200
+    assert viewer.json()['data']['pages']
     assert (await client.get(f"/api/v1/albums/{p['album_id']}")).status_code==200
     client.cookies.clear()
     response=await enter(client,tid,key);assert response.status_code==200

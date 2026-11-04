@@ -48,7 +48,10 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
     && ./node_modules/.bin/esbuild src/features/goods/mockup/renderer.ts --bundle --platform=node --format=esm --outfile=/tmp/goods-renderer.mjs \
     && node tests/goods_renderer.test.mjs file:///tmp/goods-renderer.mjs
 
-RUN node tests/album_purchase_access.test.mjs \
+RUN node tests/album_view_route.test.mjs \
+    && node tests/album_home.test.mjs \
+    && node tests/owner_book.test.mjs \
+    && node tests/album_purchase_access.test.mjs \
     && node tests/easy_upload_queue.test.mjs \
     && node tests/easy_upload_optimize.test.mjs \
     && node tests/android_heic.test.mjs \
