@@ -87,7 +87,6 @@ footer { text-align: center; padding: 24px 20px calc(24px + env(safe-area-inset-
 .memory-cards span:first-child { right: 2px; top: 0; transform: rotate(12deg); background: linear-gradient(145deg,#e9e4d5 20%,#bec8af 45%,#698066 46%,#ced5b5 75%); }
 .memory-cards span:last-child { left: 10px; top: 16px; transform: rotate(-9deg); background: linear-gradient(175deg,#e1ecf1,#b4d1db 40%,#86b4c4 41%,#608d9f 72%,#e0d7b9 73%); }
 /* Bookshelf */
-.bookshelf-screen { max-width: 920px; margin: auto; }
 .bookshelf-screen .eyebrow { display: none; }
 .books { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 30px 24px; }
 .book { position: relative; min-width: 0; }
@@ -237,3 +236,5 @@ textarea:disabled { opacity: .65; }
 /* The empty bookshelf has no scrolling grid to float over. Keep its message unobscured. */
 .bookshelf-screen .empty { padding: 24px 16px; }
 .bookshelf-screen:has(.empty) .shelf-action { position: relative; bottom: auto; margin-top: 0; }
+
+.content-watch{color:#416349;text-decoration:none;margin-right:auto;display:inline-flex;align-items:center;min-height:44px;font-size:14px}

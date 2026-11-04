@@ -13,5 +13,5 @@ export function LoadingScene({previews,leaving=false,loaded=0,total=0}:{previews
   resize();frame=requestAnimationFrame(draw);addEventListener('resize',resize);document.addEventListener('visibilitychange',visibility);
   return()=>{cancelAnimationFrame(frame);removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);};
  },[leaving]);
- return <section className={`nfc-loading${leaving?' nfc-loading-leaving':''}`} data-loaded={loaded} data-total={total} aria-label="추억 속으로 들어가는 중"><canvas ref={canvas} aria-hidden="true"/><div className="nfc-memories" aria-hidden="true">{previews.map((src,i)=>src&&<img key={i} data-slot={i} src={src} alt=""/>)}</div><div className="nfc-intro"><small>THE MOMENTS WE KEEP</small><h1>그날의 온기로.</h1><p>함께한 시간 속으로 들어갑니다</p></div></section>;
+ return <section className={`nfc-loading${leaving?' nfc-loading-leaving':''}`} data-loaded={loaded} data-total={total} aria-label="추억책을 불러오는 중"><canvas ref={canvas} aria-hidden="true"/><div className="nfc-memories" aria-hidden="true">{previews.map((src,i)=>src&&<img key={i} data-slot={i} src={src} alt=""/>)}</div><div className="nfc-intro"><small>THE MOMENTS WE KEEP</small><h1>추억책을 열고 있어요.</h1><p>사진과 글을 불러오는 중이에요.</p></div></section>;
 }

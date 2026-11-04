@@ -24,7 +24,7 @@ async def create(request: Request, body: EmptyBody, context: AuthContext = Depen
     validate_query(request, ())
     key = require_key(idempotency_key)
     async with request.app.state.session_factory() as session, session.begin():
-        status, data = await service.create_album(session, context.user_id, key, request_hash(body.model_dump()))
+        status, data = await service.create_album(session, context.user_id, key, request_hash(body.model_dump()), request.app.state.settings)
     return JSONResponse(envelope(request, data), status_code=status)
 
 

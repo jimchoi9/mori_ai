@@ -27,8 +27,6 @@ async def ready_pages(session,album):
 async def get_viewer(session,owner_id,album_id):
     album=await repo.find_album(session,owner_id,album_id,lock=True)
     if album is None:not_found()
-    if not album.legacy_access:
-        raise APIError(403,'NFC_REQUIRED','실물 굿즈의 NFC를 태그해 감상해 주세요.')
     if album.status!='published':raise APIError(409,'STATE_CONFLICT')
     if album.content_enabled:
         from uuid import UUID
@@ -39,7 +37,9 @@ async def get_viewer(session,owner_id,album_id):
         for item in entries:
             asset=await session.get(MediaAsset,UUID(item['asset_id']))
             if asset is None or asset.owner_id!=owner_id or asset.album_id!=album.id or asset.status!='ready' or asset.deleted_at is not None:raise APIError(409,'STATE_CONFLICT')
-            pages.append({'id':item['id'],'position':item['position'],'image':media_ref(asset),'caption_text':item['text']})
+            thumb=await session.get(MediaAsset,UUID(item['thumbnail_id'])) if item.get('thumbnail_id') else None
+            if thumb is not None and (thumb.owner_id!=owner_id or thumb.album_id!=album.id or thumb.status!='ready' or thumb.deleted_at is not None):thumb=None
+            pages.append({'id':item['id'],'position':item['position'],'image':media_ref(asset),'thumbnail':media_ref(thumb),'caption_text':item['text']})
         return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),
             'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':viewer_music()}
     rows=await ready_pages(session,album)

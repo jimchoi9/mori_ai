@@ -8,8 +8,9 @@ export function RevisionHistory({items,selectedId,disabled=false,onSelect,onPrev
   <div className="goods-assistant-message"><span className="goods-message-label">Mori · {item.label}</span>
    {item.status==='ready'?<div className={`goods-chat-design${selectedId===item.id?' is-selected':''}`}>
     <div className="goods-chat-art"><img src={item.imageUrl} alt={`${item.label} 생성된 디자인`} loading="lazy"/></div>
-    <div className="goods-art-actions"><button type="button" className="goods-secondary" disabled={disabled} aria-pressed={selectedId===item.id} onClick={()=>onSelect(item.id)}>{selectedId===item.id?<><GoodsIcon name="check" size={14}/>수정 기준 시안</>:'이 시안에서 수정'}</button>
-     {onPreview&&<button type="button" className="goods-text-button" disabled={disabled} aria-label={`${item.label} 목업 보기`} onClick={()=>onPreview(item.id)}>굿즈로 보기 <GoodsIcon name="right" size={14}/></button>}
+    <div className="goods-art-actions">
+     {onPreview&&<button type="button" className="goods-primary goods-proceed" disabled={disabled} aria-label={`${item.label}로 구매하기`} onClick={()=>onPreview(item.id)}>이 시안으로 구매하기 <GoodsIcon name="right" size={16}/></button>}
+     <button type="button" className={`goods-secondary goods-edit-choice${selectedId===item.id?' is-edit-selected':''}`} disabled={disabled||selectedId===item.id} aria-pressed={selectedId===item.id} aria-label={`${item.label} ${selectedId===item.id?'수정 대상으로 선택됨':'수정하기'}`} onClick={()=>onSelect(item.id)}>{selectedId===item.id?<><GoodsIcon name="check" size={16}/>수정 대상으로 선택됨</>:<><GoodsIcon name="pencil" size={16}/>이 시안 수정하기</>}</button>
     </div>{item.fake&&<p className="goods-fake-note">개발용 가짜 AI 결과입니다.</p>}
    </div>:<p className="goods-chat-progress" role="status">{item.status==='pending'?<><span className="goods-spinner"/>시안을 만드는 중이에요.</>:item.unknown?'결과를 확인 중이에요. 중복 생성을 막기 위해 다시 전송하지 않습니다.':item.error_code==='AI_BUDGET_EXCEEDED'?'현재 테스트 생성 한도가 부족해요. 운영자에게 한도 확인을 요청해 주세요. 기존 시안은 그대로 남아 있어요.':'시안을 생성하지 못했어요. 기존 시안은 그대로 남아 있어요.'}</p>}
   </div>

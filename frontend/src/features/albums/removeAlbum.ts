@@ -1,7 +1,9 @@
 import { api, ApiError } from '../../api/client.js';
 import type { Detail } from '../../api/types';
-export async function removeAlbum(albumId:string,signal:AbortSignal):Promise<void> {
+export async function removeAlbum(albumId:string,signal:AbortSignal,reviewedVersion?:number):Promise<void> {
  const latest=await api<Detail>(`/albums/${albumId}`,{signal});
+ if(reviewedVersion!==undefined&&latest.detail.album.version!==reviewedVersion)
+  throw new ApiError(409,'VERSION_CONFLICT','앨범 내용이 바뀌었어요. 다시 확인해 주세요.');
  try {
   await api(`/albums/${albumId}?expected_version=${latest.detail.album.version}`,{method:'DELETE',signal});
  } catch(error) {

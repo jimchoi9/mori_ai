@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useBlocker } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '../../api/client';
 import { STYLE_IDS, type DesignStyle, type StyleId } from './design/catalog';
 import { previewKey, type Placement, type GoodsProduct } from './mockup/preview';
@@ -10,6 +10,7 @@ import { prepareGoodsSource } from './preprocess';
 import { discardMessage, replacePhoto, generationParent } from './workflow';
 import type { Me } from '../../api/types';
 import { rememberGoodsSave, forgetGoodsSave, type GoodsResume } from './guestIntent';
+import {usePrivateRequest} from '../generation/usePrivateRequest';
 export type GoodsWorkspaceProps = {
     account?: ReactNode;
     userId: string;
@@ -20,6 +21,10 @@ export type GoodsWorkspaceProps = {
 };
 /** Owns work lifecycle and commands; UI and recommendation state remain separate. */
 export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }: GoodsWorkspaceProps) {
+    const cache=useQueryClient(),saveRequest=usePrivateRequest();
+    const completeIntent=useRef<{work:string;body:{revision_id:string;placement:Placement;product:GoodsProduct}}|null>(null);
+    const completeFlight=useRef<Promise<GoodsDesign|null>|null>(null);
+    const [saveLocked,setSaveLocked]=useState(false),[gift,setGift]=useState(resume?.gift??false);
     const initialWork = resume?.work_id ?? guest?.work_id ?? null;
     const [product, setProduct] = useState<GoodsProduct>(resume?.product ?? 'keyring');
     const productLabel = product === 'magnet' ? '마그네틱' : '키링';
@@ -74,7 +79,7 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
     const running = rows.some(r => r.status === 'queued' || r.status === 'running');
     const uncertain = rows.some(r => r.status === 'unknown');
     const dirty = !guest && !saved && (!!work || busy || !!draft || (style !== null && style !== 'free'));
-    const blocker = useBlocker(dirty);
+    const blocker = useBlocker(()=>dirty&&!savedRef.current);
     function dispose() {
         epoch.current++;
         uploadController.current?.abort();
@@ -111,10 +116,12 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
         if (!dirty)
             return;
         const before = (e: BeforeUnloadEvent) => {
+            if(savedRef.current)return;
             e.preventDefault();
             e.returnValue = '';
         };
         const logout = (e: Event) => {
+            if(savedRef.current)return;
             if (!window.confirm(discardMessage))
                 e.preventDefault();
             else
@@ -147,7 +154,7 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
         };
     }, [dirty]);
     useEffect(() => {
-        if (!work || saved)
+        if (!work || saved || saveLocked)
             return;
         let closed = false;
         let timer: number;
@@ -209,7 +216,7 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
             restoreController.abort();
             clearTimeout(timer);
         };
-    }, [work, saved]);
+    }, [work, saved, saveLocked]);
     async function upload(file?: File) {
         if (!file || busy || running)
             return;
@@ -334,33 +341,40 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
                 setBusy(false);
         }
     }
-    async function finish() {
-        if (!work || !current || busy)
-            return;
+    async function finish():Promise<GoodsDesign|null> {
+        if(saved)return saved;
+        if(completeFlight.current)return completeFlight.current;
+        if (!work || !current || busy || saveRequest.current.signal.aborted)return null;
         if (guest) {
-            rememberGoodsSave({ work_id: work, revision_id: current.id, placement, product });
+            rememberGoodsSave({ work_id: work, revision_id: current.id, placement, product, gift });
             setShowLogin(true);
-            return;
+            return null;
         }
         const token = epoch.current;
+        completeIntent.current??={work,body:{revision_id:current.id,placement:{...placement},product}};
+        const sent=completeIntent.current;
+        setSaveLocked(true);
         setBusy(true);
         setError('');
-        try {
-            const result = await api<GoodsDesign>(`/goods/work/${work}/complete`, { method: 'POST', body: { revision_id: current.id, placement, product } });
-            if (!live.current || epoch.current !== token)
-                return;
-            savedRef.current = true;
-            forgetGoodsSave();
-            setSaved(result);
-        }
-        catch (e) {
-            if (live.current && epoch.current === token)
-                setError(errorText(e));
-        }
-        finally {
-            if (live.current && epoch.current === token)
-                setBusy(false);
-        }
+        const flight=(async()=>{
+            try {
+                const result = await api<GoodsDesign>(`/goods/work/${sent.work}/complete`, { method: 'POST', body: sent.body,signal:saveRequest.current.signal });
+                if (!live.current || epoch.current !== token || saveRequest.current.signal.aborted)return null;
+                savedRef.current = true;
+                forgetGoodsSave();
+                setSaved(result);
+                void cache.invalidateQueries({queryKey:['goods-designs',userId]}).catch(()=>undefined);
+                return result;
+            }catch (e) {
+                if (live.current && epoch.current === token && !saveRequest.current.signal.aborted)setError(errorText(e));
+                return null;
+            }finally {
+                completeFlight.current=null;
+                if (live.current && epoch.current === token && !saveRequest.current.signal.aborted)setBusy(false);
+            }
+        })();
+        completeFlight.current=flight;
+        return flight;
     }
     async function newConversation() {
         if (busy || running)
@@ -394,6 +408,9 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
             setStyle('free');
             setStep(1);
             setSaved(null);
+            completeIntent.current=null;
+            setSaveLocked(false);
+            setGift(false);
             setPreview(null);
             setShowLogin(false);
             setPlacement({ holeX: .5, holeY: 0, widthMm: 50 });
@@ -424,6 +441,6 @@ export function useGoodsWorkspace({ userId, guest, consent, onConsent, resume }:
         if (rows.length)
             tail.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
     }, [rows.length, rows.map(r => r.status).join(':')]);
-    const ready = !!current?.image_url && current.status === 'ready' && preview?.status === 'ready' && preview.key === previewKey({ src, product, placement });
-    return { product, productLabel, loginBusy, setLoginBusy, showLogin, setShowLogin, agreed, setAgreed, remaining, step, setStep, style, setStyle, work, source, sourceAttached, setSourceAttached, selected, draft, setDraft, rows, busy, error, saved, placement, setPlacement, preview, tail, fileInput, pending, catalog, current, src, running, uncertain, ready, upload, generate, finish, newConversation, choose, openPreview, setProduct, setPreview };
+    const ready = !!current?.image_url && current.status === 'ready' && (product==='magnet'||preview?.status === 'ready' && preview.key === previewKey({ src, product, placement }));
+    return { product, productLabel, loginBusy, setLoginBusy, showLogin, setShowLogin, agreed, setAgreed, remaining, step, setStep, style, setStyle, work, source, sourceAttached, setSourceAttached, selected, draft, setDraft, rows, busy, error, saved, saveLocked, gift, setGift, placement, setPlacement, preview, tail, fileInput, pending, catalog, current, src, running, uncertain, ready, upload, generate, finish, newConversation, choose, openPreview, setProduct, setPreview };
 }

@@ -23,10 +23,10 @@ function imageElement(blob:Blob,signal:AbortSignal,timeout:number):Promise<HTMLI
  });
 }
 /** Native formats stay native. Unsupported HEIC is decoded automatically by our web worker. */
-export async function readPhoto(blob:Blob,signal:AbortSignal,bitmapFirst=false,maxEdge=2048,timeout=15000):Promise<DecodedPhoto>{
+export async function readPhoto(blob:Blob,signal:AbortSignal,bitmapFirst=false,maxEdge=2048,timeout=15000,bitmapSize?:{width:number;height:number}):Promise<DecodedPhoto>{
  signal.throwIfAborted();
  try{
-  const image=bitmapFirst&&typeof createImageBitmap==='function'?await createImageBitmap(blob):await imageElement(blob,signal,timeout);
+  const image=bitmapFirst&&typeof createImageBitmap==='function'?await createImageBitmap(blob,bitmapSize?{resizeWidth:bitmapSize.width,resizeHeight:bitmapSize.height,resizeQuality:'high'}:undefined):await imageElement(blob,signal,timeout);
   const close=()=>{'close' in image?image.close():image.removeAttribute('src');};
   if(signal.aborted){close();signal.throwIfAborted();}
   return {image,width:'naturalWidth' in image?image.naturalWidth:image.width,height:'naturalHeight' in image?image.naturalHeight:image.height,close};

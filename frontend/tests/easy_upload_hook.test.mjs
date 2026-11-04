@@ -12,7 +12,7 @@ await build({entryPoints:['src/features/uploads/useEasyUploads.ts'],bundle:true,
  b.onResolve({filter:/\.\/easyTransport$/},()=>({path:'transport',namespace:'stub'}));
  b.onLoad({filter:/.*/,namespace:'stub'},({path})=>({loader:'js',contents:path==='react'?`export const useState=v=>globalThis.hooks.state(v),useRef=v=>globalThis.hooks.ref(v),useEffect=f=>globalThis.hooks.effect(f);`:path==='optimize'?`export const optimizePhoto=(...args)=>globalThis.prepare(...args);`:`export const transferPhoto=(...args)=>globalThis.transfer(...args),verifyPhoto=(...args)=>globalThis.verify(...args);`}));
 }}]});
-const {useEasyUploads}=await import(join(dir,'hook.mjs'));
+const {useEasyUploads,stageNewAlbumUploads,discardAlbumUploads}=await import(join(dir,'hook.mjs'));
 function harness(album='a',known=[],user='u',limit=20){
  const cells=[],cleanups=[];let cursor=0,initial=true;
  const hooks={state(value){const index=cursor++;if(!(index in cells))cells[index]=value;return [cells[index],next=>cells[index]=typeof next==='function'?next(cells[index]):next];},ref(value){const index=cursor++;return cells[index]??={current:value};},effect(work){if(initial)cleanups.push(work());}};
@@ -129,4 +129,46 @@ test('saved uploads unlock immediately while title metadata is pending, and logo
  assert.equal(hook.busy,false);assert.equal(hook.items.filter(item=>item.state==='saved').length,1);assert.equal(signals.length,1);assert.equal(signals[0].aborted,false);
  hook.select([photo(2)],19);await h.render().send();assert.equal(h.render().busy,false);assert.equal(known.length,2);assert.equal(signals.length,2);
  window.dispatchEvent(new Event('mori:logout'));assert.ok(signals.every(signal=>signal.aborted));h.close();
+});
+test('new album selection hands original files to the existing queue and sends exactly once after mount',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));const files=[photo(1),photo(2)],sent=[];
+ globalThis.fetch=async()=>response({detail:{pages:[]}});globalThis.prepare=async file=>({file});
+ globalThis.transfer=async(_album,item)=>{sent.push(item.file);item.pageId=item.id;item.transferred=true;};globalThis.verify=async()=>{};
+ stageNewAlbumUploads('u','new-handoff',files);const h=harness('new-handoff');h.render();h.render();
+ for(let i=0;i<50&&h.render().items.filter(item=>item.state==='saved').length<2;i++)await new Promise(r=>setTimeout(r,0));
+ assert.deepEqual(sent,files);assert.equal(h.render().items.filter(item=>item.state==='saved').length,2);h.close();
+});
+test('StrictMode-style cleanup before the deferred handoff keeps files for the surviving mount',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));const sent=[];
+ globalThis.fetch=async()=>response({detail:{pages:[]}});globalThis.prepare=async file=>({file});
+ globalThis.transfer=async(_album,item)=>{sent.push(item.id);item.pageId=item.id;item.transferred=true;};globalThis.verify=async()=>{};
+ stageNewAlbumUploads('u','strict-handoff',[photo(1)]);const first=harness('strict-handoff');first.render();first.close();
+ const second=harness('strict-handoff');second.render();
+ for(let i=0;i<50&&!sent.length;i++)await new Promise(r=>setTimeout(r,0));
+ assert.equal(sent.length,1);second.close();
+});
+test('logout before automatic handoff clears files and performs no requests',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));let requests=0;globalThis.fetch=async()=>{requests++;return response({detail:{pages:[]}});};
+ stageNewAlbumUploads('u','logout-handoff',[photo(1)]);const h=harness('logout-handoff');h.render();window.dispatchEvent(new Event('mori:logout'));
+ await new Promise(r=>setTimeout(r,10));assert.equal(requests,0);assert.equal(h.render().items.length,0);h.close();
+});
+test('a repeated handoff cannot overwrite an existing album photo draft',()=>{
+ window.dispatchEvent(new Event('mori:logout'));stageNewAlbumUploads('u','protected-handoff',[photo(1)]);
+ assert.throws(()=>stageNewAlbumUploads('u','protected-handoff',[photo(2)]),/이미 고른 사진/);
+ const h=harness('protected-handoff');assert.equal(h.render().items[0].file.name,'1.jpg');h.close();
+});
+test('confirmed album deletion discards only its owner-scoped files and leaves other albums retryable',()=>{
+ window.dispatchEvent(new Event('mori:logout'));const a=harness('deleted',[],'owner'),b=harness('other',[],'owner'),c=harness('deleted',[],'another');
+ a.render().select([photo(1)],20);b.render().select([photo(2)],20);c.render().select([photo(3)],20);
+ discardAlbumUploads('owner','deleted');assert.equal(a.render().items.length,0);assert.equal(b.render().items[0].file.name,'2.jpg');assert.equal(c.render().items[0].file.name,'3.jpg');a.close();b.close();c.close();
+});
+test('failed first upload stays available for explicit retry; another owner cannot receive it',async()=>{
+ window.dispatchEvent(new Event('mori:logout'));let attempts=0;
+ globalThis.fetch=async()=>response({detail:{pages:[]}});globalThis.prepare=async file=>{attempts++;if(attempts===1)throw Error('decode unavailable');return {file};};
+ globalThis.transfer=async(_album,item)=>{item.pageId=item.id;item.transferred=true;};globalThis.verify=async()=>{};
+ stageNewAlbumUploads('u','failed-handoff',[photo(1)]);const h=harness('failed-handoff');h.render();
+ for(let i=0;i<50&&h.render().items[0].state!=='failed';i++)await new Promise(r=>setTimeout(r,0));
+ assert.equal(h.render().items[0].state,'failed');assert.equal(h.render().items[0].file.name,'1.jpg');
+ const other=harness('failed-handoff',[],'another');assert.equal(other.render().items.length,0);
+ await h.render().send();assert.equal(h.render().items[0].state,'saved');assert.equal(attempts,2);h.close();other.close();
 });

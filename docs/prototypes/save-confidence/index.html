@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark"><title>Mori 저장·첨부 상태 비교</title>
+<style>
+html{color-scheme:light dark}body{margin:0;background:light-dark(#f0f0e9,#171d18);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}button,select,textarea{font:inherit}button,select{cursor:pointer}button:disabled{cursor:default}select{max-width:100%;min-height:44px;padding:7px 10px;background:light-dark(#fffef9,#29342a);color:light-dark(#293b2c,#ebefe7);border:1px solid light-dark(#dfe4d9,#465043);border-radius:9px}button{min-height:44px}*{box-sizing:border-box}
+#mori-save-confidence .mori-window .mori-send {position:relative;display:grid;place-items:center;flex:none;width:38px;height:38px;min-height:38px;padding:0;border:0;border-radius:50%;background:var(--mori-green);color:var(--mori-on-green);}
+#mori-save-confidence .mori-send::after {content:"";position:absolute;inset:-3px;}
+</style></head><body>
+<style>
+#mori-save-confidence { color-scheme:light dark; }
+#mori-save-confidence .lab-controls {position:sticky;top:0;z-index:50;display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:0 auto;padding:12px 16px;max-width:720px;background:light-dark(#f0f0e9,#171d18);border-bottom:1px solid light-dark(#dadfd4,#465043);}
+#mori-save-confidence .lab-controls label {display:grid;gap:5px;}
+#mori-save-confidence .lab-note {margin:10px 16px;text-align:center;font-size:12px;color:light-dark(#647060,#b3bdaf);}
+#mori-save-confidence .lab-controls label {min-width:0;flex:1 1 130px;font-size:12px;}
+#mori-save-confidence .lab-controls select {width:100%;font-size:14px;}
+#mori-save-confidence .lab-controls button {background:light-dark(#fffef9,#29342a);color:inherit;border:1px solid light-dark(#dfe4d9,#465043);border-radius:9px;padding:8px 13px;font-size:13px;}
+#mori-save-confidence .preview-stage {min-height:650px;padding:10px 12px 130px;}
+#mori-save-confidence .mori-window {
+ --mori-paper:light-dark(#faf9f6,#222923);--mori-ink:light-dark(#293b2c,#ebefe7);
+ --mori-muted:light-dark(#647060,#b3bdaf);--mori-line:light-dark(#dfe4d9,#465043);
+ --mori-soft:light-dark(#edf1e7,#303e30);--mori-green:light-dark(#3d5944,#c2d6b6);
+ --mori-on-green:light-dark(#fffef9,#1f3023);--mori-error:light-dark(#963f32,#ffb9a9);
+ --mori-status-size:13px;--mori-action-height:50px;
+ position:relative;max-width:414px;min-height:630px;margin:0 auto;display:flex;flex-direction:column;
+ background:var(--mori-paper);color:var(--mori-ink);border:1px solid var(--mori-line);border-radius:22px;
+ box-shadow:0 10px 32px light-dark(#25352b14,#0003);font:400 15px/1.65 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;
+ overflow-wrap:anywhere;
+}
+#mori-save-confidence .mori-window * {box-sizing:border-box;}
+#mori-save-confidence .mori-window button,#mori-save-confidence .mori-window textarea {font:inherit;}
+#mori-save-confidence .mori-window button {min-height:44px;padding:9px 12px;background:transparent;color:inherit;border:0;border-radius:10px;}
+#mori-save-confidence .mori-window button:disabled {opacity:.5;}
+#mori-save-confidence .mori-header {display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--mori-line);}
+#mori-save-confidence .mori-header h2 {font-size:19px;font-weight:500;line-height:1.4;margin:0;flex:1;}
+#mori-save-confidence .mori-header .mori-count {font-size:12px;color:var(--mori-muted);white-space:nowrap;}
+#mori-save-confidence .mori-back {width:44px;flex:none;display:grid;place-items:center;}
+#mori-save-confidence .mori-main {padding:20px;flex:1;}
+#mori-save-confidence .mori-main h3 {font-size:20px;font-weight:500;line-height:1.5;margin:0 0 8px;}
+#mori-save-confidence .mori-main p {margin:0;}
+#mori-save-confidence .mori-empty {display:grid;place-content:center;text-align:center;min-height:390px;gap:12px;color:var(--mori-muted);}
+#mori-save-confidence .mori-empty i {margin:auto;}
+#mori-save-confidence .mori-status {padding:13px 14px;border-radius:12px;background:var(--mori-soft);margin-bottom:18px;}
+#mori-save-confidence .mori-status strong {font-size:15px;font-weight:500;display:block;}
+#mori-save-confidence .mori-status p,#mori-save-confidence .mori-save-label {font-size:var(--mori-status-size);color:var(--mori-muted);}
+#mori-save-confidence .mori-status.error {color:var(--mori-error);background:light-dark(#f9ebe5,#482f28);}
+#mori-save-confidence .mori-status.error p {color:inherit;}
+#mori-save-confidence .mori-progress {height:5px;background:var(--mori-line);border-radius:4px;margin-top:12px;overflow:hidden;}
+#mori-save-confidence .mori-progress span {display:block;height:100%;background:var(--mori-green);transition:width .3s;}
+#mori-save-confidence .mori-rows {list-style:none;padding:0;margin:0;}
+#mori-save-confidence .mori-rows li {display:grid;grid-template-columns:70px minmax(0,1fr);gap:13px;align-items:center;padding:15px 0;border-bottom:1px solid var(--mori-line);}
+#mori-save-confidence .mori-rows p {font-size:14px;}
+#mori-save-confidence .mori-thumb {position:relative;aspect-ratio:1;overflow:hidden;border-radius:9px;background:linear-gradient(167deg,light-dark(#d7e6e1,#657b78) 0 46%,light-dark(#7ba5a0,#3b6260) 47% 70%,light-dark(#e9d5af,#a58f70) 71%);}
+#mori-save-confidence .mori-thumb[data-photo='1'] {background:linear-gradient(142deg,light-dark(#e5e9db,#536a55) 0 45%,light-dark(#8ba57e,#38513b) 46% 70%,light-dark(#d6c6aa,#8e8069) 71%);}
+#mori-save-confidence .mori-thumb[data-photo='2'] {background:linear-gradient(38deg,light-dark(#d5b792,#896f55) 0 30%,light-dark(#e9dbbd,#b0a083) 31% 58%,light-dark(#b8be9c,#6b735c) 59%);}
+#mori-save-confidence .mori-thumb span {position:absolute;bottom:4px;left:5px;padding:0 4px;border-radius:3px;background:var(--mori-paper);font-size:11px;}
+#mori-save-confidence .mori-row-label {display:block;color:var(--mori-muted);font-size:12px;margin-top:4px;}
+#mori-save-confidence .mori-rows textarea {display:block;width:100%;min-height:85px;padding:9px;border:1px solid var(--mori-line);border-radius:9px;background:var(--mori-soft);color:var(--mori-ink);resize:vertical;font-size:16px;}
+#mori-save-confidence .mori-footer {position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:60;width:min(414px,calc(100% - 24px));display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 20px max(16px,env(safe-area-inset-bottom));border:1px solid var(--mori-line);border-bottom:0;background:var(--mori-paper);border-radius:14px 14px 0 0;}
+#mori-save-confidence .mori-footer-save {width:100%;font-size:13px;color:var(--mori-muted);margin:0;}
+#mori-save-confidence .mori-footer .mori-save-label {flex:1;margin:0;min-width:80px;}
+#mori-save-confidence .mori-window .mori-primary {background:var(--mori-green);color:var(--mori-on-green);font-size:16px;font-weight:500;min-height:var(--mori-action-height);padding:12px 20px;}
+#mori-save-confidence .mori-window .mori-primary.fill {width:100%;}
+#mori-save-confidence .mori-footer .mori-primary.grow {flex:1;}
+#mori-save-confidence .mori-done {text-align:center;padding:30px 10px 12px;}
+#mori-save-confidence .mori-done .mori-symbol {display:grid;place-items:center;width:52px;height:52px;margin:0 auto 18px;border-radius:50%;background:var(--mori-soft);color:var(--mori-green);}
+#mori-save-confidence .mori-done p {font-size:14px;color:var(--mori-muted);}
+#mori-save-confidence .mori-done .mori-mini-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:24px auto;max-width:260px;}
+#mori-save-confidence .mori-compose {margin-top:28px;border:1px solid var(--mori-line);border-radius:14px;padding:14px;}
+#mori-save-confidence .mori-compose textarea {display:block;width:100%;min-height:90px;resize:vertical;font-size:16px;border:0;background:transparent;color:inherit;padding:8px 0;}
+#mori-save-confidence .mori-attachment {display:flex;align-items:center;gap:12px;padding:8px 0 14px;}
+#mori-save-confidence .mori-attachment .mori-thumb {width:62px;flex:none;}
+#mori-save-confidence .mori-attachment strong {font-size:14px;font-weight:500;display:block;}
+#mori-save-confidence .mori-attachment p {font-size:13px;color:var(--mori-muted);}
+#mori-save-confidence .mori-compose-tools {display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+#mori-save-confidence .mori-window .mori-secondary {border:1px solid var(--mori-line);color:var(--mori-green);}
+#mori-save-confidence .mori-shade {position:fixed;inset:0;z-index:90;background:light-dark(#24372a66,#0009);display:grid;place-items:center;padding:18px;}
+#mori-save-confidence .mori-dialog {width:min(100%,350px);background:var(--mori-paper);padding:24px;border-radius:18px;box-shadow:0 10px 30px #0002;}
+#mori-save-confidence .mori-notice {position:fixed;z-index:80;bottom:calc(120px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(382px,calc(100% - 36px));display:flex;align-items:center;gap:12px;padding:15px 12px 15px 18px;border-radius:14px;background:var(--mori-green);color:var(--mori-on-green);box-shadow:0 8px 24px #0002;}
+#mori-save-confidence .mori-notice>div{flex:1;min-width:0;}#mori-save-confidence .mori-notice strong{display:block;font-weight:500;font-size:15px;}#mori-save-confidence .mori-notice p{margin:2px 0 0;font-size:13px;}
+#mori-save-confidence .mori-notice button{min-width:44px;min-height:44px;padding:6px;color:var(--mori-on-green);font-size:24px;flex:none;}
+#mori-save-confidence .mori-dialog h3 {font-size:19px;font-weight:500;margin:0 0 10px;}
+#mori-save-confidence .mori-dialog p {font-size:14px;margin:0 0 18px;}
+#mori-save-confidence .mori-dialog button {width:100%;}
+#mori-save-confidence .mori-warning {font-size:13px;color:var(--mori-error);margin:0 0 12px;}
+@media(max-width:380px){#mori-save-confidence .lab-controls{padding-right:0;}#mori-save-confidence .preview-stage{padding:14px 2px;min-height:730px;}#mori-save-confidence .mori-main{padding:16px;}#mori-save-confidence .mori-footer{padding:14px 16px;}#mori-save-confidence .mori-header{padding:12px 10px;}#mori-save-confidence .mori-rows li{grid-template-columns:60px minmax(0,1fr);gap:10px;}}
+@media(prefers-reduced-motion:reduce){#mori-save-confidence *{transition:none!important;}}
+</style>
+<div id="mori-save-confidence" aria-label="저장 상태 비교">
+ <div class="lab-controls">
+  <label>비교안<select id="mori-demo-view"><option value="toast">완료 토스트</option><option value="popup">작은 완료 팝업</option><option value="edit">변경에 따라 편집 버튼</option><option value="goods">굿즈 첨부 상태</option></select></label>
+  <label>샘플 사진<select id="mori-sample-count"><option value="3">3장</option><option value="30">30장 · 스크롤 체험</option></select></label>
+  <label class="form-label">체험 상황
+   <select class="form-select" id="mori-save-scenario">
+    <option value="success">정상 완료</option><option value="partial">사진 일부 실패</option>
+    <option value="caption">사진 저장 후 글귀 준비 중</option><option value="offline">연결 중단</option>
+    <option value="edit-fail">편집 저장 실패</option>
+   </select>
+  </label>
+  <button class="btn" type="button" id="mori-save-restart">처음부터 체험</button>
+ </div>
+ <p class="lab-note">채택안: 완료 토스트 + 하단의 작은 저장 상태 · 실제 전송·저장 없음</p>
+ <div class="demo-screens" aria-label="Mori 저장과 첨부 화면 비교">
+  <section data-variant="완료 토스트" aria-label="목록 위 완료 토스트"><div class="preview-stage"><div class="mori-window" data-demo="toast" aria-label="앨범 완료 토스트"></div></div></section>
+  <section data-variant="작은 완료 팝업" aria-label="목록 위 작은 완료 팝업" hidden><div class="preview-stage"><div class="mori-window" data-demo="popup" aria-label="앨범 완료 팝업"></div></div></section>
+  <section data-variant="변경에 따라 편집 버튼" aria-label="변경에 따라 편집 버튼 문구 전환" hidden><div class="preview-stage"><div class="mori-window" data-demo="edit" aria-label="편집 버튼 문구"></div></div></section>
+  <section data-variant="굿즈 첨부 상태" aria-label="굿즈 사진 첨부 상태 체험" hidden><div class="preview-stage"><div class="mori-window" data-demo="goods" aria-label="굿즈 사진 첨부"></div></div></section>
+ </div>
+</div>
+<script>
+(() => {
+ const root=document.getElementById('mori-save-confidence');
+ const scenario=root.querySelector('#mori-save-scenario'),view=root.querySelector('#mori-demo-view'),sampleCount=root.querySelector('#mori-sample-count');
+ const captions=['바다를 바라보며 잠깐 쉬었다.','해변 길을 따라 천천히 걸었다.','한 테이블에 둘러앉아 밥을 먹었다.'];
+ const boxes=Array.from(root.querySelectorAll('[data-demo]'));
+ const states=new Map();
+ const escapeText=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const icon=name=>`<span aria-hidden="true">${({'chevron-left':'‹',check:'✓',x:'×',images:'▧','image-plus':'＋'})[name]??''}</span>`;
+ const thumb=i=>`<div class="mori-thumb" data-photo="${i}" role="img" aria-label="${i+1}번째 샘플 사진"><span>${i+1}</span></div>`;
+ const control=(action,label,classes='',disabled=false)=>`<button type="button" class="${classes} cursor-interaction" data-action="${action}"${action==='back'?' aria-label="내 앨범으로"':action==='remove'?' aria-label="첨부 사진 지우기"':''}${disabled?' disabled':''}>${label}</button>`;
+ const initial=kind=>({kind,phase:kind==='edit'?'editing':'empty',done:kind==='edit'?3:0,total:3,text:[...captions],baseline:[...captions],request:'',changed:false,notice:null,noticeTimer:null,editStatus:'saved',leave:false,attempt:0,timeout:null,delay:null});
+ const design={statusSize:13,buttonHeight:50};
+ function applyDesign(){for(const box of boxes){box.style.setProperty('--mori-status-size',`${design.statusSize}px`);box.style.setProperty('--mori-action-height',`${design.buttonHeight}px`);}}
+ function rows(s,editing=false){
+  return `<ol class="mori-rows">${Array.from({length:s.done},(_,i)=>`<li>${thumb(i)}<div>${editing?`<textarea aria-label="${i+1}번째 사진 글귀" data-caption="${i}" maxlength="80">${escapeText(s.text[i])}</textarea>`:`<p>${escapeText(s.text[i])}</p>`}</div></li>`).join('')}</ol>`;
+ }
+ function banner(title,detail,error=false){return `<div class="mori-status${error?' error':''}"${error?' role="alert"':' role="status"'}><strong>${title}</strong><p>${detail}</p></div>`;}
+ function header(s){return `<header class="mori-header">${s.kind==='goods'?'<span>Mori</span>':control('back',icon('chevron-left'),'mori-back')}<h2>${s.kind==='goods'?'굿즈 만들기':s.phase==='shelf'?'내 앨범':'기장 여행'}</h2><span class="mori-count">${s.kind==='goods'?'마그네틱':`${s.done} / 50`}</span></header>`;}
+ function footer(content){return `<footer class="mori-footer">${content}</footer>`;}
+ function editLabel(s){return s.changed?'저장하고 완료':'완료';}
+ function setStatus(box,s){
+  if(s.phase!=='editing')return;
+  const label=box.querySelector('.mori-save-label');
+  if(label)label.textContent=s.editStatus==='saving'?'변경사항 저장 중…':s.editStatus==='failed'?'저장하지 못했어요.':s.editStatus==='dirty'?'저장할 변경사항이 있어요.':s.changed?'변경사항이 저장됐어요.':'변경사항 없음';
+  const button=box.querySelector('[data-action="finish"]');if(button)button.textContent=s.finishing?'저장 중…':editLabel(s);
+ }
+ function render(box){
+  const s=states.get(box);let main='',bottom='';
+  if(s.kind==='goods'){
+   const busy=s.phase==='uploading';
+   main=`<main class="mori-main"><h3>사진으로 굿즈 만들기</h3><p class="mori-save-label">사진만 첨부해도 시안을 만들 수 있어요.</p>`;
+   if(busy)main+=banner(s.done===0?'사진을 준비하고 있어요.':'사진을 첨부하고 있어요.','잠시만 기다려 주세요.');
+   if(s.phase==='failed')main+=banner('사진을 첨부하지 못했어요.','사진을 다시 선택하지 않고 재시도할 수 있어요.',true);
+   main+=`<div class="mori-compose">${s.phase==='attached'?`<div class="mori-attachment">${thumb(0)}<div><strong>사진 첨부 완료</strong><p>이 사진으로 시안을 만들어요.</p></div>${control('remove',icon('x'),'mori-back')}</div>`:''}<textarea aria-label="굿즈 디자인 요청" placeholder="원하는 느낌을 적어 주세요. 생략해도 괜찮아요.">${escapeText(s.request)}</textarea><div class="mori-compose-tools">${control(s.phase==='failed'?'retry':'attach',s.phase==='failed'?'첨부 다시 시도':`${icon('image-plus')} 사진 첨부`,'mori-secondary',busy)}<button type="button" class="mori-send" data-action="generate" aria-label="이미지 만들기"${s.phase!=='attached'?' disabled':''}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></div></div></main>`;
+   if(s.phase==='generated')main=`<main class="mori-main"><div class="mori-done"><h3>시안이 준비됐어요.</h3><p>첨부한 사진으로 만든 샘플 시안입니다.</p><div class="mori-mini-grid">${thumb(0)}${thumb(1)}${thumb(2)}</div>${control('remove','다시 첨부해 보기','mori-secondary')}</div></main>`;
+  }else if(s.phase==='editing'){
+   main=`<main class="mori-main">${s.editStatus==='failed'?banner('변경사항을 저장하지 못했어요.','작성한 내용은 그대로 있어요. 다시 시도해 주세요.',true):''}${rows(s,true)}</main>`;
+   bottom=footer(`<p class="mori-save-label" role="status"></p>${control('finish',s.editStatus==='saving'&&s.finishing?'저장 중…':editLabel(s),'mori-primary',!!s.finishing)}`);
+  }else if(s.phase==='shelf'){
+   main=`<main class="mori-main"><div class="mori-done"><h3>기장 여행</h3><p>사진 ${s.done}장 · 저장 완료</p><div class="mori-mini-grid">${Array.from({length:s.done},(_,i)=>thumb(i)).join('')}</div>${control('open','앨범 열기','mori-primary fill')}</div></main>`;
+  }else if(s.phase==='empty'){
+   main=`<main class="mori-main"><div class="mori-empty">${icon('images')}<p>사진을 추가해 주세요.</p></div></main>`;
+   bottom=footer(control('upload','＋ 사진 추가','mori-primary fill'));
+  }else if(s.phase==='uploading'){
+   main=`<main class="mori-main">${banner(`사진 저장 중 ${s.done-s.base} / ${s.total-s.base}`,'저장이 끝날 때까지 이 화면을 열어 주세요.')}<div class="mori-progress" role="progressbar" aria-label="사진 저장 진행" aria-valuemin="0" aria-valuemax="${s.total-s.base}" aria-valuenow="${s.done-s.base}"><span style="width:${(s.done-s.base)/(s.total-s.base)*100}%"></span></div>${rows(s)}</main>`;
+   bottom=footer(control('upload','저장 중…','mori-primary fill',true));
+  }else if(s.phase==='partial'||s.phase==='failed'){
+   main=`<main class="mori-main">${banner(s.phase==='partial'?`${s.done}장은 저장됐고, 1장은 남아 있어요.`:'추가할 사진이 아직 저장되지 않았어요.',s.phase==='partial'?'남은 사진만 다시 보내면 돼요.':'연결을 확인한 뒤 다시 시도해 주세요.',true)}${rows(s)}</main>`;
+   bottom=footer(control('retry',s.phase==='partial'?'남은 1장 다시 보내기':'다시 시도','mori-primary fill'));
+  }else{
+   main=`<main class="mori-main">${s.captionPending?'<p class="mori-save-label" role="status">사진은 저장됐고, 글귀를 준비하고 있어요.</p>':''}${rows(s)}</main>`;
+   bottom=footer(`<p class="mori-footer-save" role="status">${s.editFinished?'변경사항 저장 완료':`사진 ${s.done}장 저장 완료`}</p>${control('upload',s.done>=50?'사진 50장':'＋ 사진 추가','mori-primary grow',s.done>=50)}${control('edit','편집')}`);
+  }
+  if(s.notice==='toast')bottom+=`<div class="mori-notice" role="status"><div><strong>${s.editFinished?'변경사항을 저장했어요.':`사진 ${s.done}장 모두 저장 완료`}</strong><p>이제 나가도 괜찮아요.${s.captionPending?' 글귀는 계속 준비해요.':''}</p></div>${control('dismiss','×')}</div>`;
+  if(s.notice==='popup')bottom+=`<div class="mori-shade"><section class="mori-dialog" role="dialog" aria-modal="true" aria-label="사진 저장 완료"><h3>사진 ${s.done}장이 모두 저장됐어요.</h3><p>이제 화면을 나가도 괜찮아요.${s.captionPending?' 글귀는 계속 준비하고 있어요.':''}</p>${control('ack','확인','mori-primary')}</section></div>`;
+  if(s.leave)bottom+=`<div class="mori-shade"><section class="mori-dialog" role="alertdialog" aria-modal="true" aria-label="아직 저장되지 않은 내용"><h3>아직 저장되지 않은 내용이 있어요.</h3><p>저장을 마친 뒤 나가 주세요. 지금 작성한 내용은 그대로 남아 있어요.</p>${control('stay','이어서 저장하기','mori-primary')}</section></div>`;
+  box.innerHTML=header(s)+main+bottom;setStatus(box,s);applyDesign();
+  const modal=!!s.leave||s.notice==='popup';for(const part of box.querySelectorAll('.mori-header,.mori-main,.mori-footer'))part.inert=modal;
+  if(modal)box.querySelector('.mori-dialog button')?.focus({preventScroll:true});
+ }
+ function clean(s){clearTimeout(s.timeout);clearTimeout(s.delay);clearTimeout(s.noticeTimer);s.notice=null;s.attempt++;s.finishing=false;}
+ function showComplete(box,s){
+  s.notice=s.kind==='popup'?'popup':'toast';
+  if(s.notice==='toast')s.noticeTimer=setTimeout(()=>{s.notice=null;box.querySelector('.mori-notice')?.remove();},6000);
+ }
+ function restart(){for(const box of boxes){const old=states.get(box);if(old)clean(old);states.set(box,initial(box.dataset.demo));render(box);}}
+ function begin(box,retry=false){
+  const s=states.get(box);clean(s);
+  if(s.kind==='goods'){s.done=0;}else if(!retry){s.base=s.done;s.total=Math.min(50,s.done+(s.done?3:Number(sampleCount.value)));s.text=Array.from({length:s.total},(_,i)=>s.text[i]??captions[i%3]);}
+  s.phase='uploading';s.editFinished=false;s.captionPending=false;s.leave=false;const attempt=s.attempt;
+  const mode=retry?'success':scenario.value;
+  const step=()=>{
+   if(s.attempt!==attempt)return;
+   if(s.kind==='goods'){
+    if(s.done===0){s.done=1;render(box);s.timeout=setTimeout(step,850);return;}
+    s.phase=['offline','partial'].includes(mode)?'failed':'attached';render(box);return;
+   }
+   if(mode==='offline'){s.phase='failed';s.done=s.base;render(box);return;}
+   s.done=Math.min(s.total,s.done+Math.max(1,Math.ceil((s.total-s.base)/3)));
+   if(mode==='partial'&&s.done>=s.total-1){s.done=s.total-1;s.phase='partial';render(box);return;}
+   if(s.done===s.total){s.phase='success';s.leave=false;s.captionPending=mode==='caption';if(s.captionPending)s.text=s.text.map((value,i)=>i>=s.base?'글귀를 준비하고 있어요.':value);s.baseline=[...s.text];showComplete(box,s);render(box);return;}
+   render(box);s.timeout=setTimeout(step,700);
+  };
+  render(box);s.timeout=setTimeout(step,750);
+ }
+ function save(box,finish=false,retry=false){
+  const s=states.get(box);clearTimeout(s.delay);
+  if(finish&&s.editStatus==='saved'&&s.text.every((text,i)=>text===s.baseline[i])){s.phase='review';s.editFinished=s.changed;if(s.changed)showComplete(box,s);render(box);return;}
+  s.editStatus='saving';s.finishing=finish;setStatus(box,s);
+  if(finish)render(box);
+  const attempt=s.attempt;
+  s.delay=setTimeout(()=>{
+   if(s.attempt!==attempt)return;
+   s.finishing=false;
+   if(!retry&&['edit-fail','offline'].includes(scenario.value)){s.editStatus='failed';render(box);return;}
+   s.baseline=[...s.text];s.editStatus='saved';
+   if(finish){s.phase='success';s.editFinished=true;s.captionPending=false;showComplete(box,s);render(box);}else setStatus(box,s);
+   
+  },850);
+ }
+ for(const box of boxes){
+  box.addEventListener('input',event=>{
+   if(event.target.matches('[aria-label="굿즈 디자인 요청"]')){states.get(box).request=event.target.value;return;}
+   const field=event.target.closest('[data-caption]');if(!field)return;
+   const s=states.get(box);s.text[Number(field.dataset.caption)]=field.value;s.changed=true;s.editStatus='dirty';setStatus(box,s);
+   clearTimeout(s.delay);s.delay=setTimeout(()=>save(box),800);
+  });
+  box.addEventListener('click',event=>{
+   const target=event.target.closest('[data-action]');if(!target||target.disabled)return;
+   const s=states.get(box),action=target.dataset.action;
+   if(action==='upload'||action==='attach')begin(box);
+   else if(action==='retry')begin(box,true);
+   else if(action==='confirm'){s.phase='review';render(box);}
+   else if(action==='edit'){s.phase='editing';s.changed=false;s.editStatus='saved';render(box);}
+   else if(action==='finish')save(box,true,s.editStatus==='failed');
+   else if(action==='stay'){s.leave=false;render(box);}
+   else if(action==='dismiss'||action==='ack'){clearTimeout(s.noticeTimer);s.notice=null;render(box);box.querySelector('[data-action="upload"]')?.focus({preventScroll:true});}
+   else if(action==='back'){
+    if(s.phase==='uploading'||s.phase==='partial'||s.phase==='failed'||s.phase==='editing'&&(s.editStatus!=='saved'||s.text.some((t,i)=>t!==s.baseline[i]))){s.leave=true;render(box);}
+    else if(s.kind!=='goods'){s.phase='shelf';render(box);}
+    
+   }
+   else if(action==='open'){s.phase='review';render(box);}
+   else if(action==='remove'){clean(s);s.phase='empty';s.done=0;render(box);}
+   else if(action==='generate'){s.phase='generated';render(box);}
+  });
+ }
+ scenario.addEventListener('change',()=>{restart();});
+ view.addEventListener('change',()=>{for(const box of boxes)box.closest('[data-variant]').hidden=box.dataset.demo!==view.value;window.scrollTo({top:0,behavior:'instant'});});
+ sampleCount.addEventListener('change',()=>{restart();window.scrollTo({top:0,behavior:'instant'});});
+ root.addEventListener('keydown',event=>{const box=boxes.find(b=>!b.closest('[data-variant]').hidden),s=states.get(box);if(event.key==='Escape'&&(s.leave||s.notice==='popup')){s.leave=false;s.notice=null;render(box);}else if(event.key==='Tab'&&(s.leave||s.notice==='popup')){event.preventDefault();box.querySelector('.mori-dialog button')?.focus({preventScroll:true});}});
+ root.querySelector('#mori-save-restart').addEventListener('click',()=>{restart();});
+ restart();
+
+})();
+</script>
+
+</body></html>

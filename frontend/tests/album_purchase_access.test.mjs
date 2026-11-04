@@ -14,18 +14,18 @@ const {MemoryRouter}=await import('react-router');
 const {Bookshelf,DesignDetail}=await import('../album-access-check.mjs');
 const html=C=>render(h(MemoryRouter,null,h(C,{userId:'owner'})));
 
-test('empty bookshelf guides purchase and only links to goods creation',()=>{
+test('empty album home offers independent creation and keeps goods reachable',()=>{
  globalThis.albumQuery={data:{pages:[{items:[],media_access:[]}]}};
  const output=html(Bookshelf);
- assert.match(output,/굿즈를 구매하면 전용 사진첩/);
- assert.match(output,/href="\/goods"[^>]*>굿즈 만들기/);
+ assert.match(output,/첫 앨범 만들기/);
+ assert.match(output,/href="\/goods"[^>]*>사진으로 굿즈 만들기/);
  assert.doesNotMatch(output,/새 사진첩|사진첩 생성 다시 시도/);
 });
 test('existing albums remain reachable without restoring independent creation',()=>{
  globalThis.albumQuery={data:{pages:[{items:[{id:'legacy',title:'기존 추억',status:'draft',page_count:0,updated_at:'2026-10-20T00:00:00Z'}],media_access:[]}]}};
  const output=html(Bookshelf);
  assert.match(output,/기존 추억/);assert.match(output,/href="\/albums\/legacy\/edit"/);
- assert.match(output,/사진첩 삭제/);assert.doesNotMatch(output,/href="\/goods"/);assert.doesNotMatch(output,/새 사진첩/);
+ assert.match(output,/앨범 삭제/);assert.match(output,/href="\/goods"/);assert.doesNotMatch(output,/새 사진첩/);
 });
 test('checkout disabled does not restore manual connection or free album creation',()=>{
  globalThis.design={id:'design',version:1,product:'magnet',image_url:'/art.png',placement:{holeX:.5,holeY:0,widthMm:50}};

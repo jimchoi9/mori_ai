@@ -4,14 +4,10 @@ import type {Detail} from '../../api/types';
 import {sendPhotos} from './easyQueue';
 import {optimizePhoto} from './optimizePhoto';
 import {transferPhoto,verifyPhoto,type TransferItem} from './easyTransport';
-import type {UploadBatch} from './uploadMessages';
 
 const TITLE_NOTICE_TIMEOUT_MS=5000;
-interface Draft {notifications:Set<AbortController>;items:TransferItem[];batches:UploadBatch[];activeIds:string[];busy:boolean;controller?:AbortController;listeners:Set<()=>void>}
-const drafts=new Map<string,Draft>();
-export function hasUploadDraft(userId:string,albumId:string){return drafts.get(`${userId}:${albumId}`)?.items.some(item=>!item.replacesPageId&&item.state!=='saved')??false;}
-function clearDrafts(){for(const draft of drafts.values()){draft.controller?.abort();for(const request of draft.notifications)request.abort();draft.notifications.clear();draft.items=[];draft.batches=[];draft.activeIds=[];draft.busy=false;draft.listeners.forEach(f=>f());}drafts.clear();}
-window.addEventListener('mori:logout',clearDrafts);window.addEventListener('mori:clear-private-memory',clearDrafts);
+export {stageNewAlbumUploads,hasUploadDraft,discardAlbumUploads} from './easyDrafts';
+import {drafts} from './easyDrafts';
 
 export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<unknown>,maxPhotos:20|50,knownPageIds:readonly string[]=[]){
  const key=`${userId}:${albumId}`;
@@ -63,6 +59,8 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
  }
  useEffect(()=>{
   const update=()=>render(n=>n+1);draft.listeners.add(update);
+  // Defer until effect setup survives StrictMode's setup/cleanup/setup cycle.
+  const starter=setTimeout(()=>{const ids=draft.startIds;if(ids?.length&&!draft.busy){draft.startIds=undefined;void send(ids);}},0);
   const expire=()=>{draft.controller?.abort();for(const request of draft.notifications)request.abort();};
   // Network/visibility recovery is consent to resume previously sent photos only.
   const resume=()=>{const ids=draft.items.filter(item=>item.submitted&&item.state!=='saved').map(item=>item.id);if(ids.length)void send(ids);};
@@ -70,7 +68,7 @@ export function useEasyUploads(albumId:string,userId:string,refresh:()=>Promise<
   const leave=(event:BeforeUnloadEvent)=>{if(draft.busy){event.preventDefault();event.returnValue='';}};
   window.addEventListener('online',resume);document.addEventListener('visibilitychange',visible);
   window.addEventListener('mori:session-expired',expire);window.addEventListener('beforeunload',leave);
-  return()=>{draft.listeners.delete(update);expire();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);window.removeEventListener('mori:session-expired',expire);window.removeEventListener('beforeunload',leave);};
+  return()=>{clearTimeout(starter);draft.listeners.delete(update);expire();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);window.removeEventListener('mori:session-expired',expire);window.removeEventListener('beforeunload',leave);};
  },[draft]);
  function select(files:File[],remaining:number){
   if(draft.busy)return [];

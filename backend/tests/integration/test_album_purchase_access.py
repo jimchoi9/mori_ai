@@ -22,20 +22,15 @@ async def purchase(client, db, *, gift=False):
 
 
 @pytest.mark.asyncio
-async def test_no_purchase_cannot_admit_upload_generation_or_resume(client, db):
-    me = await login(client); await consent(client, me)
-    async with db() as s, s.begin():
-        album = Album(owner_id=UUID(me['user']['id'])); s.add(album); await s.flush(); aid = str(album.id)
-        assert album.legacy_access is False
-    for reply in [await reserve(client,me,aid), await generate(client,me,aid),
-                  await resume(client,me,aid,str(uuid4()),1)]:
-        assert reply.status_code == 403 and reply.json()['error']['code'] == 'PURCHASE_REQUIRED'
-    async with db() as s:
-        assert await s.scalar(select(func.count()).select_from(Upload)) == 0
-        assert await s.scalar(select(func.count()).select_from(Run)) == 0
-    beta = await login(client, 'beta'); await consent(client,beta)
-    assert (await reserve(client,beta,aid)).status_code == 404
-    assert (await generate(client,beta,aid)).status_code == 404
+async def test_independent_album_admits_owner_upload_without_purchase(client, db):
+    me=await login(client);await consent(client,me)
+    response=await create(client,me)
+    assert response.status_code==201
+    aid=response.json()['data']['album']['id']
+    assert (await reserve(client,me,aid)).status_code==201
+    beta=await login(client,'beta');await consent(client,beta)
+    assert (await reserve(client,beta,aid)).status_code==404
+    assert (await generate(client,beta,aid)).status_code==404
 
 
 @pytest.mark.asyncio
@@ -49,11 +44,11 @@ async def test_purchase_grants_only_its_album_and_replay_is_safe(client, db):
     first = await reserve(client,me,receipt['album_id'],files,version=2,key='second')
     again = await reserve(client,me,receipt['album_id'],files,version=2,key='second')
     assert first.status_code == again.status_code == 201 and first.json()['data'] == again.json()['data']
-    assert (await create(client,me)).json()['error']['code'] == 'PURCHASE_REQUIRED'
+    assert (await create(client,me)).status_code == 201
     async with db() as s, s.begin():
         album = await s.get(Album, UUID(receipt['album_id'])); assert not album.legacy_access
         extra = Album(owner_id=album.owner_id); s.add(extra); await s.flush(); aid=str(extra.id)
-    assert (await reserve(client,me,aid)).json()['error']['code'] == 'PURCHASE_REQUIRED'
+    assert (await reserve(client,me,aid)).status_code == 201
 
 
 @pytest.mark.asyncio
@@ -86,15 +81,14 @@ async def test_gift_requires_explicit_claim_then_recipient_can_upload(client, db
 
 
 @pytest.mark.asyncio
-async def test_foreign_or_unclaimed_receipt_cannot_grant_access(client, db):
-    me,receipt=await purchase(client,db); await consent(client,me)
-    async with db() as s, s.begin():
+async def test_receipt_changes_do_not_remove_independent_owner_access(client, db):
+    me,receipt=await purchase(client,db);await consent(client,me)
+    async with db() as s,s.begin():
         other=User();s.add(other);await s.flush()
         p=await s.get(GoodsTestPurchase,UUID(receipt['id']));p.owner_id=other.id
-    assert (await reserve(client,me,receipt['album_id'])).json()['error']['code']=='PURCHASE_REQUIRED'
-    async with db() as s, s.begin():
-        p=await s.get(GoodsTestPurchase,UUID(receipt['id']));p.owner_id=UUID(me['user']['id']);p.gift=True
-    assert (await reserve(client,me,receipt['album_id'])).json()['error']['code']=='PURCHASE_REQUIRED'
+    assert (await reserve(client,me,receipt['album_id'])).status_code==201
+    beta=await login(client,'beta');await consent(client,beta)
+    assert (await reserve(client,beta,receipt['album_id'])).status_code==404
 
 
 @pytest.mark.asyncio
@@ -134,7 +128,7 @@ async def test_migration_grandfathers_only_preexisting_non_purchase_albums(clien
 
 
 @pytest.mark.asyncio
-async def test_missing_grant_rechecked_before_put_complete_and_replay(client,db):
+async def test_owner_rechecked_before_put_complete_and_replay(client,db):
     me,receipt=await purchase(client,db);await consent(client,me)
     from backend.tests.integration.test_upload_http import file
     files=[file(size=4)]
@@ -142,20 +136,20 @@ async def test_missing_grant_rechecked_before_put_complete_and_replay(client,db)
     upload=response.json()['data']['uploads'][0]
     async with db() as s,s.begin():
         other=User();s.add(other);await s.flush()
-        p=await s.get(GoodsTestPurchase,UUID(receipt['id']));p.owner_id=other.id
+        album=await s.get(Album,UUID(receipt['album_id']));album.owner_id=other.id
     replies=[await reserve(client,me,receipt['album_id'],files),
         await client.put(upload['upload_url'],content=b'abcd',headers={**upload['required_headers'],**headers(me)}),
         await client.post(f"/api/v1/albums/{receipt['album_id']}/uploads/{upload['upload_id']}/complete",json={},headers=headers(me))]
-    assert all(r.status_code==403 and r.json()['error']['code']=='PURCHASE_REQUIRED' for r in replies)
+    assert all(r.status_code==404 for r in replies)
 
 
 @pytest.mark.asyncio
-async def test_missing_grant_before_paid_dispatch_sends_nothing_and_releases_reservation(client,db,tmp_path):
+async def test_pending_management_before_paid_dispatch_sends_nothing_and_releases_reservation(client,db,tmp_path):
     from backend.tests.integration.test_real_generation_pipeline import real_pipeline,only_stage
     me,aid,rid,store,executor,runner,provider,ledger=await real_pipeline(client,db,tmp_path,count=1)
     await only_stage(db,rid,'caption')
     async with db() as s,s.begin():
-        album=await s.get(Album,UUID(aid));album.legacy_access=False
+        album=await s.get(Album,UUID(aid));album.management_pending=True
     assert await runner.run_once()
     assert provider.calls==[]
     from backend.models import AIBudgetEntry

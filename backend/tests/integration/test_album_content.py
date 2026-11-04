@@ -222,7 +222,7 @@ async def test_pinned_nfc_keeps_existing_session_and_new_entry_excludes_deleted_
     async with db() as session,session.begin():
         row=await session.scalar(select(NfcViewingSession));row.expires_at=now()-timedelta(seconds=1)
     assert (await client.get(grant['pages'][0]['src'],headers=h)).status_code==401
-    assert (await client.get(f'/api/v1/albums/{aid}/viewer')).status_code==403
+    assert (await client.get(f'/api/v1/albums/{aid}/viewer')).status_code==409
 
 @pytest.mark.asyncio
 async def test_unknown_paid_caption_is_accounted_and_never_retried(client,db):

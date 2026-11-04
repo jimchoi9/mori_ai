@@ -18,8 +18,11 @@ body.nfc-mode{margin:0;overflow:hidden;background:#ead8bb;color:#443629;color-sc
 .nfc-experience #book-frame,.nfc-experience #opening-book,.nfc-experience .stf__block{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .nfc-experience #book-frame{flex:none}
 .nfc-experience .book-page{background:#ead8bb;overflow:hidden}.nfc-experience .story-page{display:flex;flex-direction:column}
-.nfc-experience .story-picture{height:75%;min-height:0;position:relative;background:#ead8bb}
-.nfc-experience .story-image{height:100%;width:100%;display:block;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.nfc-experience .story-picture{height:75%;min-height:0;position:relative;background:#d9c9ad;isolation:isolate;overflow:hidden}
+.nfc-experience .story-picture::before{content:"";position:absolute;inset:-32px;background-image:var(--story-backdrop,none);background-position:center;background-size:cover;filter:blur(24px);opacity:.35;pointer-events:none;z-index:-1}
+.nfc-experience .story-image{height:100%;width:100%;display:block;position:relative;object-fit:contain;transform:scale(var(--story-scale,1));transform-origin:center;pointer-events:none;-webkit-user-drag:none}
+.nfc-experience .story-portrait .story-image{object-fit:cover;transform:none}
+.nfc-experience .story-portrait::before{content:none}
 .nfc-experience .story-copy{height:25%;padding:18px 24px max(36px,calc(24px + env(safe-area-inset-bottom)));overflow:hidden;touch-action:none;min-height:0}
 .nfc-experience .story-copy p{font-size:22px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;word-break:keep-all}
 .nfc-experience .book-position{position:absolute;bottom:max(10px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:12px;color:#8d806d;pointer-events:none}

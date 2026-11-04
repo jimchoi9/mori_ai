@@ -14,7 +14,7 @@ export function GoodsLogin({onClose,onBusyChange}:{onClose:()=>void;onBusyChange
   catch(e){setError(errorText(e));}finally{setBusy(false);}
  }
  return <section className="goods-login mori-panel" aria-label="디자인 저장 로그인">
-  <h2>이 디자인을 내 공간에 저장하세요</h2><p>로그인하고 지금 만든 시안에서 이어갈 수 있어요.</p>
+  <h2>로그인하고 이어가기</h2><p>선택한 디자인과 설정은 그대로 이어져요.</p>
   <OAuthLoginOptions providers={config.data?.auth_providers} pending={config.isPending} failed={config.isError} retry={()=>void config.refetch()} returnTo="/goods"/>
   {dev.data?.dev_auth_enabled&&<details><summary>개발용 테스트 로그인</summary>{(['alpha','beta'] as const).map(account=><button key={account} disabled={busy} onClick={()=>void login(account)}>{account} 개발 계정으로 로그인</button>)}</details>}
   {error&&<p role="alert">{error}</p>}<button disabled={busy} onClick={onClose}>디자인으로 돌아가기</button>

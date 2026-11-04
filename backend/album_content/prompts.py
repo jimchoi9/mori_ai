@@ -3,8 +3,12 @@ from backend.generation.prompt_profiles import caption_prompt
 
 SHORT_MEMORY_VERSION = 'album-memory-short-v1'
 PLACE_MEMORY_VERSION = 'album-place-action-v1'
-PLACE_EXPERIENCE_VERSION = 'album-place-experience-v1'
-PLACE_CONTEXT_VERSIONS = (PLACE_MEMORY_VERSION, PLACE_EXPERIENCE_VERSION)
+LEGACY_PLACE_EXPERIENCE_VERSION = 'album-place-experience-v1'
+PREVIOUS_PLACE_EXPERIENCE_VERSION = 'album-place-experience-v2'
+PLACE_EXPERIENCE_VERSION = 'album-place-experience-v3'
+PLACE_CONTEXT_VERSIONS = (PLACE_MEMORY_VERSION, LEGACY_PLACE_EXPERIENCE_VERSION, PREVIOUS_PLACE_EXPERIENCE_VERSION, PLACE_EXPERIENCE_VERSION)
+STRUCTURED_PLACE_VERSIONS = (LEGACY_PLACE_EXPERIENCE_VERSION, PREVIOUS_PLACE_EXPERIENCE_VERSION, PLACE_EXPERIENCE_VERSION)
+NATURAL_PLACE_VERSIONS = (PREVIOUS_PLACE_EXPERIENCE_VERSION, PLACE_EXPERIENCE_VERSION)
 
 _PLACE_MEMORY = (
     '첫 번째 current 사진 한 장에 대한 한국어 글귀 한 문장만 쓰세요. 장소와 사진에 직접 보이는 행동을 중심으로 '
@@ -46,7 +50,10 @@ def instructions(config):
         return _SHORT_MEMORY
     if version == PLACE_MEMORY_VERSION:
         return _PLACE_MEMORY
+    if version in (LEGACY_PLACE_EXPERIENCE_VERSION, PREVIOUS_PLACE_EXPERIENCE_VERSION):
+        from backend.album_content.place_caption import PROMPT, PROMPT_V2
+        return PROMPT_V2 if version == PREVIOUS_PLACE_EXPERIENCE_VERSION else PROMPT
     if version == PLACE_EXPERIENCE_VERSION:
-        from backend.album_content.place_caption import PROMPT
-        return PROMPT
+        from backend.album_content.place_caption import evidence_prompt
+        return evidence_prompt(has_gps=config['caption_place_context']['gps'] is not None)
     raise ValueError('Unsupported album caption prompt')

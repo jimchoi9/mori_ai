@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Mori · 시안 선택과 구매 진행 체험</title>
+<style>
+:root{font:15px/1.6 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',system-ui,sans-serif;color:#263d31;background:#faf9f5;color-scheme:light}*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button,select{cursor:pointer}button{touch-action:manipulation;min-height:44px}button:disabled{opacity:.45;cursor:default}button:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #315541;outline-offset:4px}[hidden]{display:none!important}p,h1,h2{margin:0}svg{display:block;max-width:100%}.lab{background:#edf0e8;border-bottom:1px solid #dce3d5;padding:12px 18px}.lab-inner{max-width:600px;margin:auto}.lab-tools{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.lab label{display:grid;gap:4px;font-size:12px;flex:1;min-width:170px}.lab select,.lab button{min-height:44px;padding:8px 12px;border:1px solid #cdd7c6;border-radius:9px;background:#fffefb;color:#38503d;max-width:100%}.lab-note{font-size:11px;color:#697866;margin-top:8px}.shell{max-width:600px;margin:auto;padding:0 18px 40px}.site-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:23px 0 25px}.brand{display:flex;align-items:center;gap:9px;font-size:20px;font-weight:650;letter-spacing:-.6px}.brand-mark{display:grid;place-items:center;width:31px;height:36px;border:1.5px solid #315541;border-radius:10px 10px 16px 16px;font:29px Georgia,serif;padding-bottom:4px}.context{font-size:12px;color:#7d887f}.conversation{max-width:420px}.user-message{width:fit-content;max-width:86%;margin:0 0 23px auto;padding:13px 17px;border-radius:19px 19px 4px 19px;background:#e8eddf;color:#4b6245;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.user-message small{display:block;font-size:10px;color:#66775f;margin-bottom:5px}.message-label{font-size:11px;color:#7d887f;margin-bottom:9px}.revision{margin-bottom:27px}.design-card{padding:7px;background:#fff;border:1px solid #e1e5dc;border-radius:16px}.design-card.is-editing{border-color:#8fa286}.art{border-radius:10px;overflow:hidden;aspect-ratio:1;display:grid;place-items:center;background-color:#eeefe9;background-image:linear-gradient(45deg,#e4e7dd 25%,transparent 25%),linear-gradient(-45deg,#e4e7dd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e4e7dd 75%),linear-gradient(-45deg,transparent 75%,#e4e7dd 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.art svg{width:100%;height:100%}.art-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px 2px}.secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d9dfd4;background:#fff;color:#315541;border-radius:24px;padding:8px 13px;min-height:40px;font-size:11px;white-space:nowrap}.text-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:0;border-radius:7px;padding:8px 2px;background:transparent;color:#7d887f;font-size:11px;white-space:nowrap}.primary{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:11px;background:#315541;color:#fff;min-height:48px;padding:12px 16px;font-size:15px;font-weight:550;box-shadow:none}.proposed .art-actions{flex-direction:column;gap:5px;padding:10px 5px 3px}.proposed .buy{width:100%;font-size:16px;min-height:50px}.proposed .secondary{width:100%;border:1px solid #d9dfd4;border-radius:10px;background:#fff;color:#46613d;font-size:14px;min-height:44px}.composer{margin-top:29px;padding:13px 15px;border:1px solid #d8dfd1;border-radius:19px;background:#fff;box-shadow:0 6px 24px #2c442b07}.composer label{font-size:11px;color:#7d887f}.composer textarea{display:block;width:100%;max-width:100%;min-height:84px;border:0;border-radius:0;background:transparent;color:#263d31;font:inherit;font-size:16px;line-height:1.8;resize:vertical;padding:8px 0;box-shadow:none}.composer textarea::placeholder{color:#a4aaa3}.composer-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px}.reference{font-size:11px;color:#7d887f}.send{position:relative;display:grid;place-items:center;flex:none;width:38px;height:38px;min-height:38px;padding:0;border:0;border-radius:50%;background:#315541;color:#fff;box-shadow:none}.send::after{content:'';position:absolute;inset:-3px}.send-status{font-size:12px;color:#64755f;min-height:19px;margin:8px 2px 0}.back{display:inline-flex;align-items:center;gap:7px;padding:7px 0;background:none;border:0;color:#64765f;font-size:13px;margin-bottom:16px}.order h1{font-size:23px;font-weight:600;letter-spacing:-.6px}.order-intro{font-size:13px;color:#7d887f;margin:6px 0 22px}.summary{display:flex;gap:16px;align-items:center;background:#fff;border:1px solid #e1e5dc;border-radius:15px;padding:15px;margin-bottom:23px}.summary .art{width:110px;flex:none}.summary h2{font-size:16px;font-weight:550}.summary p{font-size:12px;color:#7d887f;margin-top:5px}.order .primary{width:100%}.order-note{font-size:12px;color:#7d887f;text-align:center;margin-top:10px}.purchase-status{font-size:14px;color:#315541;border-top:1px solid #dce4d5;margin-top:18px;padding-top:16px}.purchase-status p{font-size:12px;color:#7d887f;margin-top:6px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}@media(max-width:359px){.shell{padding-inline:14px}.lab{padding-inline:14px}.summary{gap:12px;padding:12px}.summary .art{width:90px}.summary h2{font-size:15px}.art-actions{padding-inline:0}.secondary{padding:8px 10px}.art-actions .text-button{font-size:10px}}
+
+.edit-reference{display:flex;align-items:center;gap:10px;padding-bottom:11px;margin-bottom:10px;border-bottom:1px solid #e8ede3}.reference-thumbnail{width:44px;height:44px;flex:none;border-radius:8px;overflow:hidden;background:#edf0e8}.reference-thumbnail svg{width:100%;height:100%}.edit-reference strong{font-size:13px;font-weight:550;color:#46613d}.composer:focus-within{border-color:#73937c;box-shadow:0 0 0 1px #73937c20}
+
+.proposed .secondary.edit-selected{background:#e8eddf;border-color:#e8eddf;color:#536b4c;opacity:1;cursor:default}
+</style>
+</head>
+<body>
+<aside class="lab" aria-label="시안 진행 버튼 비교 설정"><div class="lab-inner"><div class="lab-tools">
+ <label>시안 카드 버튼<select id="variant"><option value="proposed">제안 · 이 시안으로 구매하기</option><option value="current">기존 · 굿즈로 보기</option></select></label><button type="button" id="restart">처음부터 체험</button>
+ </div><p class="lab-note">샘플 체험 · 실제 AI 생성·로그인·저장·결제·주문 없음. 다음 화면도 흐름을 확인하는 제안입니다.</p></div></aside>
+<main class="shell">
+ <header class="site-header"><div class="brand"><span class="brand-mark" aria-hidden="true">m</span>Mori</div><span class="context">마그네틱 · 일러스트</span></header>
+ <div id="conversation" class="conversation proposed">
+  <p class="user-message"><small>새 디자인 만들기</small>바닷가에서 함께 찍은 사진으로 만들어 줘.</p>
+  <section id="revisions" aria-label="디자인 대화"></section>
+  <div class="composer" aria-label="디자인 수정 요청 입력">
+   <div class="edit-reference" role="status"><div class="reference-thumbnail" id="reference-thumbnail"></div><strong id="reference">시안 1 수정 중</strong></div>
+   <label for="request">어떻게 바꿀까요?</label><textarea id="request" rows="3" placeholder="예: 글자는 작게, 나머지는 그대로 해 줘."></textarea>
+   <div class="composer-tools"><button class="send" id="send" type="button" aria-label="수정 요청 보내기" disabled><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></div>
+  </div><p class="send-status" id="send-status" role="status"></p>
+ </div>
+ <section id="order" class="order" aria-label="선택한 시안과 주문 내용" hidden>
+  <button class="back" type="button" id="back">‹ 시안 다시 고르기</button>
+  <h1 tabindex="-1" id="order-title">주문 내용 확인</h1><p class="order-intro">선택한 시안으로 구매를 이어가요.</p>
+  <div class="summary"><div id="order-art" class="art"></div><div><h2 id="chosen-label"></h2><p>일러스트 마그네틱</p><p>선택한 모양과 디자인으로 준비해요.</p></div></div>
+  <button class="primary" type="button" id="continue">구매 단계로 계속 <span aria-hidden="true">→</span></button>
+  <p class="order-note">실제 결제는 진행되지 않는 체험 화면입니다.</p>
+  <div class="purchase-status" id="purchase-status" role="status" hidden><strong id="purchase-message"></strong><p>실제 서비스에서는 가격과 주문 정보를 확인하는 구매 절차로 이어집니다. 이 체험은 여기까지입니다.</p></div>
+ </section>
+</main>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id),variant=$('variant'),conversation=$('conversation'),revisions=$('revisions'),order=$('order'),request=$('request'),send=$('send');
+ const check='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+ const right='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg>';
+ const pencil='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z"/></svg>';
+ const art=(id,prefix="card")=>`<svg viewBox="0 0 300 300" role="img" aria-label="시안 ${id} 샘플 디자인"><rect x="23" y="23" width="254" height="254" rx="${id===1?'43':'110'}" fill="${id===1?'#e6e5ce':'#e5ece7'}" stroke="#fffef9" stroke-width="6"/><clipPath id="clip-${prefix}-${id}"><rect x="28" y="28" width="244" height="244" rx="${id===1?'39':'105'}"/></clipPath><g clip-path="url(#clip-${prefix}-${id})"><rect x="28" y="28" width="244" height="140" fill="${id===1?'#e9dfc5':'#d3e3df'}"/><circle cx="210" cy="83" r="25" fill="${id===1?'#e7b46b':'#efd6a2'}"/><path d="M20 153 73 112l58 44 64-32 90 32v100H20Z" fill="${id===1?'#a5b28f':'#91aaa2'}"/><path d="M20 177q64-17 130 0t130 0v100H20Z" fill="${id===1?'#9ebfba':'#8fb8bc'}"/><path d="M20 236q70-23 135 0t130 2v62H20Z" fill="#e6c9a3"/><g stroke="#6e6255" stroke-linecap="round" stroke-width="5"><path d="m118 221-8 24m16-24 8 24m34-24-6 24m14-24 7 24"/></g><path d="M100 218v-39q18-16 38 0v39Z" fill="${id===1?'#be835d':'#a67966'}"/><path d="M151 218v-39q17-16 35 0v39Z" fill="${id===1?'#7f9270':'#698679'}"/><circle cx="119" cy="165" r="14" fill="#e6b58b"/><circle cx="168" cy="165" r="14" fill="#e6b58b"/><path d="M105 163q1-24 24-10l4 12q-16-5-28-2m49 0q1-24 24-10l4 12q-16-5-28-2" fill="#5f5c51"/></g></svg>`;
+ let editing=1,chosen=null,returnY=0;
+ function renderCards(){
+  const proposed=variant.value==='proposed';conversation.classList.toggle('proposed',proposed);
+  revisions.innerHTML=[1,2].map(id=>`<article class="revision" aria-label="시안 ${id}"><p class="message-label"><span>Mori · 시안 ${id}</span></p><div class="design-card${editing===id?' is-editing':''}"><div class="art">${art(id)}</div><div class="art-actions">${proposed?`<button type="button" class="primary buy" data-proceed="${id}" aria-label="시안 ${id}로 구매하기">이 시안으로 구매하기 ${right}</button>`:''}${proposed?`<button type="button" class="secondary${editing===id?' edit-selected':''}" data-edit="${id}" aria-label="시안 ${id} ${editing===id?'수정 대상으로 선택됨':'수정하기'}"${editing===id?' disabled':''}>${editing===id?check+'수정 대상으로 선택됨':pencil+'이 시안 수정하기'}</button>`:`<button type="button" class="secondary" data-edit="${id}" aria-pressed="${editing===id}">${editing===id?check+'수정 기준 시안':'이 시안에서 수정'}</button>`}${!proposed?`<button type="button" class="text-button" data-proceed="${id}" aria-label="시안 ${id} 굿즈로 보기">굿즈로 보기 ${right}</button>`:''}</div></div></article>`).join('');
+  $('reference').textContent=`시안 ${editing} 수정 중`;
+  $('reference-thumbnail').innerHTML=art(editing,'reference');
+ }
+ function openOrder(id){
+  chosen=id;returnY=window.scrollY;conversation.hidden=true;order.hidden=false;
+  $('order-art').innerHTML=art(id,'order');$('chosen-label').textContent=`선택한 시안 ${id}`;
+  $('purchase-status').hidden=true;$('continue').disabled=false;
+  window.scrollTo({top:0,behavior:'instant'});$('order-title').focus({preventScroll:true});
+ }
+ function back(){order.hidden=true;conversation.hidden=false;window.scrollTo({top:returnY,behavior:'instant'});if(chosen)revisions.querySelector(`[data-proceed="${chosen}"]`)?.focus({preventScroll:true});}
+ revisions.addEventListener('click',event=>{const target=event.target.closest('button');if(!target||target.disabled)return;if(target.dataset.proceed)openOrder(Number(target.dataset.proceed));else if(target.dataset.edit){editing=Number(target.dataset.edit);renderCards();$('send-status').textContent='';}});
+ variant.addEventListener('change',()=>{renderCards();if(!order.hidden)back();});
+ $('restart').addEventListener('click',()=>{editing=1;chosen=null;returnY=0;request.value='';send.disabled=true;$('send-status').textContent='';order.hidden=true;conversation.hidden=false;renderCards();window.scrollTo({top:0,behavior:'instant'});});
+ $('back').addEventListener('click',back);
+ request.addEventListener('input',()=>{send.disabled=!request.value.trim();$('send-status').textContent='';});
+ send.addEventListener('click',()=>{if(!send.disabled)$('send-status').textContent=`시안 ${editing} 수정 요청을 확인했어요. 이 체험에서는 새 이미지를 생성하지 않아요.`;});
+ $('continue').addEventListener('click',()=>{$('purchase-message').textContent=`선택한 시안 ${chosen}로 구매 단계까지 이어졌어요.`;$('purchase-status').hidden=false;$('continue').disabled=true;});
+ renderCards();
+})();
+</script>
+</body>
+</html>

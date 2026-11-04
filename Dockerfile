@@ -26,7 +26,7 @@ RUN ./node_modules/.bin/tsc src/features/auth/oauth.ts --target ES2022 --module 
 RUN ./node_modules/.bin/tsc src/features/uploads/putFile.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --rootDir src --outDir /tmp/r2-upload-check \
     && node tests/r2_upload.test.mjs file:///tmp/r2-upload-check/features/uploads/putFile.js
 
-RUN node tests/admin_access.test.mjs && node tests/admin_management.test.mjs
+RUN node tests/admin_access.test.mjs && node tests/admin_management.test.mjs && node tests/account_navigation.test.mjs
 
 RUN node tests/ui_components.test.mjs && node tests/review_navigation.test.mjs && node tests/generation_steps.test.mjs
 
@@ -34,13 +34,13 @@ RUN ./node_modules/.bin/esbuild src/features/uploads/preprocess.ts --bundle --pl
     && node tests/upload_preprocess.test.mjs file:///tmp/upload-preprocess-check.mjs \
     && node tests/upload_preprocess_hook.test.mjs \
     && node tests/capture_metadata.test.mjs
-RUN node tests/content_order.test.mjs && node tests/album_flow.test.mjs && node tests/album_title.test.mjs
+RUN node tests/photo_order.test.mjs && node tests/content_order.test.mjs && node tests/album_save_state.test.mjs && node tests/album_flow.test.mjs && node tests/album_title.test.mjs
 
 RUN ./node_modules/.bin/tsc src/features/viewer/musicPlayback.ts --target ES2022 --module ES2022 --moduleResolution Bundler --lib ES2022,DOM --skipLibCheck --outDir /tmp/music-check \
     && node tests/music_playback.test.mjs file:///tmp/music-check/musicPlayback.js
 
 RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
-    && node tests/goods_checkout.test.mjs && node tests/goods_purchase.test.mjs \
+    && node tests/goods_checkout.test.mjs && node tests/goods_purchase_review.test.mjs && node tests/goods_purchase.test.mjs \
     && node tests/goods_upload.test.mjs && node tests/goods_workspace.test.mjs \
     && node tests/goods_mockup.test.mjs \
     && node tests/goods_catalog.test.mjs \
@@ -48,7 +48,13 @@ RUN node tests/goods_workflow.test.mjs && node tests/goods_geometry.test.mjs \
     && ./node_modules/.bin/esbuild src/features/goods/mockup/renderer.ts --bundle --platform=node --format=esm --outfile=/tmp/goods-renderer.mjs \
     && node tests/goods_renderer.test.mjs file:///tmp/goods-renderer.mjs
 
-RUN node tests/album_purchase_access.test.mjs \
+RUN node tests/album_view_route.test.mjs \
+    && node tests/album_home.test.mjs \
+    && node tests/new_album.test.mjs \
+    && node tests/album_delete_dialog.test.mjs \
+    && node tests/caption_delete_cleanup.test.mjs \
+    && node tests/owner_book.test.mjs \
+    && node tests/album_purchase_access.test.mjs \
     && node tests/easy_upload_queue.test.mjs \
     && node tests/easy_upload_optimize.test.mjs \
     && node tests/android_heic.test.mjs \
@@ -57,8 +63,12 @@ RUN node tests/album_purchase_access.test.mjs \
     && node tests/upload_messages.test.mjs \
     && node tests/iphone_webp.test.mjs \
     && node tests/nfc_access.test.mjs \
+    && node tests/nfc_entry.test.mjs \
+    && node tests/nfc_revisit.test.mjs \
     && node tests/nfc_loading.test.mjs \
-    && node tests/nfc_music.test.mjs
+    && node tests/nfc_music.test.mjs \
+    && node tests/nfc_ending.test.mjs \
+    && node tests/nfc_photo_layout.test.mjs
 
 FROM python:3.12-slim-bookworm AS backend-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1

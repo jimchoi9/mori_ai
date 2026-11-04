@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Mori · 사진 첨부와 AI 추천 체험</title>
+<style>
+:root{font:15px/1.6 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',system-ui,sans-serif;color:#263d31;background:#faf9f5;color-scheme:light}*{box-sizing:border-box}body{margin:0}button,select,textarea{font:inherit}button,select{cursor:pointer}button{touch-action:manipulation;min-height:44px}button:disabled{cursor:default;opacity:.45}button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #315541;outline-offset:4px}[hidden]{display:none!important}p,h1,h2{margin:0}svg{display:block;max-width:100%}.lab{background:#edf0e8;border-bottom:1px solid #dce3d5;padding:14px 20px}.lab-inner{max-width:660px;margin:auto}.lab-title{font-size:12px;font-weight:600;color:#5e705e;margin-bottom:9px}.lab-tools{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.lab label{display:grid;gap:4px;font-size:12px;flex:1;min-width:150px}.lab select,.lab button{min-height:44px;padding:8px 12px;border:1px solid #cdd7c6;border-radius:9px;background:#fffefb;color:#38503d}.lab-note{font-size:11px;color:#697866;margin-top:9px}.shell{max-width:660px;margin:auto;padding:0 24px 48px}.site-header{display:flex;align-items:center;justify-content:space-between;padding:24px 0 30px}.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:650;letter-spacing:-.6px}.brand-mark{display:grid;place-items:center;width:33px;height:38px;border:1.5px solid #315541;border-radius:11px 11px 17px 17px;font:30px Georgia,serif;padding-bottom:4px}.page-label{font-size:12px;color:#7d887f}.intro{margin:8px 0 22px}.intro h1{font-size:23px;font-weight:600;letter-spacing:-.7px}.intro p{font-size:13px;color:#7d887f;margin-top:7px}.selection{display:flex;align-items:center;gap:9px;color:#687b67;font-size:12px;margin-bottom:22px}.selection span{border:1px solid #dde3d6;padding:5px 11px;border-radius:20px}.composer{border:1px solid #d8dfd1;border-radius:19px;padding:16px;background:#fff;box-shadow:0 6px 24px #2c442b07}.composer:focus-within{border-color:#819a81}.attachment{display:flex;gap:12px;align-items:center;min-width:0;padding-bottom:14px;margin-bottom:10px;border-bottom:1px solid #edf0e7}.thumbnail{width:68px;height:68px;flex:none;overflow:hidden;background:#e6e9df;border-radius:10px}.thumbnail svg{height:100%;width:100%;object-fit:cover}.attachment-info{flex:1;min-width:0}.attachment-info strong{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:550}.attachment-info p{font-size:12px;color:#7d887f;overflow-wrap:anywhere}.check{display:grid;place-items:center;width:17px;height:17px;flex:none;border-radius:50%;background:#e6eee0;color:#315541;font-size:11px}.quiet-button{border:0;background:transparent;color:#7d887f;box-shadow:none;padding:8px;min-width:44px;flex:none;border-radius:8px}.remove{font-size:23px}.attachment-status{display:flex;gap:10px;align-items:center;font-size:13px;color:#6c7f68;padding:3px 0 15px}.spinner{width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}.attachment-status p{font-size:12px;color:#7d887f}.error{padding:12px 13px;background:#fff8f3;border:1px solid #ead8cf;border-radius:10px;margin-bottom:13px;color:#904c3e;font-size:13px}.error p{margin-top:3px;font-size:12px}.error-actions{display:flex;gap:12px;margin-top:7px}.error-actions button{border:0;padding:5px 0;color:#904c3e;background:transparent;text-decoration:underline;text-underline-offset:4px;font-size:12px}.field-label{font-size:12px;color:#7d887f}.composer textarea{display:block;width:100%;max-width:100%;min-height:112px;resize:vertical;border:0;outline:none;background:transparent;color:#263d31;box-shadow:none;padding:10px 0;font:inherit;font-size:16px;line-height:1.8}.composer textarea::placeholder{color:#9ca69b}.composer textarea:focus-visible{outline:none}.tools{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:9px}.attach-button{display:flex;align-items:center;gap:7px;background:transparent;border:0;padding:10px 0;color:#657d5d;font-size:13px;flex:none}.send{position:relative;display:grid;place-items:center;flex:none;width:38px;height:38px;min-height:38px;padding:0;border:0;border-radius:50%;background:#315541;color:#fff;box-shadow:none}.send::after{content:"";position:absolute;inset:-3px}.hint{color:#7d887f;font-size:12px;margin:10px 3px 0}.result{margin-bottom:22px}.user-request{margin:0 0 16px auto;max-width:86%;background:#e8eddf;border-radius:17px 17px 4px 17px;color:#4b6245;padding:11px 15px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.result-label{font-size:12px;color:#7d887f;margin-bottom:9px}.result-art{max-width:330px;border:1px solid #dfe5d9;border-radius:16px;padding:16px;background:#fff}.result-art svg{width:100%;height:auto;border-radius:11px}.result-note{font-size:11px;color:#7d887f;margin-top:8px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:400px){.shell{padding-inline:18px}.lab{padding-inline:18px}.intro h1{font-size:21px}.composer{padding:14px}.site-header{padding:22px 0}.thumbnail{width:60px;height:60px}.attachment{gap:9px}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+.suggestions{margin:22px 0 14px}.suggestions h2{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}.suggestions h2 span{font-size:15px;color:#527450}.suggestions p{font-size:12px;color:#77816f;margin:4px 0 10px}.suggestion-options{display:flex;gap:7px;flex-wrap:wrap}.suggestion-options button{border:1px solid #cfdac5;background:#eff2e9;color:#3e5c43;border-radius:22px;padding:8px 13px;font-size:13px}.suggestion-options button[aria-pressed="true"]{border-color:#597a5a;background:#e0e9d9}.suggestion-title{display:flex;align-items:center;justify-content:space-between;gap:8px}.suggestion-title button{border:0;background:transparent;color:#61765f;font-size:12px;padding:5px}.suggestions .suggestion-feedback{color:#426346;margin:9px 0 0}
+</style>
+</head>
+<body>
+<aside class="lab" aria-label="체험 설정">
+ <div class="lab-inner"><p class="lab-title">7a·8 · 사진 첨부와 AI 추천 체험</p><div class="lab-tools">
+ <label>체험 상황<select id="scenario"><option value="success">정상 첨부</option><option value="failure">첨부 한 번 실패 → 재시도</option><option value="slow">느린 첨부</option></select></label>
+ <button type="button" id="restart">처음부터 체험</button></div>
+ <p class="lab-note">‘사진 첨부’를 누르면 샘플로 진행합니다. 실제 파일 선택·전송·AI 호출은 없습니다. 추천도 체험용 예시입니다.</p></div>
+</aside>
+<main class="shell">
+ <header class="site-header"><div class="brand"><span class="brand-mark" aria-hidden="true">m</span>Mori</div><span class="page-label">굿즈 만들기</span></header>
+ <div class="intro"><h1>이 사진으로 굿즈를 만들어 볼까요?</h1><p>사진만으로 시작해도 좋아요.</p></div>
+ <div class="selection"><span>마그네틱</span><span>일러스트</span></div>
+ <section id="result" class="result" aria-label="샘플 시안" hidden></section>
+ <section class="suggestions" id="suggestions" aria-label="AI 추천" hidden>
+  <div class="suggestion-title"><h2><span aria-hidden="true">✧</span>AI 추천</h2><button type="button" id="more">다른 추천 ↻</button></div>
+  <p>마음에 드는 표현을 누르면 요청에 추가돼요.</p>
+  <div class="suggestion-options" id="suggestion-options"></div>
+  <p class="suggestion-feedback" id="suggestion-feedback" role="status" hidden></p>
+ </section>
+ <section class="composer" aria-label="디자인 요청 입력">
+  <div id="attachment" aria-live="polite" aria-atomic="true"></div>
+  <label class="field-label" for="request">원하는 느낌 <span>(선택)</span></label>
+  <textarea id="request" maxlength="3000" placeholder="예: 따뜻한 색감으로, 배경은 간단하게 그려 주세요."></textarea>
+  <div class="tools"><button class="attach-button" type="button" id="attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="9" r="1.5" fill="currentColor"/><path d="m4 17 5-5 4 3 3-4 5 6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span id="attach-label">사진 첨부</span></button>
+   <button class="send" type="button" id="generate" aria-label="이미지 만들기" disabled><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></div>
+ </section>
+ <p class="hint" id="hint" role="status">사진을 첨부하거나 설명을 적어 주세요.</p>
+</main>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id),scenario=$('scenario'),request=$('request'),attachment=$('attachment'),attach=$('attach'),generate=$('generate'),result=$('result');
+ const escapeText=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const photo=(art=false)=>`<svg viewBox="0 0 240 200" role="img" aria-label="${art?'샘플 일러스트 시안':'샘플 여행 사진'}"><rect width="240" height="200" fill="${art?'#f8eee0':'#d9e9e6'}"/><circle cx="182" cy="44" r="21" fill="${art?'#eab46a':'#f7e4ae'}"/><path d="M0 100 52 69 106 105 158 77 240 110V200H0Z" fill="${art?'#92a88b':'#99b7a7'}"/><path d="M0 118q60-17 120 0t120 0v82H0Z" fill="${art?'#b8d4cc':'#9fcacb'}"/><path d="M0 167q70-20 130 0t110 2v31H0Z" fill="${art?'#edd1ac':'#e9d7b3'}"/><g stroke="${art?'#6e6255':'#5a625b'}" stroke-linecap="round" stroke-width="${art?'5':'4'}"><path d="m94 167-8 20m16-20 8 20m27-20-6 20m14-20 7 20"/></g><path d="M77 165v-32q17-15 34 0v32Z" fill="${art?'#b37458':'#c69275'}"/><path d="M123 165v-32q15-15 31 0v32Z" fill="${art?'#7c9270':'#6f8e7a'}"/><circle cx="94" cy="118" r="12" fill="#e8bc91"/><circle cx="139" cy="118" r="12" fill="#e8bc91"/><path d="M82 115q1-20 20-8l4 9q-14-3-24-1m45 0q1-20 20-8l4 9q-14-3-24-1" fill="#5f5c51"/></svg>`;
+ let phase='empty',attached=false,candidate=false,sequence=0,timer,suggestionSet=0;
+ const examples=[['따뜻한 수채화 느낌으로','배경은 단순하게','글자 없이 깔끔하게'],['색연필 질감으로','부드러운 파스텔 색감으로','인물을 조금 더 크게']];
+ function suggestions(){
+  $('suggestions').hidden=!attached||busy()||phase==='failed';
+  $('suggestion-options').innerHTML=examples[suggestionSet].map(text=>`<button type="button" aria-pressed="${request.value.split('\n').includes(text)}" data-prompt="${text}">${text}</button>`).join('');
+ }
+ $('more').addEventListener('click',()=>{suggestionSet=1-suggestionSet;$('suggestion-feedback').hidden=true;suggestions();});
+ $('suggestion-options').addEventListener('click',event=>{const text=event.target.closest('[data-prompt]')?.dataset.prompt;if(!text)return;if(!request.value.split('\n').includes(text))request.value=[request.value.trim(),text].filter(Boolean).join('\n');$('suggestion-feedback').textContent='요청에 추가했어요. 자유롭게 고쳐도 좋아요.';$('suggestion-feedback').hidden=false;render();});
+ const busy=()=>['preparing','uploading','generating'].includes(phase);
+ function render(){
+  let html='';
+  if(attached)html=`<div class="attachment"><div class="thumbnail">${photo()}</div><div class="attachment-info"><strong><span class="check" aria-hidden="true">✓</span>사진 첨부 완료</strong><p>${candidate?'현재 첨부된 사진':'이 사진으로 시안을 만들어요.'}</p></div><button class="quiet-button remove" type="button" data-action="remove" aria-label="첨부 사진 지우기" ${busy()?'disabled':''}>×</button></div>`;
+  if(['preparing','uploading'].includes(phase))html+=`<div class="attachment-status" role="status"><span class="spinner" aria-hidden="true"></span><div>${phase==='preparing'?'사진을 준비하고 있어요.':'사진을 첨부하고 있어요.'}<p>${attached?'기존 사진은 그대로 있어요.':'잠시만 기다려 주세요.'}</p></div></div>`;
+  if(phase==='failed')html+=`<div class="error" role="alert"><strong>${attached?'새 사진을 첨부하지 못했어요.':'사진을 첨부하지 못했어요.'}</strong><p>연결이 잠시 끊겼어요.${attached?' 기존 사진은 그대로 있어요.':' 다시 선택하지 않고 재시도할 수 있어요.'}</p><div class="error-actions"><button type="button" data-action="retry">첨부 다시 시도</button><button type="button" data-action="cancel">첨부 취소</button></div></div>`;
+  attachment.innerHTML=html;suggestions();
+  attach.disabled=busy();$('attach-label').textContent=attached?'사진 바꾸기':'사진 첨부';
+  request.disabled=phase==='generating';
+  generate.disabled=busy()||phase==='failed'||!attached&&!request.value.trim();
+  generate.setAttribute('aria-label',phase==='generating'?'시안 만드는 중':'이미지 만들기');
+  generate.innerHTML=phase==='generating'?'<span class="spinner" aria-hidden="true"></span>':`<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg>`;
+  $('hint').textContent=phase==='generating'?'샘플 시안을 만들고 있어요.':phase==='failed'?'입력한 설명은 그대로 있어요.':busy()?'첨부가 끝나면 시안을 만들 수 있어요.':attached?'사진 첨부 완료 · 시안을 만들 준비가 됐어요.':request.value.trim()?'적어 주신 설명으로 시안을 만들어요.':'사진을 첨부하거나 설명을 적어 주세요.';
+ }
+ function begin(retry=false){
+  if(busy())return;
+  clearTimeout(timer);const run=++sequence,mode=scenario.value;candidate=true;phase='preparing';render();
+  timer=setTimeout(()=>{if(run!==sequence)return;phase='uploading';render();timer=setTimeout(()=>{if(run!==sequence)return;if(mode==='failure'&&!retry){phase='failed';}else{attached=true;candidate=false;phase='attached';}render();},mode==='slow'?4000:1100);},mode==='slow'?2200:1000);
+ }
+ function reset(){++sequence;clearTimeout(timer);phase='empty';attached=false;candidate=false;suggestionSet=0;$('suggestion-feedback').hidden=true;request.value='';result.hidden=true;result.innerHTML='';render();}
+ attach.addEventListener('click',()=>begin());
+ attachment.addEventListener('click',event=>{const action=event.target.closest('[data-action]')?.dataset.action;if(!action||busy())return;if(action==='retry')begin(true);else if(action==='cancel'){candidate=false;phase=attached?'attached':'empty';render();attach.focus({preventScroll:true});}else if(action==='remove'){attached=false;candidate=false;phase='empty';render();attach.focus({preventScroll:true});}});
+ request.addEventListener('input',()=>{suggestions();generate.disabled=busy()||phase==='failed'||!attached&&!request.value.trim();if(!busy()&&phase!=='failed')$('hint').textContent=attached?'사진 첨부 완료 · 시안을 만들 준비가 됐어요.':request.value.trim()?'적어 주신 설명으로 시안을 만들어요.':'사진을 첨부하거나 설명을 적어 주세요.';});
+ generate.addEventListener('click',()=>{
+  if(generate.disabled)return;const prompt=request.value.trim(),withPhoto=attached,run=++sequence;phase='generating';render();
+  timer=setTimeout(()=>{if(run!==sequence)return;phase=attached?'attached':'empty';result.innerHTML=`<p class="user-request">${escapeText(prompt||(withPhoto?'이 사진으로 일러스트를 만들어 주세요.':''))}</p><p class="result-label" role="status">샘플 시안이 준비됐어요.</p><div class="result-art">${photo(true)}</div><p class="result-note">첨부와 생성의 흐름을 확인하는 예시 그림입니다.</p>`;result.hidden=false;render();},1500);
+ });
+ scenario.addEventListener('change',reset);$('restart').addEventListener('click',reset);window.addEventListener('pagehide',()=>{++sequence;clearTimeout(timer);});render();
+})();
+</script>
+</body>
+</html>
