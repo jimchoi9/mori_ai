@@ -14,8 +14,8 @@
 .bookshelf-screen .album-card-meta{display:grid;align-content:start;gap:1px;min-height:40px;margin:0;font-size:13px;line-height:1.5;color:var(--album-muted);font-variant-numeric:tabular-nums}
 .bookshelf-screen .album-card-meta span{display:block;overflow-wrap:anywhere}
 .bookshelf-screen .album-card-menu{position:static;display:flex;justify-content:space-between;align-items:center;gap:4px;margin-top:4px}
-.bookshelf-screen .album-card-menu .album-watch{flex:none;gap:5px;min-height:44px;min-width:44px;padding:8px 0;border:0;border-radius:0;background:none;color:var(--album-accent);font-size:14px;font-weight:500;line-height:1.4}
-.bookshelf-screen .album-watch:hover{text-decoration:underline;text-underline-offset:4px}
+.bookshelf-screen .album-card-menu .album-watch{flex:none;gap:5px;min-height:44px;min-width:44px;padding:8px 0;border:0;border-radius:0;background:none;color:var(--album-accent);font-size:14px;font-weight:500;line-height:1.4;text-decoration:none}
+.bookshelf-screen .album-watch:hover,.bookshelf-screen .album-watch:focus-visible{text-decoration:underline;text-underline-offset:4px}
 .bookshelf-screen .album-watch span{font-size:14px}
 .bookshelf-screen .album-card-menu .book-options{flex:none;margin:0 0 0 auto}
 .bookshelf-screen .book-options summary{width:44px;height:44px;color:#687064;font-size:20px}
