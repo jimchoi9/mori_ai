@@ -1,4 +1,4 @@
-"""NFC persistence; callers own transactions. Lock purchase before minting a tag."""
+"""Viewing capability persistence; minting callers lock the purchase or owner album."""
 from sqlalchemy import select,or_,and_
 from backend.models import GoodsNfcTag, NfcViewingSession, GoodsTestPurchase, Album, MediaAsset
 
@@ -7,22 +7,35 @@ async def purchase_tag(session, purchase_id):
     return await session.scalar(select(GoodsNfcTag).where(GoodsNfcTag.purchase_id==purchase_id))
 
 
+async def album_tag(session, album_id):
+    return await session.scalar(select(GoodsNfcTag).where(GoodsNfcTag.album_id==album_id))
+
+
+def album_target():
+    return or_(Album.id==GoodsNfcTag.album_id,
+               and_(GoodsNfcTag.album_id.is_(None),Album.id==GoodsTestPurchase.album_id))
+
+
+def valid_target():
+    return or_(GoodsNfcTag.album_id.is_not(None),GoodsTestPurchase.status=='simulated')
+
+
 async def find_tag(session, tag_id):
     return (await session.execute(select(GoodsNfcTag,GoodsTestPurchase,Album)
-        .join(GoodsTestPurchase,GoodsTestPurchase.id==GoodsNfcTag.purchase_id)
-        .join(Album,Album.id==GoodsTestPurchase.album_id)
+        .outerjoin(GoodsTestPurchase,GoodsTestPurchase.id==GoodsNfcTag.purchase_id)
+        .join(Album,album_target())
         .where(GoodsNfcTag.id==tag_id,GoodsNfcTag.active.is_(True),
-               GoodsTestPurchase.status=='simulated',Album.deleted_at.is_(None),Album.status!='deleted'))).first()
+               valid_target(),Album.deleted_at.is_(None),Album.status!='deleted'))).first()
 
 
 async def find_session(session, token_hash, stamp):
     return (await session.execute(select(NfcViewingSession,GoodsNfcTag,Album)
         .join(GoodsNfcTag,GoodsNfcTag.id==NfcViewingSession.tag_id)
-        .join(GoodsTestPurchase,GoodsTestPurchase.id==GoodsNfcTag.purchase_id)
-        .join(Album,Album.id==GoodsTestPurchase.album_id)
+        .outerjoin(GoodsTestPurchase,GoodsTestPurchase.id==GoodsNfcTag.purchase_id)
+        .join(Album,album_target())
         .where(NfcViewingSession.token_hash==token_hash,NfcViewingSession.revoked.is_(False),
                NfcViewingSession.expires_at>stamp,GoodsNfcTag.active.is_(True),
-               GoodsTestPurchase.status=='simulated',Album.deleted_at.is_(None),
+               valid_target(),Album.deleted_at.is_(None),Album.status!='deleted',
                Album.management_pending.is_(False),
                or_(and_(NfcViewingSession.pinned.is_(True),Album.content_enabled.is_(True)),and_(NfcViewingSession.pinned.is_(False),Album.status=='published',Album.version==NfcViewingSession.album_version))))).first()
 
