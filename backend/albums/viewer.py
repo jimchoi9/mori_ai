@@ -27,11 +27,11 @@ async def ready_pages(session,album):
 async def get_viewer(session,owner_id,album_id):
     album=await repo.find_album(session,owner_id,album_id,lock=True)
     if album is None:not_found()
-    if album.status!='published':raise APIError(409,'STATE_CONFLICT')
     if album.content_enabled:
+        from backend.album_content.service import viewing_entries
         from uuid import UUID
         from backend.models import MediaAsset
-        entries=album.content_manifest
+        entries=await viewing_entries(session,album)
         if not entries:raise APIError(409,'STATE_CONFLICT')
         pages=[]
         for item in entries:
@@ -42,6 +42,7 @@ async def get_viewer(session,owner_id,album_id):
             pages.append({'id':item['id'],'position':item['position'],'image':media_ref(asset),'thumbnail':media_ref(thumb),'caption_text':item['text']})
         return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),
             'media_access':await access_entries(session,[(album.id,p['image']) for p in pages[:2]],owner_id),'music':viewer_music()}
+    if album.status!='published':raise APIError(409,'STATE_CONFLICT')
     rows=await ready_pages(session,album)
     pages=[{'id':str(page.id),'position':page.position,'image':media_ref(asset),'caption_text':page.caption_text} for page,asset in rows]
     return {'album_id':str(album.id),'title':album.title,'version':album.version,'pages':pages,'generation_mode':await generation_mode(session,album.id),

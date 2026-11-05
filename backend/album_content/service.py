@@ -37,27 +37,28 @@ async def visible_pages(session,album,*,uploads=None):
     return [p for p in pages if not(uploads.get(p.id) and uploads[p.id].replaces_page_id and uploads[p.id].status!='ready')]
 
 
-async def refresh_manifest(session,album):
-    if not album.content_enabled:return
-    await session.flush()
-    pages=await visible_pages(session,album)
-    assets={a.id:a for a in await albums.ready_assets(session,album.id)}
-    uploads={u.page_id:u for u in await albums.page_uploads(session,album.id)}
-    run=await output_run(session,album)
+async def viewing_entries(session,album,*,pages=None,assets=None,uploads=None):
+    """Derive appreciation data without changing stored pages, jobs or album state.
+
+    Old albums may have an empty/stale manifest solely because a caption failed.
+    Use the same image checks for reads and writes; captions are optional in a book.
+    Callers changing the stored manifest or issuing NFC grants hold the album lock.
+    """
+    uploads=uploads if uploads is not None else await albums.page_uploads(session,album.id)
+    pages=pages if pages is not None else await visible_pages(session,album,uploads=uploads)
+    assets=assets if assets is not None else {a.id:a for a in await albums.ready_assets(session,album.id)}
+    uploads={u.page_id:u for u in uploads}
+    run=await output_run(session,album) if any(p.result_asset_id for p in pages) else None
     candidate=[]
     for page in pages:
         u=uploads.get(page.id);thumb=assets.get(page.thumbnail_asset_id);image=assets.get(page.normalized_asset_id)
         legacy=assets.get(page.result_asset_id)
         if legacy is not None and await validate_page_outputs(session,album,page,run):image=legacy
         valid=(image is not None and (ready_asset(image,album,page,'normalized',ratio=False) or image is legacy and await validate_page_outputs(session,album,page,run)))
-        if (u is None or u.status!='ready' or not valid or not ready_asset(thumb,album,page,'thumbnail',ratio=False)
-            or page.caption_text is None or page.ai_caption is None and page.caption_edited_at is None):break
-        candidate.append({'id':str(page.id),'position':len(candidate)+1,'asset_id':str(image.id),'thumbnail_id':str(thumb.id),'text':page.caption_text})
+        if (u is None or u.status!='ready' or not valid or not ready_asset(thumb,album,page,'thumbnail',ratio=False)):break
+        candidate.append({'id':str(page.id),'position':len(candidate)+1,'asset_id':str(image.id),'thumbnail_id':str(thumb.id),'text':page.caption_text if page.caption_text is not None else ''})
     else:
-        album.content_manifest=candidate
-        album.status='published' if candidate else 'draft'
-        if candidate:album.published_at=album.published_at or now()
-        return
+        return candidate
     # Pending additions never hide an existing ready book. Removal/order/manual text
     # changes affect new entrances immediately; already-issued sessions stay pinned.
     prior={p['id']:p for p in album.content_manifest}
@@ -66,7 +67,15 @@ async def refresh_manifest(session,album):
         old=prior.get(str(page.id))
         if old:
             kept.append({**old,'position':len(kept)+1,'text':page.caption_text if page.caption_text is not None else old['text']})
-    album.content_manifest=kept;album.status='published' if kept else 'draft'
+    return kept
+
+
+async def refresh_manifest(session,album):
+    if not album.content_enabled:return
+    await session.flush()
+    album.content_manifest=await viewing_entries(session,album)
+    album.status='published' if album.content_manifest else 'draft'
+    if album.content_manifest:album.published_at=album.published_at or now()
 
 
 async def activate_replacement(session,album,upload,page):

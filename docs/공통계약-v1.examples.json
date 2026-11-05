@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.33",
+  "contract_version": "1.34",
   "client_config": {
     "data": {
       "album_min_photos": 1,
@@ -1967,7 +1967,15 @@
     "replacement_reservation_optional_fields": {
       "replaces_page_id": "00000000-0000-4000-8000-000000000002"
     },
-    "publication": "automatic_when_current_visible_pages_are_ready",
+    "publication": "automatic_when_current_visible_images_are_ready_independent_of_captions",
+    "missing_caption": {
+      "management_page": {"caption_text": null, "caption_status": "unknown"},
+      "management_display": "글귀를 직접 적어주세요.",
+      "viewer_caption_text": "",
+      "nfc_page_text": "",
+      "photo_remains_visible": true,
+      "automatic_paid_retry": false
+    },
     "editing_period_limit": null,
     "replacement_caption": "preserve_without_ai",
     "nfc_session": "pinned_transfer_grant_2h_in_memory; entry_persisted_for_unrestricted_revisit",
