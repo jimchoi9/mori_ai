@@ -363,12 +363,15 @@ class GoodsDeliveryAttempt(Identity, Created, Base):
 
 
 class GoodsNfcTag(Identity, Created, Base):
+    """Stable viewing capability: an existing purchase OR an ordinary album."""
     __tablename__ = 'goods_nfc_tags'
-    purchase_id: Mapped[UUID] = mapped_column(ForeignKey('goods_test_purchases.id'), unique=True)
+    purchase_id: Mapped[UUID | None] = mapped_column(ForeignKey('goods_test_purchases.id'), unique=True)
+    album_id: Mapped[UUID | None] = mapped_column(ForeignKey('albums.id'), unique=True)
     # The writing secret is retained for immutable manufacturing packets; never expose it in logs.
     write_token: Mapped[str] = mapped_column(String(80))
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text('true'))
+    __table_args__ = (CheckConstraint('(purchase_id IS NULL) <> (album_id IS NULL)', name='ck_viewing_tag_target'),)
 
 
 class NfcViewingSession(Created, Base):
