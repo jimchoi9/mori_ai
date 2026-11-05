@@ -236,7 +236,7 @@ async def test_unknown_paid_caption_is_accounted_and_never_retried(client,db):
     async with db() as session:
         assert (await session.scalar(select(AlbumCaptionJob))).status=='unknown'
         assert (await session.scalar(select(AIBudgetEntry))).status=='unknown'
-    # User-supplied text unblocks publication without another paid request.
+    # User-supplied text remains editable without another paid request.
     await save(client,me,aid,(await detail(client,aid))['pages'][0],'내가 직접 적어요')
     await worker.run_once();assert provider.calls==1 and (await detail(client,aid))['album']['content_ready']
 
