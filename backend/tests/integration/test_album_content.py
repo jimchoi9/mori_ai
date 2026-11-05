@@ -236,7 +236,7 @@ async def test_unknown_paid_caption_is_accounted_and_never_retried(client,db):
     async with db() as session:
         assert (await session.scalar(select(AlbumCaptionJob))).status=='unknown'
         assert (await session.scalar(select(AIBudgetEntry))).status=='unknown'
-    # User-supplied text unblocks publication without another paid request.
+    # User-supplied text remains editable without another paid request.
     await save(client,me,aid,(await detail(client,aid))['pages'][0],'내가 직접 적어요')
     await worker.run_once();assert provider.calls==1 and (await detail(client,aid))['album']['content_ready']
 
@@ -393,3 +393,90 @@ async def test_manual_restore_has_owner_csrf_and_pending_boundaries(client,db):
     assert (await client.post(url,json=body,headers=headers(me))).status_code==409
     other=await login(client,'beta')
     assert (await client.post(url,json=body,headers=headers(other))).status_code==404
+
+
+@pytest.mark.asyncio
+async def test_saved_photos_are_viewable_before_any_caption(client,db):
+    me,aid,s=await start(client,db)
+    u=await upload(client,db,me,aid,s)
+    d=await detail(client,aid)
+    assert d['pages'][0]['caption_text'] is None
+    assert d['pages'][0]['caption_status']=='waiting'
+    assert d['album']['content_ready']
+    response=await client.get(f'/api/v1/albums/{aid}/viewer')
+    assert response.status_code==200,response.text
+    assert [(p['id'],p['caption_text']) for p in response.json()['data']['pages']]==[(u['page_id'],'')]
+    async with db() as session:
+        assert await session.scalar(select(func.count()).select_from(AlbumCaptionJob))==0
+
+
+@pytest.mark.asyncio
+async def test_48_saved_photos_with_one_unknown_caption_remain_viewable(client,db):
+    me,aid,s=await start(client,db)
+    s.easy_upload_max_photos=50
+    uploads=[await upload(client,db,me,aid,s) for _ in range(48)]
+    s.ai_real_calls_enabled=True
+    from backend.generation.openai_provider import ProviderFailure,ProviderResult
+    class Provider:
+        calls=0
+        async def caption(self,*args,**kwargs):
+            self.calls+=1
+            if self.calls==24:raise ProviderFailure('AI_TEMPORARY_FAILURE',dispatch_state='rejected')
+            return ProviderResult(caption='함께 걸으며 사진을 남겼다.',cost_usd=Decimal('0'),usage={})
+    provider=Provider()
+    worker=ContentWorker(db,s,client._transport.app.state.media_storage,provider)
+    for _ in range(48):await worker.run_once()
+    async with db() as session,session.begin():
+        jobs=(await session.scalars(select(AlbumCaptionJob).order_by(AlbumCaptionJob.id))).all()
+        assert [j.status for j in jobs].count('succeeded')==47
+        assert [j.status for j in jobs].count('unknown')==1
+        failed=next(j for j in jobs if j.status=='unknown')
+        failed_page=str(failed.page_id)
+        before=[(j.id,j.status,j.attempt_id,j.attempt_count,j.error_code) for j in jobs]
+        # An already-deployed album has no persisted manifest after one failed caption.
+        album=await session.get(Album,UUID(aid))
+        album.content_manifest=[];album.status='draft'
+    listing=(await client.get('/api/v1/albums')).json()['data']['items']
+    assert next(a for a in listing if a['id']==aid)['content_ready']
+    d=await detail(client,aid)
+    assert len(d['pages'])==48 and d['album']['content_ready']
+    assert next(p for p in d['pages'] if p['id']==failed_page)['caption_status']=='unknown'
+    assert next(p for p in d['pages'] if p['id']==failed_page)['caption_text'] is None
+    response=await client.get(f'/api/v1/albums/{aid}/viewer')
+    assert response.status_code==200,response.text
+    pages=response.json()['data']['pages']
+    assert [p['id'] for p in pages]==[u['page_id'] for u in uploads]
+    assert sum(p['caption_text']=='' for p in pages)==1
+    assert next(p for p in pages if p['id']==failed_page)['caption_text']==''
+    async with db() as session:
+        jobs=(await session.scalars(select(AlbumCaptionJob).order_by(AlbumCaptionJob.id))).all()
+        assert [(j.id,j.status,j.attempt_id,j.attempt_count,j.error_code) for j in jobs]==before
+        album=await session.get(Album,UUID(aid))
+        assert album.content_manifest==[] and album.status=='draft'  # GETs do not backfill stored rows.
+    await worker.run_once()
+    assert provider.calls==48  # The unknown result is never automatically resent.
+
+
+@pytest.mark.asyncio
+async def test_nfc_saved_photos_without_captions_pin_each_entrance(client,db,tmp_path):
+    me,p,tid,key=await purchased(client,db,tmp_path,completed=False)
+    aid=p['album_id'];s=client._transport.app.state.settings
+    s.album_content_enabled=True;s.easy_upload_enabled=True;s.dev_ai_enabled=True
+    await consent(client,me)
+    assert (await client.post(f'/api/v1/albums/{aid}/content',json={},headers=headers(me))).status_code==200
+    for _ in range(2):await upload(client,db,me,aid,s)
+    async with db() as session,session.begin():
+        album=await session.get(Album,UUID(aid));album.content_manifest=[];album.status='draft'
+    first=(await enter(client,tid,key)).json()['data']
+    assert first['state']=='ready' and len(first['pages'])==2
+    assert [p['text'] for p in first['pages']]==['','']
+    d=await detail(client,aid)
+    await save(client,me,aid,d['pages'][0],'함께 남긴 기억')
+    client.cookies.clear()
+    second=(await enter(client,tid,key)).json()['data']
+    assert second['state']=='ready' and second['pages'][0]['text']=='함께 남긴 기억'
+    assert first['pages'][0]['text']==''
+    for page in first['pages']:
+        for field in ('src','thumb'):
+            assert (await client.get(page[field],headers={'X-Mori-Viewer-Token':first['session_token']})).status_code==200
+    assert (await client.get(f'/api/v1/albums/{aid}/viewer')).status_code==401

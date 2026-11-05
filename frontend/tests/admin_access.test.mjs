@@ -8,7 +8,7 @@ await build({entryPoints:['src/features/auth/oauth.ts'],bundle:true,platform:'no
 const oauth=await import(pathToFileURL(`${process.cwd()}/admin-oauth-check.mjs`));
 test('admin login returns to exact private route only',()=>{
  assert.match(oauth.oauthLoginUrl('google','/admin'),/return_to=%2Fadmin$/);
- for(const path of ['/administrator','/admin/','//evil.test','https://evil.test','/admin?x=1'])assert.match(oauth.oauthLoginUrl('google',path),/return_to=%2Fgoods$/);
+ for(const path of ['/administrator','/admin/','//evil.test','https://evil.test','/admin?x=1'])assert.match(oauth.oauthLoginUrl('google',path),/return_to=%2Falbums$/);
 });
 test('admin route precedes product side effects and has no menu link',async()=>{
  const app=await readFile('src/App.tsx','utf8');

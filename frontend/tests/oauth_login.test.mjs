@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 const oauth = await import(process.argv[2]);
 const id = '12345678-1234-1234-1234-123456789abc';
+test('root entry and omitted return path lead social login back to the album home', () => {
+  for (const provider of ['google', 'kakao']) {
+    const expected = `/api/v1/auth/${provider}/start?return_to=%2Falbums`;
+    assert.equal(oauth.oauthLoginUrl(provider, '/'), expected);
+    assert.equal(oauth.oauthLoginUrl(provider), expected);
+  }
+});
 test('OAuth navigates through same-origin start with only allowed return paths', () => {
   for (const provider of ['google', 'kakao']) {
     for (const path of ['/goods', '/designs', `/designs/${id}`, '/albums', ...['edit','progress','review','view'].map(view => `/albums/${id}/${view}`)]) {
@@ -9,9 +16,9 @@ test('OAuth navigates through same-origin start with only allowed return paths',
     }
   }
 });
-test('untrusted return locations fall back to goods', () => {
+test('untrusted return locations fall back to the album home', () => {
   for (const path of ['https://evil.test','//evil.test','/albums?token=secret','/albums#secret',`/albums/${id}/edit?x=1`, '/albums/not-a-uuid/view', '/login', '/albums/new', '/albums/../login', '/albums/', `/albums/${id}/view\n`]) {
-    assert.equal(oauth.oauthLoginUrl('google', path), '/api/v1/auth/google/start?return_to=%2Fgoods');
+    assert.equal(oauth.oauthLoginUrl('google', path), '/api/v1/auth/google/start?return_to=%2Falbums');
   }
   assert.throws(() => oauth.oauthLoginUrl('unknown', '/albums'));
 });
@@ -50,6 +57,11 @@ if (process.argv[3]) {
     assert.match(html, /href="\/api\/v1\/auth\/google\/start\?return_to=%2Falbums"/);
     assert.doesNotMatch(html, /Kakao로 로그인|unknown/);
     assert.match(render({providers:['kakao']}), /Kakao로 로그인/);
+  });
+  test('the actual login options at the site root preserve the album-home destination', () => {
+    const html = render({providers:['google','kakao'],returnTo:'/'});
+    for (const provider of ['google','kakao']) assert.match(html, new RegExp(`href="/api/v1/auth/${provider}/start\\?return_to=%2Falbums"`));
+    assert.doesNotMatch(html, /return_to=%2Fgoods/);
   });
   test('login configuration has loading and safe retry states', () => {
     assert.match(render({pending:true}), /role="status"/);

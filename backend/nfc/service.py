@@ -43,10 +43,11 @@ async def enter(session,tag_id,token):
         from sqlalchemy import select
         album=await session.scalar(select(Album).where(Album.id==album.id).with_for_update().execution_options(populate_existing=True))
         if album.deleted_at is not None or album.management_pending:return {'state':'preparing'}
-        if not album.content_manifest:return {'state':'preparing'}
+        from backend.album_content.service import viewing_entries
+        entries=await viewing_entries(session,album)
+        if not entries:return {'state':'preparing'}
         from backend.models import MediaAsset
         from uuid import UUID
-        entries=album.content_manifest
         for item in entries:
             for key in ('asset_id','thumbnail_id'):
                 asset=await session.get(MediaAsset,UUID(item[key]))

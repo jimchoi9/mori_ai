@@ -59,12 +59,16 @@ async def summary(session, album):
         pages=await visible_pages(session,album,uploads=uploads)
     else:pages = await repo.album_pages(session, album.id)
     assets = {a.id: a for a in await repo.ready_assets(session, album.id)}
+    content_ready=False
+    if album.content_enabled:
+        from backend.album_content.service import viewing_entries
+        content_ready=bool(await viewing_entries(session,album,pages=pages,assets=assets,uploads=uploads))
     cover_page = pages[0] if pages else None
     cover = scoped_asset(assets, cover_page, 'thumbnail', album) if cover_page else None
     from backend.album_titles.service import capture_period
     period=capture_period(pages,uploads)
     return {'capture_period':period,'title_pending':bool(album.content_enabled and session.info.get('album_title_generation_enabled',True) and album.title_source=='pending' and album.title_seed is not None), 'id': str(album.id), 'title': album.title, 'status': album.status, 'version': album.version,
-        **({'content_enabled':True,'content_ready':bool(album.content_manifest)} if album.content_enabled else {}),
+        **({'content_enabled':True,'content_ready':content_ready} if album.content_enabled else {}),
         'nfc_required':False, 'page_count': len(pages), 'cover': media_ref(cover), 'created_at': utc(album.created_at),
         'updated_at': utc(album.updated_at), 'published_at': utc(album.published_at)}
 

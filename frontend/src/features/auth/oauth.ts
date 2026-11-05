@@ -5,13 +5,13 @@ export function oauthProviders(value: unknown): AuthProvider[] {
   return [...new Set(value.filter((provider): provider is AuthProvider => provider === 'google' || provider === 'kakao'))];
 }
 
-export function oauthLoginUrl(provider: AuthProvider, returnTo = '/goods'): string {
+export function oauthLoginUrl(provider: AuthProvider, returnTo = '/albums'): string {
   if (provider !== 'google' && provider !== 'kakao') throw new Error('Unsupported login provider');
   const albumPath = /^\/albums\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(edit|manage|progress|review|view)$/i;
   const designPath = /^\/designs\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const purchasePath = /^\/purchases\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/photos)?$/i;
   const giftPath = /^\/gifts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const destination = ['/goods','/designs','/albums','/admin'].includes(returnTo) || albumPath.test(returnTo) || designPath.test(returnTo) || purchasePath.test(returnTo) || giftPath.test(returnTo) ? returnTo : '/goods';
+  const destination = ['/goods','/designs','/albums','/admin'].includes(returnTo) || albumPath.test(returnTo) || designPath.test(returnTo) || purchasePath.test(returnTo) || giftPath.test(returnTo) ? returnTo : '/albums';
   return `/api/v1/auth/${provider}/start?return_to=${encodeURIComponent(destination)}`;
 }
 
